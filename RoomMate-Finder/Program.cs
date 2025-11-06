@@ -10,45 +10,41 @@ using RoomMate_Finder.Features.Profiles;
 using RoomMate_Finder.Infrastructure.Persistence;
 using RoomMate_Finder.Validators;
 
-// Încarcă variabilele de mediu din .env ÎNAINTE de orice altceva
 LoadEnvironmentVariables();
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
     Args = args,
-    // Dezactivează folosirea launchSettings.json pentru a depinde doar de .env
+    // use only .env
     ApplicationName = typeof(Program).Assembly.FullName
 });
 
-// Configurare port din .env - suprascrie orice altă configurare
+// Configure port from .env 
 ConfigurePort(builder);
 
-// Configurare servicii
-ConfigureServices(builder.Services, builder.Configuration);
+// Configure services
+ConfigureServices(builder.Services, builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 
-// Inițializare bază de date
 await InitializeDatabaseAsync(app);
 
-// Configurare middleware
+// Configure middleware
 ConfigureMiddleware(app);
 
-// Configurare endpoints
+// Configure endpoints
 ConfigureEndpoints(app);
 
 app.Run();
 
-// ===== Metode helper =====
+// ===== helper =====
 
 static void LoadEnvironmentVariables()
 {
     try
     {
-        // Încearcă să încarce din directorul curent
         Env.Load();
         
-        // Încearcă să încarce din directorul aplicației dacă există
         var envFile = Path.Combine(AppContext.BaseDirectory, ".env");
         if (File.Exists(envFile))
         {
@@ -70,21 +66,20 @@ static void ConfigurePort(WebApplicationBuilder builder)
     var port = GetRequiredEnvironmentVariable("API_PORT");
     var url = $"http://localhost:{port}";
     
-    // Forțează folosirea portului din .env, ignorând launchSettings.json
     builder.WebHost.UseUrls(url);
-    
+
     Console.WriteLine($"✓ Server configured to run on {url}");
 }
 
-static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+static void ConfigureServices(IServiceCollection services, IConfiguration configuration, IWebHostEnvironment env)
 {
-    // JWT Configuration - doar din .env
+    // JWT Configuration - from .env
     ConfigureJwtAuthentication(services);
     
-    // CORS Configuration - doar din .env
-    ConfigureCors(services);
+    // CORS Configuration - from .env, with development fallbacks
+    ConfigureCors(services, env);
     
-    // Database Configuration - doar din .env
+    // Database Configuration - from.env
     ConfigureDatabase(services);
     
     // MediatR & Validation
@@ -99,7 +94,6 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
 
 static void ConfigureJwtAuthentication(IServiceCollection services)
 {
-    // Citește DOAR din .env, nu mai folosește fallback la appsettings.json
     var jwtKey = GetRequiredEnvironmentVariable("JWT_KEY");
     var jwtIssuer = GetRequiredEnvironmentVariable("JWT_ISSUER");
     var jwtAudience = GetRequiredEnvironmentVariable("JWT_AUDIENCE");
@@ -126,16 +120,41 @@ static void ConfigureJwtAuthentication(IServiceCollection services)
     Console.WriteLine($"✓ JWT configured from .env (Issuer: {jwtIssuer})");
 }
 
-static void ConfigureCors(IServiceCollection services)
+static void ConfigureCors(IServiceCollection services, IWebHostEnvironment? env = null)
 {
     var corsOriginsStr = GetRequiredEnvironmentVariable("CORS_ORIGINS");
-    var allowedOrigins = corsOriginsStr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    var allowedOrigins = corsOriginsStr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
     
+    // If we're in development, include common Blazor/ASP.NET dev ports so the frontend can call the API
+    if (env?.IsDevelopment() == true)
+    {
+        // Add typical development origins used by Blazor WebAssembly and dotnet run
+        var devOrigins = new[] { "http://localhost:5042", "https://localhost:7100", "http://localhost:5173", "http://localhost:3000" };
+        foreach (var o in devOrigins)
+        {
+            if (!allowedOrigins.Contains(o, StringComparer.OrdinalIgnoreCase))
+            {
+                allowedOrigins.Add(o);
+            }
+        }
+    }
+
+    // Also add common local dev origins as a safe default for local development
+    // (this avoids issues if ASPNETCORE_ENVIRONMENT isn't set to Development for the backend process).
+    var alwaysDevOrigins = new[] { "http://localhost:5042", "https://localhost:7100", "http://localhost:5173", "http://localhost:3000" };
+    foreach (var o in alwaysDevOrigins)
+    {
+        if (!allowedOrigins.Contains(o, StringComparer.OrdinalIgnoreCase))
+        {
+            allowedOrigins.Add(o);
+        }
+    }
+     
     services.AddCors(options =>
     {
         options.AddDefaultPolicy(policy =>
         {
-            policy.WithOrigins(allowedOrigins)
+            policy.WithOrigins(allowedOrigins.ToArray())
                   .AllowAnyHeader()
                   .AllowAnyMethod()
                   .AllowCredentials();
