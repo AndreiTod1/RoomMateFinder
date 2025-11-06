@@ -10,13 +10,11 @@ public class AppDbContext : DbContext
     {
     }
 
-    public DbSet<Profile> Profiles { get; set; }
-    
+    public DbSet<Profile> Profiles { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Profile>().ToTable("profiles", "public");
         base.OnModelCreating(modelBuilder);
-        modelBuilder.Entity<Profile>().ToTable("Profiles");
-            
     }
-
 }
