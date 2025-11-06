@@ -14,6 +14,7 @@
         <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.0" />
         <PackageReference Include="MediatR" Version="13.1.0" />
         <PackageReference Include="MediatR.Extensions.Autofac.DependencyInjection" Version="13.1.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.10" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.10">
@@ -31,7 +32,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Common\" />
       <Folder Include="Exceptions\" />
       <Folder Include="Features\Conversations\" />
       <Folder Include="Features\Matching\" />
