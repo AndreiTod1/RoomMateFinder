@@ -1,41 +1,46 @@
+using Microsoft.EntityFrameworkCore;
+using MediatR;
+using FluentValidation;
+using RoomMate_Finder.Features.Profiles;
+using RoomMate_Finder.Infrastructure.Persistence;
+using RoomMate_Finder.Validators;
+using DotNetEnv;
+Env.Load();
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+var host = Environment.GetEnvironmentVariable("DB_HOST");
+var port = Environment.GetEnvironmentVariable("DB_PORT");
+var database = Environment.GetEnvironmentVariable("DB_NAME");
+var username = Environment.GetEnvironmentVariable("DB_USER");
+var password = Environment.GetEnvironmentVariable("DB_PASSWORD");
+var connectionString = $"Host={host};Port={port};Database={database};Username={username};Password={password}";
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssemblyContaining<CreateProfileRequest>();
+});
+
+builder.Services.AddValidatorsFromAssemblyContaining<CreateProfileValidator>();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated();
+}
+
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-    {
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast
-                (
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-            .ToArray();
-        return forecast;
-    })
-    .WithName("GetWeatherForecast");
-
+app.MapProfilesEndpoints();
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
