@@ -1,0 +1,17 @@
+﻿# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=RoomMateFinderDb
+DB_USER=postgres
+DB_PASSWORD=postgres
+
+# JWT Configuration
+JWT_KEY=key
+JWT_ISSUER=RoomMateFinderAPI
+JWT_AUDIENCE=RoomMateFinderClient
+
+# CORS Configuration (multiple origins separated by comma)
+CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+
+# API Configuration
+API_PORT=5111
