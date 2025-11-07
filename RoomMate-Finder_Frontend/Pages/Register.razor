@@ -1,0 +1,160 @@
+@page "/register"
+@using System.ComponentModel.DataAnnotations
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3>Înregistrare</h3>
+
+<EditForm Model="model" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">Nume complet</label>
+        <InputText class="form-control" @bind-Value="model.FullName" />
+        <ValidationMessage For="() => model.FullName" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+        <InputText class="form-control" @bind-Value="model.Email" />
+        <ValidationMessage For="() => model.Email" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Parolă</label>
+        <InputText type="password" class="form-control" @bind-Value="model.Password" />
+        <ValidationMessage For="() => model.Password" />
+    </div>
+
+    <!-- Additional optional fields required by the API -->
+    <div class="mb-3">
+        <label class="form-label">Vârstă (opțional)</label>
+        <InputNumber class="form-control" @bind-Value="model.Age" />
+        <ValidationMessage For="() => model.Age" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Gen (opțional)</label>
+        <InputText class="form-control" @bind-Value="model.Gender" />
+        <ValidationMessage For="() => model.Gender" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Universitate (opțional)</label>
+        <InputText class="form-control" @bind-Value="model.University" />
+        <ValidationMessage For="() => model.University" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Bio (opțional)</label>
+        <InputTextArea class="form-control" @bind-Value="model.Bio" />
+        <ValidationMessage For="() => model.Bio" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Lifestyle (opțional)</label>
+        <InputText class="form-control" @bind-Value="model.Lifestyle" />
+        <ValidationMessage For="() => model.Lifestyle" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Interese (opțional)</label>
+        <InputText class="form-control" @bind-Value="model.Interests" />
+        <ValidationMessage For="() => model.Interests" />
+    </div>
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    <button class="btn btn-primary" type="submit">Înregistrează-te</button>
+</EditForm>
+
+@code {
+    private RegisterModel model = new();
+    private string? errorMessage;
+    private string? successMessage;
+
+    private async Task HandleValidSubmit()
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var req = new
+            {
+                Email = model.Email,
+                Password = model.Password,
+                FullName = model.FullName,
+                Bio = model.Bio ?? string.Empty,
+                Age = model.Age,
+                Gender = model.Gender ?? string.Empty,
+                University = model.University ?? string.Empty,
+                Lifestyle = model.Lifestyle ?? string.Empty,
+                Interests = model.Interests ?? string.Empty
+            };
+
+            var resp = await Http.PostAsJsonAsync("/profiles", req);
+            if (resp.IsSuccessStatusCode)
+            {
+                successMessage = "Înregistrare realizată cu succes. Te poți loga acum.";
+                // optional redirect to login after short delay
+                await Task.Delay(1200);
+                Navigation.NavigateTo("/login");
+            }
+            else
+            {
+                // Try to parse JSON error message if present
+                var text = await resp.Content.ReadAsStringAsync();
+                try
+                {
+                    var doc = System.Text.Json.JsonDocument.Parse(text);
+                    if (doc.RootElement.TryGetProperty("message", out var msg))
+                    {
+                        errorMessage = msg.GetString();
+                    }
+                    else
+                    {
+                        errorMessage = text;
+                    }
+                }
+                catch
+                {
+                    errorMessage = string.IsNullOrWhiteSpace(text) ? "Eroare la înregistrare" : text;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    public class RegisterModel
+    {
+        [Required]
+        public string FullName { get; set; } = string.Empty;
+
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        public string Password { get; set; } = string.Empty;
+
+        // Additional optional fields expected by the backend
+        public string? Bio { get; set; } = string.Empty;
+        public int Age { get; set; } = 18;
+        public string? Gender { get; set; } = string.Empty;
+        public string? University { get; set; } = string.Empty;
+        public string? Lifestyle { get; set; } = string.Empty;
+        public string? Interests { get; set; } = string.Empty;
+    }
+}
