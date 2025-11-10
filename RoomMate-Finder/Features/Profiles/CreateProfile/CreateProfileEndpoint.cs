@@ -19,6 +19,7 @@ public static class CreateProfileEndpoint
                     return Results.BadRequest(new { message = ex.Message });
                 }
             })
+            .WithTags("Authentication")
             .WithName("CreateProfile")
             .WithSummary("Creates a new user profile")
             .Produces<AuthResponse>(200)

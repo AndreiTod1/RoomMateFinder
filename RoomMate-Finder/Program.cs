@@ -9,6 +9,7 @@ using RoomMate_Finder.Common;
 using RoomMate_Finder.Features.Profiles;
 using RoomMate_Finder.Infrastructure.Persistence;
 using RoomMate_Finder.Validators;
+using Microsoft.OpenApi.Models;
 
 LoadEnvironmentVariables();
 
@@ -87,9 +88,42 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
         cfg.RegisterServicesFromAssemblyContaining<CreateProfileRequest>());
     services.AddValidatorsFromAssemblyContaining<CreateProfileValidator>();
     
-    // API Documentation
+    // HttpContext for accessing user claims in endpoints
+    services.AddHttpContextAccessor();
+    
+    // API Documentation with JWT support
     services.AddEndpointsApiExplorer();
-    services.AddSwaggerGen();
+    services.AddSwaggerGen(options =>
+    {
+        options.SwaggerDoc("v1", new OpenApiInfo 
+        { 
+            Title = "RoomMate Finder API", 
+            Version = "v1",
+            Description = "API for RoomMate Finder application"
+        });
+        
+        var securityScheme = new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Description = "Enter 'Bearer {your JWT token}'",
+            In = ParameterLocation.Header,
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Reference = new OpenApiReference
+            {
+                Type = ReferenceType.SecurityScheme,
+                Id = "Bearer"
+            }
+        };
+
+        options.AddSecurityDefinition("Bearer", securityScheme);
+        
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            { securityScheme, Array.Empty<string>() }
+        });
+    });
 }
 
 static void ConfigureJwtAuthentication(IServiceCollection services)

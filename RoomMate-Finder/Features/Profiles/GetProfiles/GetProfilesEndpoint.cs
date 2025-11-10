@@ -12,6 +12,7 @@ public static class GetProfilesEndpoint
                 var response = await mediator.Send(request);
                 return Results.Ok(response);
             })
+            .WithTags("Profiles")
             .WithName("GetProfiles")
             .WithSummary("Gets all user profiles")
             .Produces<List<GetProfilesResponse>>(200);

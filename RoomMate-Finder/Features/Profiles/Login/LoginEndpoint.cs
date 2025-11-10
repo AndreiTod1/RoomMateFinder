@@ -18,6 +18,7 @@ public static class LoginEndpoint
                     return Results.Unauthorized();
                 }
             })
+            .WithTags("Authentication")
             .WithName("LoginProfile")
             .WithSummary("Authenticates a user")
             .Produces<LoginResponse>(200)
