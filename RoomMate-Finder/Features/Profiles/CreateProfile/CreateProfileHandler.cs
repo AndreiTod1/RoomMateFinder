@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using RoomMate_Finder.Common;
 using RoomMate_Finder.Entities;
@@ -11,16 +12,25 @@ public class CreateProfileHandler : IRequestHandler<CreateProfileRequest, AuthRe
 {
     private readonly AppDbContext _dbContext;
     private readonly JwtService _jwtService;
+    private readonly IValidator<CreateProfileRequest> _validator;
 
-    public CreateProfileHandler(AppDbContext dbContext, JwtService jwtService)
+    public CreateProfileHandler(AppDbContext dbContext, JwtService jwtService, IValidator<CreateProfileRequest> validator)
     {
         _dbContext = dbContext;
         _jwtService = jwtService;
+        _validator = validator;
     }
 
     public async Task<AuthResponse> Handle(CreateProfileRequest request, CancellationToken cancellationToken)
     {
-        // Verifică dacă emailul există deja
+        var validationResult = await _validator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            var errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
+            throw new InvalidOperationException(errors);
+        }
+
+        
         var existingUser = await _dbContext.Profiles
             .FirstOrDefaultAsync(p => p.Email == request.Email, cancellationToken);
             
