@@ -7,6 +7,8 @@ using MediatR;
 using DotNetEnv;
 using RoomMate_Finder.Common;
 using RoomMate_Finder.Features.Profiles;
+using RoomMate_Finder.Features.Matching;
+using RoomMate_Finder.Features.Matching.CalculateCompatibility.Services;
 using RoomMate_Finder.Infrastructure.Persistence;
 using RoomMate_Finder.Validators;
 using Microsoft.OpenApi.Models;
@@ -87,6 +89,9 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
     services.AddMediatR(cfg => 
         cfg.RegisterServicesFromAssemblyContaining<CreateProfileRequest>());
     services.AddValidatorsFromAssemblyContaining<CreateProfileValidator>();
+    
+    // Compatibility Services
+    ConfigureCompatibilityServices(services);
     
     // HttpContext for accessing user claims in endpoints
     services.AddHttpContextAccessor();
@@ -233,7 +238,7 @@ static async Task InitializeDatabaseAsync(WebApplication app)
 {
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    
+
     try
     {
         await dbContext.Database.EnsureCreatedAsync();
@@ -264,5 +269,17 @@ static void ConfigureMiddleware(WebApplication app)
 static void ConfigureEndpoints(WebApplication app)
 {
     app.MapProfilesEndpoints();
+    app.MapMatchingEndpoints();
     Console.WriteLine("✓ Endpoints configured");
+}
+
+static void ConfigureCompatibilityServices(IServiceCollection services)
+{
+    services.AddScoped<IAgeCompatibilityService, AgeCompatibilityService>();
+    services.AddScoped<IGenderCompatibilityService, GenderCompatibilityService>();
+    services.AddScoped<IUniversityCompatibilityService, UniversityCompatibilityService>();
+    services.AddScoped<ILifestyleCompatibilityService, LifestyleCompatibilityService>();
+    services.AddScoped<IInterestsCompatibilityService, InterestsCompatibilityService>();
+    services.AddScoped<ICompatibilityCalculatorService, CompatibilityCalculatorService>();
+    services.AddScoped<ICompatibilityDescriptionService, CompatibilityDescriptionService>();
 }
