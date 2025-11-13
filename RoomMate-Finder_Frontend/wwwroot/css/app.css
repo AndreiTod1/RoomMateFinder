@@ -2,6 +2,12 @@ html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
+/* Define defaults for CSS variables used by the loading indicator */
+:root {
+    --blazor-load-percentage: 0%;
+    --blazor-load-percentage-text: "Loading";
+}
+
 h1:focus {
     outline: none;
 }
@@ -112,3 +118,146 @@ code {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* UI improvements added: navbar, nav menu, buttons, profile card and small utilities */
+/* Navbar styling */
+.top-row.navbar {
+    /* Black -> dark blue gradient for a strong header */
+    background: linear-gradient(90deg, #000000 0%, #0b3d91 100%);
+    padding: 0.45rem 0;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
+}
+
+.navbar-brand {
+    font-weight: 700;
+    color: #ffffff !important;
+    letter-spacing: 0.2px;
+}
+
+.navbar-text {
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.navbar .navbar-toggler {
+    border-color: rgba(255,255,255,0.16);
+}
+
+.navbar .navbar-toggler-icon {
+    filter: invert(1) brightness(0.95);
+}
+
+/* Nav menu area */
+.nav-scrollable {
+    /* Strong blue background for the sidebar */
+    background: linear-gradient(180deg, #0b3d91 0%, #1b6ec2 100%);
+    padding: 0.5rem 0 1rem 0;
+    color: #ffffff;
+}
+
+/* Sidebar-specific link/icon colors for contrast */
+.nav-scrollable .nav-link {
+    color: rgba(255,255,255,0.95);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+}
+
+.nav-scrollable .nav-link:hover {
+    background-color: rgba(255,255,255,0.06);
+    color: #ffffff;
+    text-decoration: none;
+    transform: none;
+}
+
+.nav-scrollable .nav-item .bi,
+.nav-scrollable .nav-link .bi {
+    margin-right: 0.5rem;
+    color: rgba(255,255,255,0.9);
+}
+
+/* Buttons */
+.btn-outline-light {
+    color: #ffffff;
+    border-color: rgba(255,255,255,0.45);
+    background: transparent;
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.btn-outline-light:hover {
+    background-color: rgba(255,255,255,0.12);
+    color: #ffffff;
+}
+
+/* Profile card (used by profile pages/components) */
+.profile-card {
+    background: #ffffff;
+    border: 1px solid #e7eefb;
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: 0 6px 18px rgba(19,57,94,0.06);
+    max-width: 820px;
+    margin: 1rem auto;
+}
+
+.profile-card .avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg,#1b6ec2 0%,#3aa0ff 100%);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.35rem;
+    margin-right: 1rem;
+}
+
+.profile-card .meta {
+    color: #556677;
+    font-size: 0.95rem;
+}
+
+/* Form refinements inside profile card */
+.profile-card .form-label {
+    font-weight: 600;
+    color: #213a57;
+}
+
+.profile-card .form-control {
+    border: 1px solid #d7e6fb;
+    box-shadow: none;
+    padding: 0.55rem 0.65rem;
+}
+
+.profile-card .form-control:focus {
+    border-color: #1b6ec2;
+    box-shadow: 0 0 0 0.12rem rgba(27,110,194,0.12);
+}
+
+.profile-card hr {
+    margin: 0.9rem 0;
+    border-color: #eef6ff;
+}
+
+.profile-card h3 { color: #0f2b44; }
+
+@media (max-width: 767px) {
+    .top-row .navbar-brand { font-size: 1rem; }
+    .profile-card { padding: 0.8rem; }
+    .profile-card .avatar { width: 56px; height: 56px; font-size: 1.05rem; }
+    .profile-card { margin: 0.6rem; }
+    .profile-card .d-flex.align-items-center { gap: 0.6rem; }
+}
+
+/* small utilities */
+.mx-1-5 { margin-left: 0.6rem; margin-right: 0.6rem; }
+.p-1-25 { padding: 0.75rem; }
+
+/* Accessibility and responsive tweaks */
+@media (max-width: 767px) {
+    .top-row .navbar-brand { font-size: 1rem; }
+    .profile-card { padding: 0.8rem; }
+    .profile-card .avatar { width: 56px; height: 56px; font-size: 1.05rem; }
+}
+
+/* End of UI improvements */

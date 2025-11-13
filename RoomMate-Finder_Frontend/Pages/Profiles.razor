@@ -1,0 +1,57 @@
+@page "/profiles"
+@using RoomMate_Finder_Frontend.Services
+@inject IProfileService ProfileService
+@inject NavigationManager Navigation
+
+<h3>Lista Profile</h3>
+
+@if (_error != null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else if (_profiles == null)
+{
+    <p>Se încarcă...</p>
+}
+else if (!_profiles.Any())
+{
+    <p>Nu există profile.</p>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var p in _profiles)
+        {
+            <a class="list-group-item list-group-item-action" @onclick="@(() => GoToProfile(p.Id))">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">@p.FullName</h5>
+                    <small>@p.CreatedAt.ToLocalTime().ToString("g")</small>
+                </div>
+                <p class="mb-1">@p.Bio</p>
+                <small>@p.University</small>
+            </a>
+        }
+    </div>
+}
+
+@code {
+    private List<ProfileDto>? _profiles;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _profiles = await ProfileService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private void GoToProfile(Guid id)
+    {
+        Navigation.NavigateTo($"/profile/{id}");
+    }
+}

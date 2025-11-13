@@ -1,0 +1,231 @@
+@page "/profile/{Id:guid}"
+@using RoomMate_Finder_Frontend.Services
+@using System.ComponentModel.DataAnnotations
+@inject IProfileService ProfileService
+@inject NavigationManager Navigation
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private ProfileDto? _profile;
+    private string? _error;
+    private bool _isEditing;
+    private EditModel _editModel = new();
+    private bool _isSaving;
+
+    public class EditModel
+    {
+        [Required]
+        public string FullName { get; set; } = string.Empty;
+        public int Age { get; set; }
+        public string? Gender { get; set; }
+        public string? University { get; set; }
+        public string? Bio { get; set; }
+        public string? Lifestyle { get; set; }
+        public string? Interests { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _profile = await ProfileService.GetByIdAsync(Id);
+            if (_profile == null)
+            {
+                _error = "Profilul nu a fost găsit.";
+                return;
+            }
+
+            // populate edit model
+            _editModel = new EditModel
+            {
+                FullName = _profile.FullName,
+                Age = _profile.Age,
+                Gender = _profile.Gender,
+                University = _profile.University,
+                Bio = _profile.Bio,
+                Lifestyle = _profile.Lifestyle,
+                Interests = _profile.Interests
+            };
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Navigation.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private void EnableEdit() => _isEditing = true;
+    private void CancelEdit()
+    {
+        _isEditing = false;
+        // reset model to original
+        if (_profile != null)
+        {
+            _editModel.FullName = _profile.FullName;
+            _editModel.Age = _profile.Age;
+            _editModel.Gender = _profile.Gender;
+            _editModel.University = _profile.University;
+            _editModel.Bio = _profile.Bio;
+            _editModel.Lifestyle = _profile.Lifestyle;
+            _editModel.Interests = _profile.Interests;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (_profile == null) return;
+        _isSaving = true;
+        try
+        {
+            var updateDto = new UpdateProfileRequestDto(
+                _editModel.FullName,
+                _editModel.Age,
+                _editModel.Gender,
+                _editModel.University,
+                _editModel.Bio,
+                _editModel.Lifestyle,
+                _editModel.Interests
+            );
+
+            var updated = await ProfileService.UpdateAsync(_profile.Id, updateDto);
+            if (updated != null)
+            {
+                _profile = updated;
+                _isEditing = false;
+            }
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Navigation.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    // helper: compute initials for avatar
+    private string GetInitials()
+    {
+        if (_profile == null || string.IsNullOrWhiteSpace(_profile.FullName)) return "";
+        var parts = _profile.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return "";
+        var first = char.ToUpper(parts[0][0]);
+        var second = parts.Length > 1 ? char.ToUpper(parts[1][0]) : '\0';
+        return second == '\0' ? first.ToString() : $"{first}{second}";
+    }
+}
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else if (_profile == null)
+{
+    <p>Se încarcă...</p>
+}
+else
+{
+    <div class="profile-card">
+        <div class="d-flex align-items-center">
+            <div class="avatar">@GetInitials()</div>
+            <div>
+                <h3 class="mb-0">@_profile.FullName</h3>
+                <div class="meta">@_profile.Email</div>
+            </div>
+
+            <div class="ms-auto">
+                @if (!_isEditing)
+                {
+                    <button class="btn btn-outline-primary btn-sm" @onclick="EnableEdit">Edit profile</button>
+                }
+            </div>
+        </div>
+
+        <hr />
+
+        @if (_isEditing)
+        {
+            <EditForm Model="_editModel" OnValidSubmit="HandleValidSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Nume complet</label>
+                            <InputText class="form-control" @bind-Value="_editModel.FullName" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Vârstă</label>
+                            <InputNumber class="form-control" @bind-Value="_editModel.Age" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Gen</label>
+                            <InputText class="form-control" @bind-Value="_editModel.Gender" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Universitate</label>
+                            <InputText class="form-control" @bind-Value="_editModel.University" />
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Bio</label>
+                            <InputTextArea class="form-control" rows="6" @bind-Value="_editModel.Bio" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Lifestyle</label>
+                            <InputText class="form-control" @bind-Value="_editModel.Lifestyle" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Interese</label>
+                            <InputText class="form-control" @bind-Value="_editModel.Interests" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button class="btn btn-primary" type="submit" disabled="@_isSaving">Save</button>
+                    <button class="btn btn-secondary ms-2" type="button" @onclick="CancelEdit" disabled="@_isSaving">Cancel</button>
+                </div>
+            </EditForm>
+        }
+        else
+        {
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Email:</strong> @_profile.Email</p>
+                    <p><strong>Vârstă:</strong> @_profile.Age</p>
+                    <p><strong>Gen:</strong> @_profile.Gender</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Universitate:</strong> @_profile.University</p>
+                    <p><strong>Lifestyle:</strong> @_profile.Lifestyle</p>
+                    <p><strong>Interese:</strong> @_profile.Interests</p>
+                </div>
+            </div>
+
+            <hr />
+            <div>
+                <h5>Despre mine</h5>
+                <p class="text-muted">@_profile.Bio</p>
+            </div>
+        }
+    </div>
+}

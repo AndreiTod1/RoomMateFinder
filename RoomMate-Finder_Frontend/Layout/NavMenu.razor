@@ -1,9 +1,30 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using RoomMate_Finder_Frontend.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject IProfileService ProfileService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">RoomMate-Finder_Frontend</a>
+        <a class="navbar-brand" href="">RoomMate-Finder</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
+
+        <div class="d-flex align-items-center">
+            <AuthorizeView>
+                <Authorized>
+                    <span class="navbar-text me-2">Salut, @context.User.Identity?.Name</span>
+                    <button class="btn btn-outline-light btn-sm" @onclick="OnLogout">Logout</button>
+                </Authorized>
+                <NotAuthorized>
+                    <NavLink class="btn btn-outline-light btn-sm me-2" href="login">Login</NavLink>
+                    <NavLink class="btn btn-light btn-sm" href="register">Register</NavLink>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
     </div>
 </div>
 
@@ -14,27 +35,93 @@
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
             </NavLink>
         </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-item px-3">
+                    <div class="nav-link d-flex justify-content-between align-items-center" role="button" @onclick="ToggleProfiles" aria-expanded="@_profilesOpen">
+                        <span><span class="bi bi-people me-2" aria-hidden="true"></span> Caută colegi</span>
+                        <span class="bi" aria-hidden="true">@((MarkupString)$"<i class=\"{(_profilesOpen ? "bi-caret-up-fill" : "bi-caret-down-fill")}\"></i>")</span>
+                    </div>
+
+                    @if (_profilesOpen)
+                    {
+                        <div class="ps-3">
+                            <NavLink class="nav-link" href="profiles" @onclick:stopPropagation>Toate profilele</NavLink>
+                            <a class="nav-link" href="#" @onclick="@(async () => await GoToMyProfile())" @onclick:preventDefault @onclick:stopPropagation>Profilul meu</a>
+                        </div>
+                    }
+                </div>
+            </Authorized>
+        </AuthorizeView>
+        <!-- Profile button removed from nav menu to be accessible from dashboard -->
+        <!-- Counter and Weather links removed as requested -->
     </nav>
 </div>
 
 @code {
-    private bool collapseNavMenu = true;
+    private bool _collapseNavMenu = true;
+    private bool _profilesOpen;
 
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+    private string? NavMenuCssClass => _collapseNavMenu ? "collapse" : null;
 
     private void ToggleNavMenu()
     {
-        collapseNavMenu = !collapseNavMenu;
+        _collapseNavMenu = !_collapseNavMenu;
     }
 
+    private void ToggleProfiles()
+    {
+        _profilesOpen = !_profilesOpen;
+    }
+
+    private async Task OnLogout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task GoToMyProfile()
+    {
+        try
+        {
+            // Prefer calling the backend /profiles/me which validates token and returns profile
+            var profile = await ProfileService.GetCurrentAsync();
+            if (profile != null)
+            {
+                Navigation.NavigateTo($"/profile/{profile.Id}");
+                return;
+            }
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+        catch
+        {
+            // ignore and fallback to claims
+        }
+
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var idClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? user.FindFirst("sub")?.Value;
+                if (Guid.TryParse(idClaim, out var id))
+                {
+                    Navigation.NavigateTo($"/profile/{id}");
+                    return;
+                }
+            }
+        }
+        catch
+        {
+            // ignore
+        }
+
+        // fallback: go to profiles list
+        Navigation.NavigateTo("/profiles");
+    }
 }
