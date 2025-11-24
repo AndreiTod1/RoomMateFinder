@@ -17,7 +17,6 @@ public static class StartConversationEndpoint
         {
             try
             {
-                // Get the authenticated user's ID from JWT token
                 var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
                 if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var authenticatedUserId))
@@ -25,10 +24,8 @@ public static class StartConversationEndpoint
                     return Results.Unauthorized();
                 }
 
-                // Store CurrentUserId in HttpContext.Items to pass to handler
                 httpContext.Items["CurrentUserId"] = authenticatedUserId;
 
-                // Validate the request
                 var validationResult = await validator.ValidateAsync(request);
                 if (!validationResult.IsValid)
                 {

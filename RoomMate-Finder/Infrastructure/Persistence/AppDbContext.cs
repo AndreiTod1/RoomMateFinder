@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
 
     public DbSet<Profile> Profiles { get; set; } = null!;
     public DbSet<Conversation> Conversations { get; set; } = null!;
+    public DbSet<Message> Messages { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,6 +34,24 @@ public class AppDbContext : DbContext
                 
             // Ensure unique conversation between two users
             entity.HasIndex(c => new { c.User1Id, c.User2Id }).IsUnique();
+        });
+        
+        modelBuilder.Entity<Message>(entity =>
+        {
+            entity.ToTable("messages", "public");
+            
+            entity.HasOne(m => m.Conversation)
+                .WithMany()
+                .HasForeignKey(m => m.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            entity.HasOne(m => m.Sender)
+                .WithMany()
+                .HasForeignKey(m => m.SenderId)
+                .OnDelete(DeleteBehavior.Restrict);
+                
+            entity.HasIndex(m => m.ConversationId);
+            entity.HasIndex(m => m.SentAt);
         });
         
         base.OnModelCreating(modelBuilder);

@@ -18,10 +18,8 @@ public class StartConversationHandler : IRequestHandler<StartConversationRequest
 
     public async Task<StartConversationResponse> Handle(StartConversationRequest request, CancellationToken cancellationToken)
     {
-        // Get CurrentUserId from HttpContext (set by endpoint from JWT token)
         var currentUserId = (Guid)_httpContextAccessor.HttpContext!.Items["CurrentUserId"]!;
 
-        // Validate that the other user exists
         var otherUser = await _dbContext.Profiles
             .FirstOrDefaultAsync(p => p.Id == request.OtherUserId, cancellationToken);
             
@@ -30,13 +28,12 @@ public class StartConversationHandler : IRequestHandler<StartConversationRequest
             throw new KeyNotFoundException("User not found");
         }
         
-        // Cannot start conversation with yourself
         if (currentUserId == request.OtherUserId)
         {
             throw new InvalidOperationException("Cannot start a conversation with yourself");
         }
         
-        // Check if conversation already exists (in either direction)
+        // Check if conversation already exists (either direction)
         var existingConversation = await _dbContext.Conversations
             .FirstOrDefaultAsync(c => 
                 (c.User1Id == currentUserId && c.User2Id == request.OtherUserId) ||
@@ -53,7 +50,7 @@ public class StartConversationHandler : IRequestHandler<StartConversationRequest
             );
         }
         
-        // Create new conversation (always store with lower GUID first for consistency)
+        // Store with lower GUID first for consistency
         var user1Id = currentUserId < request.OtherUserId ? currentUserId : request.OtherUserId;
         var user2Id = currentUserId < request.OtherUserId ? request.OtherUserId : currentUserId;
         

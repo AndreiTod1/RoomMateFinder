@@ -53,6 +53,7 @@ public static class UpdateProfileEndpoint
                 }
             })
             .RequireAuthorization()
+            .WithTags("Profiles")
             .WithName("UpdateProfile")
             .WithSummary("Updates an existing user profile")
             .Produces<UpdateProfileResponse>(200)
