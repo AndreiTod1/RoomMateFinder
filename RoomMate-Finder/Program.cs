@@ -7,6 +7,7 @@ using MediatR;
 using DotNetEnv;
 using RoomMate_Finder.Common;
 using RoomMate_Finder.Features.Profiles;
+using RoomMate_Finder.Features.Conversations;
 using RoomMate_Finder.Infrastructure.Persistence;
 using RoomMate_Finder.Validators;
 using Microsoft.OpenApi.Models;
@@ -236,12 +237,13 @@ static async Task InitializeDatabaseAsync(WebApplication app)
     
     try
     {
-        await dbContext.Database.EnsureCreatedAsync();
-        Console.WriteLine("✓ Database initialized successfully");
+        // Use migrations instead of EnsureCreated
+        await dbContext.Database.MigrateAsync();
+        Console.WriteLine("✓ Database migrations applied successfully");
     }
     catch (Exception ex)
     {
-        Console.Error.WriteLine($"✗ Database initialization failed: {ex.Message}");
+        Console.Error.WriteLine($"✗ Database migration error: {ex.Message}");
         Console.Error.WriteLine(ex.StackTrace);
         throw;
     }
@@ -264,5 +266,6 @@ static void ConfigureMiddleware(WebApplication app)
 static void ConfigureEndpoints(WebApplication app)
 {
     app.MapProfilesEndpoints();
+    app.MapConversationsEndpoints();
     Console.WriteLine("✓ Endpoints configured");
 }

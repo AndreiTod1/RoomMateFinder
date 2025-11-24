@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RoomMate_Finder.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using RoomMate_Finder.Infrastructure.Persistence;
 namespace RoomMate_Finder.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251124074119_AddConversations")]
+    partial class AddConversations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -45,39 +48,6 @@ namespace RoomMate_Finder.Migrations
                         .IsUnique();
 
                     b.ToTable("conversations", "public");
-                });
-
-            modelBuilder.Entity("RoomMate_Finder.Entities.Message", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("ConversationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("SenderId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("SentAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ConversationId");
-
-                    b.HasIndex("SenderId");
-
-                    b.HasIndex("SentAt");
-
-                    b.ToTable("messages", "public");
                 });
 
             modelBuilder.Entity("RoomMate_Finder.Entities.Profile", b =>
@@ -146,25 +116,6 @@ namespace RoomMate_Finder.Migrations
                     b.Navigation("User1");
 
                     b.Navigation("User2");
-                });
-
-            modelBuilder.Entity("RoomMate_Finder.Entities.Message", b =>
-                {
-                    b.HasOne("RoomMate_Finder.Entities.Conversation", "Conversation")
-                        .WithMany()
-                        .HasForeignKey("ConversationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("RoomMate_Finder.Entities.Profile", "Sender")
-                        .WithMany()
-                        .HasForeignKey("SenderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Conversation");
-
-                    b.Navigation("Sender");
                 });
 #pragma warning restore 612, 618
         }
