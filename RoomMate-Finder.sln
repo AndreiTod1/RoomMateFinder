@@ -9,6 +9,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RoomMate-Finder_Frontend", "RoomMate-Finder_Frontend\RoomMate-Finder_Frontend.csproj", "{BD105AD1-9DED-41CB-85BB-F5E3C6E6F33D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RoomMate-Finder.Test", "RoomMate-Finder.Test\RoomMate-Finder.Test.csproj", "{E2ADB34D-A5C8-4524-B5BA-9F598327E945}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,5 +25,9 @@ Global
 		{BD105AD1-9DED-41CB-85BB-F5E3C6E6F33D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BD105AD1-9DED-41CB-85BB-F5E3C6E6F33D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BD105AD1-9DED-41CB-85BB-F5E3C6E6F33D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2ADB34D-A5C8-4524-B5BA-9F598327E945}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2ADB34D-A5C8-4524-B5BA-9F598327E945}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2ADB34D-A5C8-4524-B5BA-9F598327E945}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2ADB34D-A5C8-4524-B5BA-9F598327E945}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
