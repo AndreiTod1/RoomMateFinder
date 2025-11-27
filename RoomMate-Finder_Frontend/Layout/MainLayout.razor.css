@@ -2,10 +2,15 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
 }
 
 main {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .sidebar {
@@ -70,8 +75,8 @@ main {
         width: 0;
     }
 
-    .top-row, article {
-        padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
+    article {
+        overflow-y: auto;
+        padding: 0 !important;
     }
 }
