@@ -13,6 +13,10 @@ public static class DbContextHelper
             .Options;
 
         var context = new AppDbContext(options);
+        
+        // Ensure database is created with the correct schema
+        context.Database.EnsureCreated();
+        
         return context;
     }
 }
