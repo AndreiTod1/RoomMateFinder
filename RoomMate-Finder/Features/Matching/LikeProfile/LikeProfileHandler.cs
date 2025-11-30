@@ -16,6 +16,12 @@ public class LikeProfileHandler : IRequestHandler<LikeProfileRequest, LikeProfil
 
     public async Task<LikeProfileResponse> Handle(LikeProfileRequest request, CancellationToken cancellationToken)
     {
+        // Validate that user is not liking themselves
+        if (request.UserId == request.TargetUserId)
+        {
+            return new LikeProfileResponse(false, "Cannot like yourself");
+        }
+
         // Validate that both users exist
         var usersExist = await ValidateUsersExist(request.UserId, request.TargetUserId, cancellationToken);
         if (!usersExist)
@@ -23,17 +29,12 @@ public class LikeProfileHandler : IRequestHandler<LikeProfileRequest, LikeProfil
             return new LikeProfileResponse(false, "One or both users not found");
         }
 
-        // Validate that user is not liking themselves
-        if (request.UserId == request.TargetUserId)
-        {
-            return new LikeProfileResponse(false, "Cannot like yourself");
-        }
 
         // Check if action already exists
         var existingAction = await CheckExistingAction(request.UserId, request.TargetUserId, cancellationToken);
         if (existingAction != null)
         {
-            return new LikeProfileResponse(false, $"You already {existingAction.ActionType.ToString().ToLower()}d this profile");
+            return new LikeProfileResponse(false, $"You already {existingAction.ActionType.ToString().ToLower()}ed this profile");
         }
 
         // Create the like action

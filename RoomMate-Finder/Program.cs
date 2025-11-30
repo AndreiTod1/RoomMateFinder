@@ -214,7 +214,11 @@ static void ConfigureDatabase(IServiceCollection services)
     var connectionString = $"Host={host};Port={port};Database={database};Username={username};Password={password}";
     
     services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(connectionString));
+    {
+        options.UseNpgsql(connectionString);
+        options.ConfigureWarnings(warnings =>
+            warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+    });
     
     // Log connection string (fără parola)
     var maskedConnectionString = $"Host={host};Port={port};Database={database};Username={username};Password=*****";
@@ -241,12 +245,12 @@ static async Task InitializeDatabaseAsync(WebApplication app)
 
     try
     {
-        await dbContext.Database.EnsureCreatedAsync();
-        Console.WriteLine("✓ Database initialized successfully");
+        await dbContext.Database.MigrateAsync();
+        Console.WriteLine("✓ Database migrations applied successfully");
     }
     catch (Exception ex)
     {
-        Console.Error.WriteLine($"✗ Database initialization failed: {ex.Message}");
+        Console.Error.WriteLine($"✗ Database migration failed: {ex.Message}");
         Console.Error.WriteLine(ex.StackTrace);
         throw;
     }

@@ -16,6 +16,12 @@ public class PassProfileHandler : IRequestHandler<PassProfileRequest, PassProfil
 
     public async Task<PassProfileResponse> Handle(PassProfileRequest request, CancellationToken cancellationToken)
     {
+        // Validate that user is not passing themselves
+        if (request.UserId == request.TargetUserId)
+        {
+            return new PassProfileResponse(false, "Cannot pass yourself");
+        }
+
         // Validate that both users exist
         var usersExist = await ValidateUsersExist(request.UserId, request.TargetUserId, cancellationToken);
         if (!usersExist)
@@ -23,17 +29,12 @@ public class PassProfileHandler : IRequestHandler<PassProfileRequest, PassProfil
             return new PassProfileResponse(false, "One or both users not found");
         }
 
-        // Validate that user is not passing themselves
-        if (request.UserId == request.TargetUserId)
-        {
-            return new PassProfileResponse(false, "Cannot pass yourself");
-        }
 
         // Check if action already exists
         var existingAction = await CheckExistingAction(request.UserId, request.TargetUserId, cancellationToken);
         if (existingAction != null)
         {
-            return new PassProfileResponse(false, $"You already {existingAction.ActionType.ToString().ToLower()}d this profile");
+            return new PassProfileResponse(false, $"You already {existingAction.ActionType.ToString().ToLower()}ed this profile");
         }
 
         // Create the pass action
