@@ -61,6 +61,8 @@ public class AppDbContext : DbContext
             // Prevent duplicate matches
             entity.HasIndex(e => new { e.User1Id, e.User2Id })
                   .IsUnique();
+        });
+
         modelBuilder.Entity<Conversation>(entity =>
         {
             entity.ToTable("conversations", "public");
