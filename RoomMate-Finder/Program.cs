@@ -9,6 +9,7 @@ using RoomMate_Finder.Common;
 using RoomMate_Finder.Features.Profiles;
 using RoomMate_Finder.Features.Matching;
 using RoomMate_Finder.Features.Matching.CalculateCompatibility.Services;
+using RoomMate_Finder.Features.Conversations;
 using RoomMate_Finder.Infrastructure.Persistence;
 using RoomMate_Finder.Validators;
 using Microsoft.OpenApi.Models;
@@ -245,12 +246,13 @@ static async Task InitializeDatabaseAsync(WebApplication app)
 
     try
     {
+        // Use migrations instead of EnsureCreated
         await dbContext.Database.MigrateAsync();
         Console.WriteLine("✓ Database migrations applied successfully");
     }
     catch (Exception ex)
     {
-        Console.Error.WriteLine($"✗ Database migration failed: {ex.Message}");
+        Console.Error.WriteLine($"✗ Database migration error: {ex.Message}");
         Console.Error.WriteLine(ex.StackTrace);
         throw;
     }
@@ -274,6 +276,7 @@ static void ConfigureEndpoints(WebApplication app)
 {
     app.MapProfilesEndpoints();
     app.MapMatchingEndpoints();
+    app.MapConversationsEndpoints();
     Console.WriteLine("✓ Endpoints configured");
 }
 
