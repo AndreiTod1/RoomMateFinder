@@ -3,155 +3,255 @@
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
-<h3>Înregistrare</h3>
+<PageTitle>Înregistrare - RoomMate Finder</PageTitle>
 
-<EditForm Model="model" OnValidSubmit="HandleValidSubmit">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudPaper Class="pa-8" Elevation="4">
+        <MudStack Spacing="4" AlignItems="AlignItems.Center">
+            <MudIcon Icon="@Icons.Material.Filled.PersonAdd" 
+                     Color="Color.Primary" 
+                     Size="Size.Large" />
+            <MudText Typo="Typo.h4" Class="fw-bold text-center">
+                Alătură-te comunității!
+            </MudText>
+            <MudText Typo="Typo.body1" Align="Align.Center" Class="text-muted">
+                Creează-ți contul și începe să-ți găsești colegul perfect de cameră
+            </MudText>
+        </MudStack>
 
-    <div class="mb-3">
-        <label class="form-label">Nume complet</label>
-        <InputText class="form-control" @bind-Value="model.FullName" />
-        <ValidationMessage For="() => model.FullName" />
-    </div>
+        <MudForm @ref="form" Model="model">
+            <MudStack Spacing="3" Class="mt-6">
+                
+                <!-- Basic Info Section -->
+                <MudText Typo="Typo.h6" Class="mb-2 fw-bold">
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Class="me-2" />
+                    Informații de bază
+                </MudText>
+                
+                <MudTextField @bind-Value="model.FullName"
+                              For="@(() => model.FullName)"
+                              Label="Nume complet"
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Badge" />
 
-    <div class="mb-3">
-        <label class="form-label">Email</label>
-        <InputText class="form-control" @bind-Value="model.Email" />
-        <ValidationMessage For="() => model.Email" />
-    </div>
+                <MudTextField @bind-Value="model.Email"
+                              For="@(() => model.Email)"
+                              Label="Email"
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Email" />
 
-    <div class="mb-3">
-        <label class="form-label">Parolă</label>
-        <InputText type="password" class="form-control" @bind-Value="model.Password" />
-        <ValidationMessage For="() => model.Password" />
-    </div>
+                <MudTextField @bind-Value="model.Password"
+                              For="@(() => model.Password)"
+                              Label="Parola"
+                              Variant="Variant.Outlined"
+                              InputType="@(_passwordShow ? InputType.Text : InputType.Password)"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@(_passwordShow ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                              OnAdornmentClick="TogglePasswordVisibility" />
 
-    <!-- Additional optional fields required by the API -->
-    <div class="mb-3">
-        <label class="form-label">Vârstă (opțional)</label>
-        <InputNumber class="form-control" @bind-Value="model.Age" />
-        <ValidationMessage For="() => model.Age" />
-    </div>
+                <MudDivider Class="my-4" />
 
-    <div class="mb-3">
-        <label class="form-label">Gen (opțional)</label>
-        <InputText class="form-control" @bind-Value="model.Gender" />
-        <ValidationMessage For="() => model.Gender" />
-    </div>
+                <!-- Profile Details Section -->
+                <MudText Typo="Typo.h6" Class="mb-2 fw-bold">
+                    <MudIcon Icon="@Icons.Material.Filled.AccountBox" Class="me-2" />
+                    Detalii profil (opțional)
+                </MudText>
 
-    <div class="mb-3">
-        <label class="form-label">Universitate (opțional)</label>
-        <InputText class="form-control" @bind-Value="model.University" />
-        <ValidationMessage For="() => model.University" />
-    </div>
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" md="6">
+                        <MudNumericField @bind-Value="model.Age"
+                                         Label="Vârsta"
+                                         Variant="Variant.Outlined"
+                                         Min="18"
+                                         Max="65"
+                                         HideSpinButtons="false" />
+                    </MudItem>
+                    
+                    <MudItem xs="12" md="6">
+                        <MudSelect @bind-Value="model.Gender"
+                                   Label="Gen"
+                                   Variant="Variant.Outlined"
+                                   AnchorOrigin="Origin.BottomCenter">
+                            <MudSelectItem Value="@("Male")">Masculin</MudSelectItem>
+                            <MudSelectItem Value="@("Female")">Feminin</MudSelectItem>
+                            <MudSelectItem Value="@("Other")">Altul</MudSelectItem>
+                            <MudSelectItem Value="@("Prefer not to say")">Prefer să nu spun</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
 
-    <div class="mb-3">
-        <label class="form-label">Bio (opțional)</label>
-        <InputTextArea class="form-control" @bind-Value="model.Bio" />
-        <ValidationMessage For="() => model.Bio" />
-    </div>
+                <MudTextField @bind-Value="model.University"
+                              Label="Universitate"
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.School" />
 
-    <div class="mb-3">
-        <label class="form-label">Lifestyle (opțional)</label>
-        <InputText class="form-control" @bind-Value="model.Lifestyle" />
-        <ValidationMessage For="() => model.Lifestyle" />
-    </div>
+                <MudTextField @bind-Value="model.Bio"
+                              Label="Descriere scurtă despre tine"
+                              Variant="Variant.Outlined"
+                              Lines="3"
+                              Placeholder="Spune-ne câteva cuvinte despre personalitatea ta, hobby-urile tale..." />
 
-    <div class="mb-3">
-        <label class="form-label">Interese (opțional)</label>
-        <InputText class="form-control" @bind-Value="model.Interests" />
-        <ValidationMessage For="() => model.Interests" />
-    </div>
+                <MudSelect @bind-Value="model.Lifestyle"
+                           Label="Stilul tău de viață"
+                           Variant="Variant.Outlined"
+                           AnchorOrigin="Origin.BottomCenter">
+                    <MudSelectItem Value="@("studious")">Studios</MudSelectItem>
+                    <MudSelectItem Value="@("social")">Sociabil</MudSelectItem>
+                    <MudSelectItem Value="@("active")">Activ</MudSelectItem>
+                    <MudSelectItem Value="@("quiet")">Liniștit</MudSelectItem>
+                    <MudSelectItem Value="@("balanced")">Echilibrat</MudSelectItem>
+                </MudSelect>
 
-    @if (!string.IsNullOrEmpty(successMessage))
-    {
-        <div class="alert alert-success">@successMessage</div>
-    }
-    @if (!string.IsNullOrEmpty(errorMessage))
-    {
-        <div class="alert alert-danger">@errorMessage</div>
-    }
+                <MudTextField @bind-Value="model.Interests"
+                              Label="Interese și hobby-uri"
+                              Variant="Variant.Outlined"
+                              Placeholder="ex: fotbal, muzică, călătorii, gaming, citit..." />
 
-    <button class="btn btn-primary" type="submit">Înregistrează-te</button>
-</EditForm>
+                @if (!string.IsNullOrEmpty(successMessage))
+                {
+                    <MudAlert Severity="Severity.Success" Class="mt-4">
+                        @successMessage
+                    </MudAlert>
+                }
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <MudAlert Severity="Severity.Error" Class="mt-4">
+                        @errorMessage
+                    </MudAlert>
+                }
+
+                <MudButton OnClick="HandleValidSubmit"
+                           Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Large"
+                           FullWidth="true"
+                           StartIcon="@Icons.Material.Filled.PersonAdd"
+                           Class="mt-6">
+                    @if (isLoading)
+                    {
+                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                        <MudText Class="ms-2">Se înregistrează...</MudText>
+                    }
+                    else
+                    {
+                        <MudText>Creează cont</MudText>
+                    }
+                </MudButton>
+            </MudStack>
+        </MudForm>
+
+        <MudDivider Class="my-6" />
+        
+        <MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center">
+            <MudText>Ai deja cont?</MudText>
+            <MudLink Href="/login" Color="Color.Primary">
+                <MudText Class="fw-bold">Conectează-te aici</MudText>
+            </MudLink>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
 
 @code {
+    private MudForm? form;
     private RegisterModel model = new();
     private string? errorMessage;
     private string? successMessage;
+    private bool _passwordShow = false;
+    private bool isLoading = false;
+
+    private void TogglePasswordVisibility()
+    {
+        _passwordShow = !_passwordShow;
+    }
 
     private async Task HandleValidSubmit()
     {
         errorMessage = null;
         successMessage = null;
+        isLoading = true;
 
         try
         {
-            var req = new
+            if (form != null)
             {
-                Email = model.Email,
-                Password = model.Password,
-                FullName = model.FullName,
-                Bio = model.Bio ?? string.Empty,
-                Age = model.Age,
-                Gender = model.Gender ?? string.Empty,
-                University = model.University ?? string.Empty,
-                Lifestyle = model.Lifestyle ?? string.Empty,
-                Interests = model.Interests ?? string.Empty
-            };
-
-            var resp = await Http.PostAsJsonAsync("/profiles", req);
-            if (resp.IsSuccessStatusCode)
-            {
-                successMessage = "Înregistrare realizată cu succes. Te poți loga acum.";
-                // optional redirect to login after short delay
-                await Task.Delay(1200);
-                Navigation.NavigateTo("/login");
-            }
-            else
-            {
-                // Try to parse JSON error message if present
-                var text = await resp.Content.ReadAsStringAsync();
-                try
+                await form.Validate();
+                if (form.IsValid)
                 {
-                    var doc = System.Text.Json.JsonDocument.Parse(text);
-                    if (doc.RootElement.TryGetProperty("message", out var msg))
+                    var req = new
                     {
-                        errorMessage = msg.GetString();
+                        email = model.Email,
+                        password = model.Password,
+                        fullName = model.FullName,
+                        bio = model.Bio ?? string.Empty,
+                        age = model.Age,
+                        gender = model.Gender ?? string.Empty,
+                        university = model.University ?? string.Empty,
+                        lifestyle = model.Lifestyle ?? string.Empty,
+                        interests = model.Interests ?? string.Empty
+                    };
+
+                    var resp = await Http.PostAsJsonAsync("/profiles", req);
+                    if (resp.IsSuccessStatusCode)
+                    {
+                        successMessage = "Înregistrare realizată cu succes! Te redirectionez către login...";
+                        await Task.Delay(2000);
+                        Navigation.NavigateTo("/login");
                     }
                     else
                     {
-                        errorMessage = text;
+                        var text = await resp.Content.ReadAsStringAsync();
+                        try
+                        {
+                            var doc = System.Text.Json.JsonDocument.Parse(text);
+                            if (doc.RootElement.TryGetProperty("message", out var msg))
+                            {
+                                errorMessage = msg.GetString();
+                            }
+                            else
+                            {
+                                errorMessage = "Eroare la înregistrare. Te rog să încerci din nou.";
+                            }
+                        }
+                        catch
+                        {
+                            errorMessage = "Eroare la înregistrare. Te rog să încerci din nou.";
+                        }
                     }
-                }
-                catch
-                {
-                    errorMessage = string.IsNullOrWhiteSpace(text) ? "Eroare la înregistrare" : text;
                 }
             }
         }
-        catch (Exception ex)
+        catch
         {
-            errorMessage = ex.Message;
+            errorMessage = "A apărut o eroare. Te rog să încerci din nou.";
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
 
     public class RegisterModel
     {
-        [Required]
+        [Required(ErrorMessage = "Numele complet este obligatoriu")]
         public string FullName { get; set; } = string.Empty;
 
-        [Required]
-        [EmailAddress]
+        [Required(ErrorMessage = "Email-ul este obligatoriu")]
+        [EmailAddress(ErrorMessage = "Te rog să introduci un email valid")]
         public string Email { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "Parola este obligatorie")]
+        [MinLength(6, ErrorMessage = "Parola trebuie să aibă cel puțin 6 caractere")]
         public string Password { get; set; } = string.Empty;
 
-        // Additional optional fields expected by the backend
         public string? Bio { get; set; } = string.Empty;
-        public int Age { get; set; } = 18;
+        
+        [Range(18, 65, ErrorMessage = "Vârsta trebuie să fie între 18 și 65 de ani")]
+        public int Age { get; set; } = 20;
+        
         public string? Gender { get; set; } = string.Empty;
         public string? University { get; set; } = string.Empty;
         public string? Lifestyle { get; set; } = string.Empty;

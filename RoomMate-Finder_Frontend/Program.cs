@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using RoomMate_Finder_Frontend;
 using Microsoft.AspNetCore.Components.Authorization;
 using RoomMate_Finder_Frontend.Services;
+using MudBlazor.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -18,6 +19,9 @@ if (string.IsNullOrWhiteSpace(apiBase))
 }
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBase) });
+
+// MudBlazor services
+builder.Services.AddMudServices();
 
 // auth services
 builder.Services.AddAuthorizationCore();
