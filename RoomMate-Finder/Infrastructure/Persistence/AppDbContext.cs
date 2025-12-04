@@ -22,6 +22,13 @@ public class AppDbContext : DbContext
     {
         modelBuilder.Entity<Profile>().ToTable("profiles", "public");
         
+        // Configure Profile -> RoomListings relationship explicitly
+        modelBuilder.Entity<Profile>()
+            .HasMany(p => p.RoomListings)
+            .WithOne(rl => rl.Owner)
+            .HasForeignKey(rl => rl.OwnerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
         modelBuilder.Entity<UserAction>(entity =>
         {
             entity.ToTable("user_actions", "public");
@@ -116,6 +123,16 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasIndex(r => new { r.ReviewerId, r.ReviewedUserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<RoomListing>(entity =>
+        {
+            entity.ToTable("room_listings", "public");
+            
+            // Create indexes for performance
+            entity.HasIndex(rl => rl.City);
+            entity.HasIndex(rl => rl.IsActive);
+            entity.HasIndex(rl => rl.CreatedAt);
         });
     }
 }

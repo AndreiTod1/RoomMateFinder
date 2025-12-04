@@ -1,4 +1,4 @@
-using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace RoomMate_Finder.Entities;
 
@@ -15,9 +15,9 @@ public class Review
     public Profile ReviewedUser { get; set; } = null!;
 
     // Rating 1-5
+    [Range(1, 5)]
     public int Rating { get; set; }
-
-    // Optional comment
+    [MaxLength(1000)]
     public string Comment { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
