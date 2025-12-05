@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Components.Forms;
 
 namespace RoomMate_Finder_Frontend.Services
 {
@@ -9,7 +10,7 @@ namespace RoomMate_Finder_Frontend.Services
         Task<List<ProfileDto>> GetAllAsync();
         Task<ProfileDto?> GetByIdAsync(Guid id);
         Task<ProfileDto?> GetCurrentAsync();
-        Task<ProfileDto?> UpdateAsync(Guid id, UpdateProfileRequestDto update);
+        Task<ProfileDto?> UpdateAsync(Guid id, UpdateProfileRequestDto update, IBrowserFile? profilePictureFile = null);
     }
 
     public record ProfileDto(
@@ -22,7 +23,8 @@ namespace RoomMate_Finder_Frontend.Services
         string Bio,
         string Lifestyle,
         string Interests,
-        DateTime CreatedAt
+        DateTime CreatedAt,
+        string? ProfilePicturePath
     );
 
     public record UpdateProfileRequestDto(

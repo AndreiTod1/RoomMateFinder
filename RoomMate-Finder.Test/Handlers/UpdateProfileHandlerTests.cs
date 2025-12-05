@@ -1,7 +1,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using RoomMate_Finder.Entities;
 using RoomMate_Finder.Features.Profiles.UpdateProfile;
 using RoomMate_Finder.Test.Helpers;
@@ -11,6 +13,19 @@ namespace RoomMate_Finder.Test.Handlers;
 
 public class UpdateProfileHandlerTests : IDisposable
 {
+    private readonly Mock<IWebHostEnvironment> _mockEnvironment;
+    private readonly string _tempPath;
+
+    public UpdateProfileHandlerTests()
+    {
+        _tempPath = Path.Combine(Path.GetTempPath(), "UpdateProfileTest_" + Guid.NewGuid());
+        Directory.CreateDirectory(_tempPath);
+        Directory.CreateDirectory(Path.Combine(_tempPath, "profile-pictures"));
+        
+        _mockEnvironment = new Mock<IWebHostEnvironment>();
+        _mockEnvironment.Setup(e => e.WebRootPath).Returns(_tempPath);
+    }
+
     private static UpdateProfileRequest CreateValidRequest(Guid userId)
     {
         return new UpdateProfileRequest(
@@ -31,12 +46,13 @@ public class UpdateProfileHandlerTests : IDisposable
     {
         // Arrange
         using var context = DbContextHelper.CreateInMemoryDbContext();
-        var handler = new UpdateProfileHandler(context);
+        var handler = new UpdateProfileHandler(context, _mockEnvironment.Object);
 
         var request = CreateValidRequest(Guid.NewGuid()); // Non-existent ID
+        var command = new UpdateProfileWithFileCommand(request, null);
 
         // Act
-        Func<Task> act = () => handler.Handle(request, CancellationToken.None);
+        Func<Task> act = () => handler.Handle(command, CancellationToken.None);
 
         // Assert
         var ex = await act.Should().ThrowAsync<KeyNotFoundException>();
@@ -66,11 +82,12 @@ public class UpdateProfileHandlerTests : IDisposable
         context.Profiles.Add(originalProfile);
         await context.SaveChangesAsync();
 
-        var handler = new UpdateProfileHandler(context);
+        var handler = new UpdateProfileHandler(context, _mockEnvironment.Object);
         var request = CreateValidRequest(originalProfile.Id);
+        var command = new UpdateProfileWithFileCommand(request, null);
 
         // Act
-        var result = await handler.Handle(request, CancellationToken.None);
+        var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -115,7 +132,7 @@ public class UpdateProfileHandlerTests : IDisposable
         context.Profiles.Add(originalProfile);
         await context.SaveChangesAsync();
 
-        var handler = new UpdateProfileHandler(context);
+        var handler = new UpdateProfileHandler(context, _mockEnvironment.Object);
         
         // Only update FullName and Age
         var request = new UpdateProfileRequest(
@@ -129,9 +146,10 @@ public class UpdateProfileHandlerTests : IDisposable
         {
             UserId = originalProfile.Id
         };
+        var command = new UpdateProfileWithFileCommand(request, null);
 
         // Act
-        var result = await handler.Handle(request, CancellationToken.None);
+        var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -168,7 +186,7 @@ public class UpdateProfileHandlerTests : IDisposable
         context.Profiles.Add(originalProfile);
         await context.SaveChangesAsync();
 
-        var handler = new UpdateProfileHandler(context);
+        var handler = new UpdateProfileHandler(context, _mockEnvironment.Object);
         
         // All null values - nothing should change
         var request = new UpdateProfileRequest(
@@ -183,8 +201,10 @@ public class UpdateProfileHandlerTests : IDisposable
             UserId = originalProfile.Id
         };
 
+        var command = new UpdateProfileWithFileCommand(request, null);
+
         // Act
-        var result = await handler.Handle(request, CancellationToken.None);
+        var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -199,5 +219,9 @@ public class UpdateProfileHandlerTests : IDisposable
 
     public void Dispose()
     {
+        if (Directory.Exists(_tempPath))
+        {
+            try { Directory.Delete(_tempPath, true); } catch { }
+        }
     }
 }

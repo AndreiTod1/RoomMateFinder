@@ -1,6 +1,8 @@
 @page "/profile/{Id:guid}"
 @using RoomMate_Finder_Frontend.Services
 @using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Forms
+@using RoomMate_Finder_Frontend.Shared
 @inject IProfileService ProfileService
 @inject NavigationManager Navigation
 
@@ -61,58 +63,72 @@ else
                 </MudCardHeader>
                 <MudCardContent>
                     <MudForm @ref="_form" Model="_editModel">
-                        <MudGrid Spacing="4">
-                            <!-- Left Column -->
-                            <MudItem xs="12" md="6">
-                                <MudStack Spacing="3">
-                                    <MudTextField @bind-Value="_editModel.FullName"
-                                                  For="@(() => _editModel.FullName)"
-                                                  Label="Nume Complet"
-                                                  Variant="Variant.Outlined" />
-
-                                    <MudNumericField @bind-Value="_editModel.Age"
-                                                     Label="Vârsta"
-                                                     Variant="Variant.Outlined"
-                                                     Min="18" Max="65" />
-
-                                    <MudSelect @bind-Value="_editModel.Gender"
-                                               Label="Gen"
-                                               Variant="Variant.Outlined">
-                                        <MudSelectItem Value="@("Male")">Masculin</MudSelectItem>
-                                        <MudSelectItem Value="@("Female")">Feminin</MudSelectItem>
-                                        <MudSelectItem Value="@("Other")">Altul</MudSelectItem>
-                                        <MudSelectItem Value="@("Prefer not to say")">Prefer să nu spun</MudSelectItem>
-                                    </MudSelect>
-
-                                    <MudTextField @bind-Value="_editModel.University"
-                                                  Label="Universitate"
-                                                  Variant="Variant.Outlined" />
-                                </MudStack>
+                        <MudGrid Spacing="3">
+                            <!-- Left Column - All text fields -->
+                            <MudItem xs="12" md="7">
+                                <MudGrid Spacing="2">
+                                    <MudItem xs="12" sm="6">
+                                        <MudTextField @bind-Value="_editModel.FullName"
+                                                      For="@(() => _editModel.FullName)"
+                                                      Label="Nume Complet"
+                                                      Variant="Variant.Outlined" />
+                                    </MudItem>
+                                    <MudItem xs="6" sm="3">
+                                        <MudNumericField @bind-Value="_editModel.Age"
+                                                         Label="Vârsta"
+                                                         Variant="Variant.Outlined"
+                                                         Min="18" Max="65" />
+                                    </MudItem>
+                                    <MudItem xs="6" sm="3">
+                                        <MudSelect @bind-Value="_editModel.Gender"
+                                                   Label="Gen"
+                                                   Variant="Variant.Outlined">
+                                            <MudSelectItem Value="@("Male")">Masculin</MudSelectItem>
+                                            <MudSelectItem Value="@("Female")">Feminin</MudSelectItem>
+                                            <MudSelectItem Value="@("Other")">Altul</MudSelectItem>
+                                            <MudSelectItem Value="@("Prefer not to say")">Prefer să nu spun</MudSelectItem>
+                                        </MudSelect>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="6">
+                                        <MudTextField @bind-Value="_editModel.University"
+                                                      Label="Universitate"
+                                                      Variant="Variant.Outlined" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="6">
+                                        <MudSelect @bind-Value="_editModel.Lifestyle"
+                                                   Label="Stilul de viață"
+                                                   Variant="Variant.Outlined">
+                                            <MudSelectItem Value="@("studious")">Studios</MudSelectItem>
+                                            <MudSelectItem Value="@("social")">Sociabil</MudSelectItem>
+                                            <MudSelectItem Value="@("active")">Activ</MudSelectItem>
+                                            <MudSelectItem Value="@("quiet")">Liniștit</MudSelectItem>
+                                            <MudSelectItem Value="@("balanced")">Echilibrat</MudSelectItem>
+                                        </MudSelect>
+                                    </MudItem>
+                                    <MudItem xs="12">
+                                        <MudTextField @bind-Value="_editModel.Bio"
+                                                      Label="Despre mine"
+                                                      Lines="3"
+                                                      Variant="Variant.Outlined" />
+                                    </MudItem>
+                                    <MudItem xs="12">
+                                        <MudTextField @bind-Value="_editModel.Interests"
+                                                      Label="Interese și hobby-uri"
+                                                      Variant="Variant.Outlined"
+                                                      Placeholder="ex: fotbal, muzică, călătorii..." />
+                                    </MudItem>
+                                </MudGrid>
                             </MudItem>
 
-                            <!-- Right Column -->
-                            <MudItem xs="12" md="6">
-                                <MudStack Spacing="3">
-                                    <MudTextField @bind-Value="_editModel.Bio"
-                                                  Label="Despre mine"
-                                                  Lines="4"
-                                                  Variant="Variant.Outlined" />
-
-                                    <MudSelect @bind-Value="_editModel.Lifestyle"
-                                               Label="Stilul de viață"
-                                               Variant="Variant.Outlined">
-                                        <MudSelectItem Value="@("studious")">Studios</MudSelectItem>
-                                        <MudSelectItem Value="@("social")">Sociabil</MudSelectItem>
-                                        <MudSelectItem Value="@("active")">Activ</MudSelectItem>
-                                        <MudSelectItem Value="@("quiet")">Liniștit</MudSelectItem>
-                                        <MudSelectItem Value="@("balanced")">Echilibrat</MudSelectItem>
-                                    </MudSelect>
-
-                                    <MudTextField @bind-Value="_editModel.Interests"
-                                                  Label="Interese și hobby-uri"
-                                                  Variant="Variant.Outlined"
-                                                  Placeholder="ex: fotbal, muzică, călătorii..." />
-                                </MudStack>
+                            <!-- Right Column - Only photo -->
+                            <MudItem xs="12" md="5">
+                                <MudText Typo="Typo.subtitle2" Class="mb-2">
+                                    <MudIcon Icon="@Icons.Material.Filled.PhotoCamera" Size="Size.Small" Class="me-1" />
+                                    Poză de profil
+                                </MudText>
+                                <ProfilePictureUpload @ref="_profilePictureUpload"
+                                    PreviewUrl="@GetPreviewUrl()"
+                                    OnFileSelected="@OnProfilePictureSelected" />
                             </MudItem>
                         </MudGrid>
                     </MudForm>
@@ -152,7 +168,14 @@ else
                         <MudCardContent Class="pa-6">
                             <MudStack Row AlignItems="AlignItems.Center" Spacing="4">
                                 <MudAvatar Color="Color.Primary" Size="Size.Large" Style="width: 120px; height: 120px; font-size: 2.5rem;">
-                                    @GetInitials()
+                                    @if (!string.IsNullOrEmpty(_profile.ProfilePicturePath))
+                                    {
+                                        <img src="@GetFullImageUrl(_profile.ProfilePicturePath)" alt="Profile picture" style="width:100%;height:100%;object-fit:cover;" />
+                                    }
+                                    else
+                                    {
+                                        @GetInitials()
+                                    }
                                 </MudAvatar>
                                 <MudStack Spacing="1">
                                     <MudText Typo="Typo.h3" Class="fw-bold">@_profile.FullName</MudText>
@@ -297,6 +320,9 @@ else
     [Parameter]
     public Guid Id { get; set; }
 
+    [Inject]
+    private HttpClient Http { get; set; } = default!;
+
     private ProfileDto? _profile;
     private string? _error;
     private bool _isEditing;
@@ -304,6 +330,10 @@ else
     private EditModel _editModel = new();
     private bool _isSaving;
     private MudForm? _form;
+    private IBrowserFile? _newProfilePicture;
+    private string? _newProfilePicturePreview;
+    private ProfilePictureUpload? _profilePictureUpload;
+    private long _imageCacheBuster = DateTime.UtcNow.Ticks;
 
     public class EditModel
     {
@@ -378,6 +408,30 @@ else
         }
     }
 
+    private async Task OnProfilePictureSelected(IBrowserFile? file)
+    {
+        if (file is null)
+        {
+            _newProfilePicture = null;
+            _newProfilePicturePreview = null;
+            return;
+        }
+
+        if (file.Size > 5 * 1024 * 1024)
+        {
+            // optionally set an error message here
+            return;
+        }
+
+        _newProfilePicture = file;
+
+        using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        var base64 = Convert.ToBase64String(ms.ToArray());
+        _newProfilePicturePreview = $"data:{file.ContentType};base64,{base64}";
+    }
+
     private async Task HandleValidSubmit()
     {
         if (_profile == null || _form == null) return;
@@ -398,12 +452,41 @@ else
                 _editModel.Interests
             );
 
-            var updated = await ProfileService.UpdateAsync(_profile.Id, updateDto);
+            // Get cropped image if user selected a new one
+            IBrowserFile? fileToUpload = _newProfilePicture;
+            
+            if (_newProfilePicture != null && _profilePictureUpload != null)
+            {
+                try
+                {
+                    var croppedBytes = await _profilePictureUpload.GetCroppedImageAsync();
+                    if (croppedBytes != null && croppedBytes.Length > 0)
+                    {
+                        // Create a custom IBrowserFile from cropped bytes
+                        fileToUpload = new CroppedBrowserFile(croppedBytes, "profile.jpg", "image/jpeg");
+                    }
+                }
+                catch (Exception cropEx)
+                {
+                    Console.WriteLine($"Cropping failed, using original: {cropEx.Message}");
+                    // Fall back to original file if cropping fails
+                }
+            }
+
+            var updated = await ProfileService.UpdateAsync(_profile!.Id, updateDto, fileToUpload);
             if (updated != null)
             {
                 _profile = updated;
                 _isEditing = false;
+                _newProfilePicturePreview = null;
+                _newProfilePicture = null;
+                // Force image reload by updating cache buster
+                _imageCacheBuster = DateTime.UtcNow.Ticks;
             }
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Navigation.NavigateTo("/login");
         }
         catch (Exception ex)
         {
@@ -425,5 +508,30 @@ else
         var first = char.ToUpper(parts[0][0]);
         var second = parts.Length > 1 ? char.ToUpper(parts[1][0]) : '\0';
         return second == '\0' ? first.ToString() : $"{first}{second}";
+    }
+
+    private string GetFullImageUrl(string? relativePath)
+    {
+        if (string.IsNullOrEmpty(relativePath))
+            return string.Empty;
+            
+        if (relativePath.StartsWith("http") || relativePath.StartsWith("data:"))
+            return relativePath;
+            
+        var baseUrl = Http.BaseAddress?.ToString().TrimEnd('/') ?? "http://localhost:5111";
+        return $"{baseUrl}{relativePath}?v={_imageCacheBuster}";
+    }
+
+    private string GetPreviewUrl()
+    {
+        // If we have a new preview (data URL from file selection), use it
+        if (!string.IsNullOrEmpty(_newProfilePicturePreview))
+            return _newProfilePicturePreview;
+            
+        // Otherwise use the existing profile picture with full URL
+        if (!string.IsNullOrEmpty(_profile?.ProfilePicturePath))
+            return GetFullImageUrl(_profile.ProfilePicturePath);
+            
+        return string.Empty;
     }
 }

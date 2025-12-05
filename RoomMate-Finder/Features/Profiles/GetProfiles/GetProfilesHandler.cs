@@ -26,7 +26,8 @@ public class GetProfilesHandler : IRequestHandler<GetProfilesRequest, List<GetPr
                 p.Bio,
                 p.Lifestyle,
                 p.Interests,
-                p.CreatedAt
+                p.CreatedAt,
+                p.ProfilePicturePath
             ))
             .ToListAsync(cancellationToken);
 

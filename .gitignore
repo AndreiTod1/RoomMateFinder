@@ -6,6 +6,9 @@
 # dotenv files
 .env
 
+# Profile pictures (user uploads)
+RoomMate-Finder/wwwroot/profile-pictures/
+
 # User-specific files
 *.rsuser
 *.suo

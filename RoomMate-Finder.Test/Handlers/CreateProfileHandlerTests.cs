@@ -1,19 +1,32 @@
-using System.Threading;
-using System.Threading.Tasks;
 using FluentAssertions;
 using FluentValidation;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using RoomMate_Finder.Common;
 using RoomMate_Finder.Entities;
 using RoomMate_Finder.Features.Profiles;
+using RoomMate_Finder.Features.Profiles.CreateProfile;
 using RoomMate_Finder.Test.Helpers;
 using RoomMate_Finder.Validators;
-using Xunit;
 
 namespace RoomMate_Finder.Test.Handlers;
 
 public class CreateProfileHandlerTests : IDisposable
 {
+    private readonly Mock<IWebHostEnvironment> _mockEnvironment;
+    private readonly string _tempPath;
+
+    public CreateProfileHandlerTests()
+    {
+        _tempPath = Path.Combine(Path.GetTempPath(), "CreateProfileTest_" + Guid.NewGuid());
+        Directory.CreateDirectory(_tempPath);
+        Directory.CreateDirectory(Path.Combine(_tempPath, "profile-pictures"));
+        
+        _mockEnvironment = new Mock<IWebHostEnvironment>();
+        _mockEnvironment.Setup(e => e.WebRootPath).Returns(_tempPath);
+    }
+
     private static JwtService CreateTestJwtService()
     {
         // Cheie suficient de lungă pentru HS256 (>= 256 bits / 32 bytes)
@@ -49,7 +62,7 @@ public class CreateProfileHandlerTests : IDisposable
         using var context = DbContextHelper.CreateInMemoryDbContext();
         var jwtService = CreateTestJwtService();
         var validator = CreateValidator();
-        var handler = new CreateProfileHandler(context, jwtService, validator);
+        var handler = new CreateProfileHandler(context, jwtService, validator, _mockEnvironment.Object);
 
         var invalidRequest = new CreateProfileRequest(
             Email: "",            // invalid email
@@ -62,8 +75,10 @@ public class CreateProfileHandlerTests : IDisposable
             Lifestyle: new string('b', 200),
             Interests: new string('c', 300));
 
+        var command = new CreateProfileWithFileCommand(invalidRequest, null);
+
         // Act
-        Func<Task> act = () => handler.Handle(invalidRequest, CancellationToken.None);
+        Func<Task> act = () => handler.Handle(command, CancellationToken.None);
 
         // Assert
         var ex = await act.Should().ThrowAsync<InvalidOperationException>();
@@ -97,11 +112,12 @@ public class CreateProfileHandlerTests : IDisposable
 
         var jwtService = CreateTestJwtService();
         var validator = CreateValidator();
-        var handler = new CreateProfileHandler(context, jwtService, validator);
+        var handler = new CreateProfileHandler(context, jwtService, validator, _mockEnvironment.Object);
         var request = CreateValidRequest(email: existingProfile.Email);
+        var command = new CreateProfileWithFileCommand(request, null);
 
         // Act
-        Func<Task> act = () => handler.Handle(request, CancellationToken.None);
+        Func<Task> act = () => handler.Handle(command, CancellationToken.None);
 
         // Assert
         var exceptionAssertions = await act.Should().ThrowAsync<InvalidOperationException>();
@@ -115,11 +131,12 @@ public class CreateProfileHandlerTests : IDisposable
         using var context = DbContextHelper.CreateInMemoryDbContext();
         var jwtService = CreateTestJwtService();
         var validator = CreateValidator();
-        var handler = new CreateProfileHandler(context, jwtService, validator);
+        var handler = new CreateProfileHandler(context, jwtService, validator, _mockEnvironment.Object);
         var request = CreateValidRequest(email: "test1@gmail.com");
+        var command = new CreateProfileWithFileCommand(request, null);
 
         // Act
-        var result = await handler.Handle(request, CancellationToken.None);
+        var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -136,6 +153,9 @@ public class CreateProfileHandlerTests : IDisposable
 
     public void Dispose()
     {
-        // Clean up resources if needed
+        if (Directory.Exists(_tempPath))
+        {
+            try { Directory.Delete(_tempPath, true); } catch { }
+        }
     }
 }
