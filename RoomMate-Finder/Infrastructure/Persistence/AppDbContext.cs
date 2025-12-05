@@ -15,10 +15,19 @@ public class AppDbContext : DbContext
     public DbSet<Match> Matches { get; set; } = null!;
     public DbSet<Conversation> Conversations { get; set; } = null!;
     public DbSet<Message> Messages { get; set; } = null!;
+    public DbSet<RoomListing> RoomListings { get; set; } = null!;
+    public DbSet<Review> Reviews { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Profile>().ToTable("profiles", "public");
+        
+        // Configure Profile -> RoomListings relationship explicitly
+        modelBuilder.Entity<Profile>()
+            .HasMany(p => p.RoomListings)
+            .WithOne(rl => rl.Owner)
+            .HasForeignKey(rl => rl.OwnerId)
+            .OnDelete(DeleteBehavior.Cascade);
         
         modelBuilder.Entity<UserAction>(entity =>
         {
@@ -98,7 +107,32 @@ public class AppDbContext : DbContext
             entity.HasIndex(m => m.ConversationId);
             entity.HasIndex(m => m.SentAt);
         });
-        
-        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Review>(entity =>
+        {
+            entity.ToTable("reviews", "public");
+
+            entity.HasOne(r => r.Reviewer)
+                .WithMany()
+                .HasForeignKey(r => r.ReviewerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(r => r.ReviewedUser)
+                .WithMany()
+                .HasForeignKey(r => r.ReviewedUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(r => new { r.ReviewerId, r.ReviewedUserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<RoomListing>(entity =>
+        {
+            entity.ToTable("room_listings", "public");
+            
+            // Create indexes for performance
+            entity.HasIndex(rl => rl.City);
+            entity.HasIndex(rl => rl.IsActive);
+            entity.HasIndex(rl => rl.CreatedAt);
+        });
     }
 }

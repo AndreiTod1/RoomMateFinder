@@ -38,8 +38,6 @@
     <ItemGroup>
       <Folder Include="Exceptions\" />
       <Folder Include="Features\Conversations\" />
-      <Folder Include="Features\Reviews\" />
-      <Folder Include="Features\RoomListings\" />
       <Folder Include="Tests\" />
     </ItemGroup>
 

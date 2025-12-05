@@ -10,6 +10,8 @@ using RoomMate_Finder.Features.Profiles;
 using RoomMate_Finder.Features.Matching;
 using RoomMate_Finder.Features.Matching.CalculateCompatibility.Services;
 using RoomMate_Finder.Features.Conversations;
+using RoomMate_Finder.Features.RoomListings;
+using RoomMate_Finder.Features.Reviews;
 using RoomMate_Finder.Infrastructure.Persistence;
 using RoomMate_Finder.Validators;
 using Microsoft.OpenApi.Models;
@@ -275,8 +277,10 @@ static void ConfigureMiddleware(WebApplication app)
 static void ConfigureEndpoints(WebApplication app)
 {
     app.MapProfilesEndpoints();
+    app.MapRoomListingsEndpoints();
     app.MapMatchingEndpoints();
     app.MapConversationsEndpoints();
+    app.MapReviewsEndpoints();
     Console.WriteLine("✓ Endpoints configured");
 }
 
