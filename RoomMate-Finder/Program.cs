@@ -268,10 +268,17 @@ static void ConfigureMiddleware(WebApplication app)
         app.UseSwaggerUI();
         Console.WriteLine("✓ Swagger UI available at /swagger");
     }
+
+    // Serve static files from wwwroot (including profile-pictures)
+    app.UseStaticFiles();
     
     app.UseCors();
     app.UseAuthentication();
     app.UseAuthorization();
+    
+    // Antiforgery middleware must come after authentication/authorization
+    // But we'll disable it for our API endpoints that use CORS
+    // app.UseAntiforgery(); // Commented out - causes issues with CORS API calls
 }
 
 static void ConfigureEndpoints(WebApplication app)

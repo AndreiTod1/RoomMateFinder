@@ -1,5 +1,7 @@
 @page "/register"
 @using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Forms
+@using RoomMate_Finder_Frontend.Shared
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
@@ -110,6 +112,17 @@
                               Variant="Variant.Outlined"
                               Placeholder="ex: fotbal, muzică, călătorii, gaming, citit..." />
 
+                <MudDivider Class="my-4" />
+
+                <MudText Typo="Typo.h6" Class="mb-2 fw-bold">
+                    <MudIcon Icon="@Icons.Material.Filled.PhotoCamera" Class="me-2" />
+                    Poză de profil (opțional)
+                </MudText>
+
+                <ProfilePictureUpload @ref="_registerProfilePictureUpload"
+                    PreviewUrl="@_registerProfilePicturePreview"
+                    OnFileSelected="@OnRegisterProfilePictureSelected" />
+
                 @if (!string.IsNullOrEmpty(successMessage))
                 {
                     <MudAlert Severity="Severity.Success" Class="mt-4">
@@ -162,10 +175,37 @@
     private string? successMessage;
     private bool _passwordShow = false;
     private bool isLoading = false;
+    private IBrowserFile? _registerProfilePicture;
+    private string? _registerProfilePicturePreview;
+    private ProfilePictureUpload? _registerProfilePictureUpload;
 
     private void TogglePasswordVisibility()
     {
         _passwordShow = !_passwordShow;
+    }
+
+    private async Task OnRegisterProfilePictureSelected(IBrowserFile? file)
+    {
+        if (file is null)
+        {
+            _registerProfilePicture = null;
+            _registerProfilePicturePreview = null;
+            return;
+        }
+
+        if (file.Size > 5 * 1024 * 1024)
+        {
+            errorMessage = "Fișierul este prea mare (max 5MB).";
+            return;
+        }
+
+        _registerProfilePicture = file;
+
+        using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        var base64 = Convert.ToBase64String(ms.ToArray());
+        _registerProfilePicturePreview = $"data:{file.ContentType};base64,{base64}";
     }
 
     private async Task HandleValidSubmit()
@@ -181,20 +221,47 @@
                 await form.Validate();
                 if (form.IsValid)
                 {
-                    var req = new
-                    {
-                        email = model.Email,
-                        password = model.Password,
-                        fullName = model.FullName,
-                        bio = model.Bio ?? string.Empty,
-                        age = model.Age,
-                        gender = model.Gender ?? string.Empty,
-                        university = model.University ?? string.Empty,
-                        lifestyle = model.Lifestyle ?? string.Empty,
-                        interests = model.Interests ?? string.Empty
-                    };
+                    using var content = new MultipartFormDataContent();
 
-                    var resp = await Http.PostAsJsonAsync("/profiles", req);
+                    content.Add(new StringContent(model.Email), nameof(model.Email));
+                    content.Add(new StringContent(model.Password), nameof(model.Password));
+                    content.Add(new StringContent(model.FullName), nameof(model.FullName));
+                    content.Add(new StringContent(model.Bio ?? string.Empty), nameof(model.Bio));
+                    content.Add(new StringContent(model.Age.ToString()), nameof(model.Age));
+                    content.Add(new StringContent(model.Gender ?? string.Empty), nameof(model.Gender));
+                    content.Add(new StringContent(model.University ?? string.Empty), nameof(model.University));
+                    content.Add(new StringContent(model.Lifestyle ?? string.Empty), nameof(model.Lifestyle));
+                    content.Add(new StringContent(model.Interests ?? string.Empty), nameof(model.Interests));
+
+                    // Get cropped image if user selected one
+                    if (_registerProfilePicture != null)
+                    {
+                        IBrowserFile fileToUpload = _registerProfilePicture;
+                        
+                        // Try to get cropped version
+                        if (_registerProfilePictureUpload != null)
+                        {
+                            try
+                            {
+                                var croppedBytes = await _registerProfilePictureUpload.GetCroppedImageAsync();
+                                if (croppedBytes != null && croppedBytes.Length > 0)
+                                {
+                                    fileToUpload = new CroppedBrowserFile(croppedBytes, "profile.jpg", "image/jpeg");
+                                }
+                            }
+                            catch (Exception cropEx)
+                            {
+                                Console.WriteLine($"Cropping failed, using original: {cropEx.Message}");
+                            }
+                        }
+                        
+                        var stream = fileToUpload.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+                        var fileContent = new StreamContent(stream);
+                        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(fileToUpload.ContentType);
+                        content.Add(fileContent, "ProfilePicture", fileToUpload.Name);
+                    }
+
+                    var resp = await Http.PostAsync("/profiles", content);
                     if (resp.IsSuccessStatusCode)
                     {
                         successMessage = "Înregistrare realizată cu succes! Te redirectionez către login...";

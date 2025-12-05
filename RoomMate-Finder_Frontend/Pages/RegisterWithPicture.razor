@@ -1,0 +1,211 @@
+﻿@page "/register-with-picture"
+@using RoomMate_Finder_Frontend.Services
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+
+<div class="register-container">
+    <h2>Register with Profile Picture</h2>
+    
+    <EditForm Model="@registerModel" OnValidSubmit="@HandleRegister">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group">
+            <label>Full Name</label>
+            <InputText class="form-control" @bind-Value="registerModel.FullName" />
+        </div>
+
+        <div class="form-group">
+            <label>Email</label>
+            <InputText type="email" class="form-control" @bind-Value="registerModel.Email" />
+        </div>
+
+        <div class="form-group">
+            <label>Password</label>
+            <InputText type="password" class="form-control" @bind-Value="registerModel.Password" />
+        </div>
+
+        <div class="form-group">
+            <label>Age</label>
+            <InputNumber class="form-control" @bind-Value="registerModel.Age" />
+        </div>
+
+        <div class="form-group">
+            <label>Gender</label>
+            <InputSelect class="form-control" @bind-Value="registerModel.Gender">
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </InputSelect>
+        </div>
+
+        <div class="form-group">
+            <label>University</label>
+            <InputText class="form-control" @bind-Value="registerModel.University" />
+        </div>
+
+        <div class="form-group">
+            <label>Bio</label>
+            <InputTextArea class="form-control" @bind-Value="registerModel.Bio" />
+        </div>
+
+        <div class="form-group">
+            <label>Lifestyle</label>
+            <InputText class="form-control" @bind-Value="registerModel.Lifestyle" />
+        </div>
+
+        <div class="form-group">
+            <label>Interests</label>
+            <InputText class="form-control" @bind-Value="registerModel.Interests" />
+        </div>
+
+        <div class="form-group">
+            <label>Profile Picture</label>
+            <InputFile OnChange="@OnFileSelected" accept="image/*" />
+            @if (!string.IsNullOrEmpty(profilePicturePreview))
+            {
+                <div class="mt-3">
+                    <img src="@profilePicturePreview" alt="Profile Preview" style="max-width: 200px; max-height: 200px;" />
+                </div>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+
+        <button type="submit" class="btn btn-primary">Register</button>
+    </EditForm>
+</div>
+
+@code {
+    private RegisterModel registerModel = new();
+    private string profilePicturePreview = "";
+    private string profilePictureBase64 = "";
+    private string errorMessage = "";
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var file = e.File;
+            if (file != null)
+            {
+                // Validate file size (max 5MB)
+                if (file.Size > 5 * 1024 * 1024)
+                {
+                    errorMessage = "File size exceeds 5MB limit";
+                    return;
+                }
+
+                // Validate file type
+                if (!file.ContentType.StartsWith("image/"))
+                {
+                    errorMessage = "Please select a valid image file";
+                    return;
+                }
+
+                // Convert to base64
+                var buffer = new byte[file.Size];
+                await using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+                await stream.ReadAsync(buffer);
+                
+                profilePictureBase64 = $"data:{file.ContentType};base64,{Convert.ToBase64String(buffer)}";
+                profilePicturePreview = profilePictureBase64;
+                errorMessage = "";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error processing image: {ex.Message}";
+        }
+    }
+
+    private async Task HandleRegister()
+    {
+        try
+        {
+            errorMessage = "";
+
+            // Create request with profile picture
+            var request = new
+            {
+                email = registerModel.Email,
+                password = registerModel.Password,
+                fullName = registerModel.FullName,
+                age = registerModel.Age,
+                gender = registerModel.Gender,
+                university = registerModel.University,
+                bio = registerModel.Bio,
+                lifestyle = registerModel.Lifestyle,
+                interests = registerModel.Interests,
+                profilePictureUrl = profilePictureBase64  // Include base64 image
+            };
+
+            // Call backend API
+            using var http = new HttpClient();
+            var response = await http.PostAsJsonAsync(
+                "http://localhost:5000/profiles", 
+                request
+            );
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                errorMessage = $"Registration failed: {errorContent}";
+                return;
+            }
+
+            // Registration successful
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error during registration: {ex.Message}";
+        }
+    }
+
+    private class RegisterModel
+    {
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
+        public string FullName { get; set; } = "";
+        public int Age { get; set; }
+        public string Gender { get; set; } = "";
+        public string University { get; set; } = "";
+        public string Bio { get; set; } = "";
+        public string Lifestyle { get; set; } = "";
+        public string Interests { get; set; } = "";
+    }
+}
+
+<style>
+    .register-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    button {
+        margin-top: 20px;
+    }
+</style>
+

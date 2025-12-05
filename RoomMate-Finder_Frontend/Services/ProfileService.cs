@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Components.Forms;
 
 namespace RoomMate_Finder_Frontend.Services;
 
@@ -49,7 +52,7 @@ public class ProfileService : IProfileService
         }
         catch (System.Net.Http.HttpRequestException)
         {
-            // network error – return null so UI can show loading/empty
+            // network error  return null so UI can show loading/empty
             return null;
         }
     }
@@ -88,9 +91,36 @@ public class ProfileService : IProfileService
     }
 
     // Updates the profile for the specified user id. Returns the updated profile on success, otherwise null.
-    public async Task<ProfileDto?> UpdateAsync(Guid id, UpdateProfileRequestDto update)
+    public async Task<ProfileDto?> UpdateAsync(Guid id, UpdateProfileRequestDto update, IBrowserFile? profilePictureFile = null)
     {
-        var resp = await _http.PutAsJsonAsync($"/profiles/{id}", update);
+        using var content = new MultipartFormDataContent();
+
+        if (update.FullName != null)
+            content.Add(new StringContent(update.FullName), nameof(update.FullName));
+        if (update.Age.HasValue)
+            content.Add(new StringContent(update.Age.Value.ToString()), nameof(update.Age));
+        if (update.Gender != null)
+            content.Add(new StringContent(update.Gender), nameof(update.Gender));
+        if (update.University != null)
+            content.Add(new StringContent(update.University), nameof(update.University));
+        if (update.Bio != null)
+            content.Add(new StringContent(update.Bio), nameof(update.Bio));
+        if (update.Lifestyle != null)
+            content.Add(new StringContent(update.Lifestyle), nameof(update.Lifestyle));
+        if (update.Interests != null)
+            content.Add(new StringContent(update.Interests), nameof(update.Interests));
+
+        if (profilePictureFile != null)
+        {
+            var stream = profilePictureFile.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+            var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(profilePictureFile.ContentType);
+
+            // Field name must match backend's expected form field (ProfilePicture)
+            content.Add(fileContent, "ProfilePicture", profilePictureFile.Name);
+        }
+
+        var resp = await _http.PutAsync($"/profiles/{id}", content);
         if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
             throw new UnauthorizedAccessException();

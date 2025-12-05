@@ -10,5 +10,6 @@ public record GetProfilesResponse(
     string Bio,
     string Lifestyle,
     string Interests,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    string? ProfilePicturePath
 );

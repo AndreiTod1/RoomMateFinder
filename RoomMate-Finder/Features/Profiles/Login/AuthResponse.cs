@@ -5,5 +5,6 @@ public record AuthResponse(
     string Email, 
     string FullName, 
     string Token,
+    string? ProfilePicturePath = null,
     string Message = "Success"
 );
