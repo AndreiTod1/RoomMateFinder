@@ -1,0 +1,198 @@
+﻿@page "/conversations/{ConversationId:guid}"
+@using Microsoft.AspNetCore.Authorization
+@using RoomMate_Finder_Frontend.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@attribute [Authorize]
+@inject IConversationService ConversationService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Chat</PageTitle>
+
+<div class="chat-container">
+    @if (_isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary"></div>
+            <p class="mt-2">Se încarcă...</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert alert-danger m-4">@_errorMessage</div>
+        <button class="btn btn-primary m-4" @onclick="GoBack">Înapoi</button>
+    }
+    else
+    {
+        <header class="chat-header">
+            <div class="header-content">
+                <button class="back-btn" @onclick="GoBack">
+                    <span class="back-icon">&#8592;</span>
+                </button>
+                <div class="avatar">
+                    @(_otherUserName.Length > 0 ? _otherUserName[0].ToString().ToUpper() : "?")
+                </div>
+                <h5 class="username">@_otherUserName</h5>
+            </div>
+        </header>
+
+        <div class="messages-area">
+            <div class="messages-list">
+                @if (_messages == null || !_messages.Any())
+                {
+                    <div class="empty-state">
+                        <i class="bi bi-chat-dots fs-1 mb-3"></i>
+                        <p>Niciun mesaj încă. Începe conversația!</p>
+                    </div>
+                }
+                else
+                {
+                    DateTime? lastDate = null;
+                    foreach (var msg in _messages.OrderBy(m => m.SentAt))
+                    {
+                        var currentDate = msg.SentAt.ToLocalTime().Date;
+                        if (lastDate == null || currentDate != lastDate.Value)
+                        {
+                            <div class="day-separator">
+                                <span>@currentDate.ToString("dd MMMM yyyy")</span>
+                            </div>
+                            lastDate = currentDate;
+                        }
+
+                        var isMine = msg.SenderId == _currentUserId;
+                        <div class="message @(isMine ? "sent" : "received")">
+                            <div class="message-bubble">
+                                <p class="message-text">@msg.Content</p>
+                                <div class="message-meta">
+                                    <span>@msg.SentAt.ToLocalTime().ToString("HH:mm")</span>
+                                    @if (isMine)
+                                    {
+                                        <i class="bi bi-check2@(msg.IsRead ? "-all text-info" : "")"></i>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-wrapper">
+                <input type="text" 
+                       class="message-input" 
+                       placeholder="Scrie un mesaj..." 
+                       @bind="_newMessage"
+                       @bind:event="oninput"
+                       @onkeydown="HandleKeyDown"
+                       disabled="@_isSending">
+                <button class="send-btn" 
+                        @onclick="SendMessage" 
+                        disabled="@(string.IsNullOrWhiteSpace(_newMessage) || _isSending)">
+                    @if (_isSending)
+                    {
+                        <span class="spinner-border spinner-border-sm"></span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-send-fill"></i>
+                    }
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Guid ConversationId { get; set; }
+
+    private List<MessageDto>? _messages;
+    private string _newMessage = string.Empty;
+    private bool _isLoading = true;
+    private bool _isSending;
+    private string? _errorMessage;
+    private string _otherUserName = "Utilizator";
+    private Guid _currentUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetCurrentUserId();
+        await LoadMessages();
+    }
+
+    private async Task GetCurrentUserId()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var idClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (Guid.TryParse(idClaim, out var id))
+                _currentUserId = id;
+        }
+    }
+
+    private async Task LoadMessages()
+    {
+        try
+        {
+            _isLoading = true;
+            _messages = await ConversationService.GetMessagesAsync(ConversationId);
+            
+            if (_messages?.Any() == true)
+            {
+                var otherMsg = _messages.FirstOrDefault(m => m.SenderId != _currentUserId);
+                if (otherMsg != null)
+                    _otherUserName = otherMsg.SenderName;
+            }
+
+            await ConversationService.MarkMessagesAsReadAsync(ConversationId);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Eroare: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(_newMessage) || _isSending) return;
+
+        try
+        {
+            _isSending = true;
+            var content = _newMessage;
+            _newMessage = string.Empty;
+
+            var sent = await ConversationService.SendMessageAsync(ConversationId, content);
+            if (sent != null)
+            {
+                _messages ??= new List<MessageDto>();
+                _messages.Add(sent with { SenderId = _currentUserId, SenderName = "Tu", IsRead = false });
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Eroare: {ex.Message}";
+        }
+        finally
+        {
+            _isSending = false;
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+            await SendMessage();
+    }
+
+    private void GoBack() => Navigation.NavigateTo("/conversations");
+}

@@ -38,6 +38,11 @@
         <AuthorizeView>
             <Authorized>
                 <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="conversations">
+                        <span class="bi bi-chat-dots-fill me-2" aria-hidden="true"></span> Conversații
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
                     <div class="nav-link d-flex justify-content-between align-items-center" role="button" @onclick="ToggleProfiles" aria-expanded="@_profilesOpen">
                         <span><span class="bi bi-people me-2" aria-hidden="true"></span> Caută colegi</span>
                         <span class="bi" aria-hidden="true">@((MarkupString)$"<i class=\"{(_profilesOpen ? "bi-caret-up-fill" : "bi-caret-down-fill")}\"></i>")</span>

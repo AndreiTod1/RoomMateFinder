@@ -1,0 +1,140 @@
+﻿@page "/conversations"
+@using Microsoft.AspNetCore.Authorization
+@using RoomMate_Finder_Frontend.Services
+@attribute [Authorize]
+@inject IConversationService ConversationService
+@inject NavigationManager Navigation
+
+<PageTitle>Conversații</PageTitle>
+
+<div class="conversations-page">
+    <div class="conversations-header">
+        <h2 class="conversations-header-title">
+            <i class="bi bi-chat-dots-fill text-primary"></i>
+            Conversațiile mele
+        </h2>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="conversations-loading">
+            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Se încarcă...</span>
+            </div>
+            <p>Se încarcă conversațiile...</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert alert-danger shadow-sm border-0 d-flex align-items-center conversations-error" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+            <div>@_errorMessage</div>
+        </div>
+    }
+    else if (_conversations == null || !_conversations.Any())
+    {
+        <div class="conversations-empty">
+            <div class="conversations-empty-icon">
+                <i class="bi bi-chat-left-text"></i>
+            </div>
+            <h4>Nicio conversație încă</h4>
+            <p>Începeți o conversație cu alți utilizatori pentru a le vedea aici.</p>
+            <a href="/profiles" class="btn btn-primary btn-lg">
+                <i class="bi bi-people-fill me-2"></i>
+                Descoperă profiluri
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="conversations-card-list">
+            @foreach (var conversation in _conversations.OrderByDescending(c => c.CreatedAt))
+            {
+                <div class="conversation-card" @onclick="@(() => NavigateToConversation(conversation.Id))">
+                    <div class="conversation-card-body">
+                        <div class="conversation-avatar">
+                            <div class="conversation-avatar-circle">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                        </div>
+                        <div class="conversation-main">
+                            <div class="conversation-main-header">
+                                <h5 class="conversation-name">@conversation.OtherUserName</h5>
+                                <span class="conversation-meta-badge">
+                                    <i class="bi bi-clock"></i>
+                                    @GetRelativeTime(conversation.CreatedAt)
+                                </span>
+                            </div>
+                            <p class="conversation-subtitle">
+                                <i class="bi bi-calendar3"></i>
+                                Conversație începută la @conversation.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
+                            </p>
+                        </div>
+                        <div class="conversation-chevron">
+                            <i class="bi bi-chevron-right"></i>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<ConversationDto>? _conversations;
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadConversations();
+    }
+
+    private async Task LoadConversations()
+    {
+        try
+        {
+            _isLoading = true;
+            _errorMessage = null;
+            _conversations = await ConversationService.GetConversationsAsync();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            _errorMessage = "Nu sunteți autentificat. Vă rugăm să vă autentificați.";
+            Navigation.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"A apărut o eroare la încărcarea conversațiilor: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+    
+    private void NavigateToConversation(Guid conversationId)
+    {
+        Navigation.NavigateTo($"/conversations/{conversationId}");
+    }
+    
+    private string GetRelativeTime(DateTime dateTime)
+    {
+        var timeSpan = DateTime.UtcNow - dateTime;
+        
+        if (timeSpan.TotalMinutes < 1)
+            return "Acum";
+        if (timeSpan.TotalMinutes < 60)
+            return $"{(int)timeSpan.TotalMinutes}m";
+        if (timeSpan.TotalHours < 24)
+            return $"{(int)timeSpan.TotalHours}h";
+        if (timeSpan.TotalDays < 7)
+            return $"{(int)timeSpan.TotalDays}z";
+        if (timeSpan.TotalDays < 30)
+            return $"{(int)(timeSpan.TotalDays / 7)}săpt";
+        if (timeSpan.TotalDays < 365)
+            return $"{(int)(timeSpan.TotalDays / 30)}luni";
+        
+        return $"{(int)(timeSpan.TotalDays / 365)}ani";
+    }
+}
