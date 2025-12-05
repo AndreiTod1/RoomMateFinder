@@ -4,6 +4,295 @@
 @inject IProfileService ProfileService
 @inject NavigationManager Navigation
 
+<PageTitle>@(_profile?.FullName ?? "Profil") - RoomMate Finder</PageTitle>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="py-8">
+        <MudAlert Severity="Severity.Error">
+            <MudText>@_error</MudText>
+        </MudAlert>
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" OnClick="@(() => Navigation.NavigateTo("/profiles"))" Class="mt-4">
+            Înapoi la Lista de Profile
+        </MudButton>
+    </MudContainer>
+}
+else if (_profile == null)
+{
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="py-8 text-center">
+        <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+        <MudText Typo="Typo.h6" Class="mt-4">Se încarcă profilul...</MudText>
+    </MudContainer>
+}
+else
+{
+    <MudContainer MaxWidth="MaxWidth.Large" Class="py-4">
+        <!-- Header with Back Button -->
+        <MudStack Row AlignItems="AlignItems.Center" Class="mb-6">
+            <MudButton Variant="Variant.Text" 
+                       StartIcon="@Icons.Material.Filled.ArrowBack" 
+                       OnClick="@(() => Navigation.NavigateTo("/profiles"))"
+                       Color="Color.Primary">
+                Înapoi la Profile
+            </MudButton>
+            <MudSpacer />
+            @if (!_isEditing && _isCurrentUserProfile)
+            {
+                <MudButton Variant="Variant.Outlined" 
+                           StartIcon="@Icons.Material.Filled.Edit" 
+                           OnClick="EnableEdit"
+                           Color="Color.Primary">
+                    Editează Profilul
+                </MudButton>
+            }
+        </MudStack>
+
+        @if (_isEditing)
+        {
+            <!-- Edit Mode -->
+            <MudCard>
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h5">
+                            <MudIcon Icon="@Icons.Material.Filled.Edit" Class="me-2" />
+                            Editează Profilul
+                        </MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudForm @ref="_form" Model="_editModel">
+                        <MudGrid Spacing="4">
+                            <!-- Left Column -->
+                            <MudItem xs="12" md="6">
+                                <MudStack Spacing="3">
+                                    <MudTextField @bind-Value="_editModel.FullName"
+                                                  For="@(() => _editModel.FullName)"
+                                                  Label="Nume Complet"
+                                                  Variant="Variant.Outlined" />
+
+                                    <MudNumericField @bind-Value="_editModel.Age"
+                                                     Label="Vârsta"
+                                                     Variant="Variant.Outlined"
+                                                     Min="18" Max="65" />
+
+                                    <MudSelect @bind-Value="_editModel.Gender"
+                                               Label="Gen"
+                                               Variant="Variant.Outlined">
+                                        <MudSelectItem Value="@("Male")">Masculin</MudSelectItem>
+                                        <MudSelectItem Value="@("Female")">Feminin</MudSelectItem>
+                                        <MudSelectItem Value="@("Other")">Altul</MudSelectItem>
+                                        <MudSelectItem Value="@("Prefer not to say")">Prefer să nu spun</MudSelectItem>
+                                    </MudSelect>
+
+                                    <MudTextField @bind-Value="_editModel.University"
+                                                  Label="Universitate"
+                                                  Variant="Variant.Outlined" />
+                                </MudStack>
+                            </MudItem>
+
+                            <!-- Right Column -->
+                            <MudItem xs="12" md="6">
+                                <MudStack Spacing="3">
+                                    <MudTextField @bind-Value="_editModel.Bio"
+                                                  Label="Despre mine"
+                                                  Lines="4"
+                                                  Variant="Variant.Outlined" />
+
+                                    <MudSelect @bind-Value="_editModel.Lifestyle"
+                                               Label="Stilul de viață"
+                                               Variant="Variant.Outlined">
+                                        <MudSelectItem Value="@("studious")">Studios</MudSelectItem>
+                                        <MudSelectItem Value="@("social")">Sociabil</MudSelectItem>
+                                        <MudSelectItem Value="@("active")">Activ</MudSelectItem>
+                                        <MudSelectItem Value="@("quiet")">Liniștit</MudSelectItem>
+                                        <MudSelectItem Value="@("balanced")">Echilibrat</MudSelectItem>
+                                    </MudSelect>
+
+                                    <MudTextField @bind-Value="_editModel.Interests"
+                                                  Label="Interese și hobby-uri"
+                                                  Variant="Variant.Outlined"
+                                                  Placeholder="ex: fotbal, muzică, călătorii..." />
+                                </MudStack>
+                            </MudItem>
+                        </MudGrid>
+                    </MudForm>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton OnClick="HandleValidSubmit"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Save"
+                               Disabled="@_isSaving">
+                        @if (_isSaving)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                            <span class="ms-2">Salvez...</span>
+                        }
+                        else
+                        {
+                            <span>Salvează</span>
+                        }
+                    </MudButton>
+                    <MudButton OnClick="CancelEdit"
+                               Variant="Variant.Text"
+                               StartIcon="@Icons.Material.Filled.Cancel"
+                               Disabled="@_isSaving">
+                        Anulează
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        }
+        else
+        {
+            <!-- View Mode -->
+            <MudGrid Spacing="4">
+                <!-- Profile Header Card -->
+                <MudItem xs="12">
+                    <MudCard Elevation="3">
+                        <MudCardContent Class="pa-6">
+                            <MudStack Row AlignItems="AlignItems.Center" Spacing="4">
+                                <MudAvatar Color="Color.Primary" Size="Size.Large" Style="width: 120px; height: 120px; font-size: 2.5rem;">
+                                    @GetInitials()
+                                </MudAvatar>
+                                <MudStack Spacing="1">
+                                    <MudText Typo="Typo.h3" Class="fw-bold">@_profile.FullName</MudText>
+                                    <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                        <MudChip T="string" Icon="@Icons.Material.Filled.Cake" Color="Color.Info" Size="Size.Small">
+                                            @_profile.Age ani
+                                        </MudChip>
+                                        @if (!string.IsNullOrEmpty(_profile.Gender))
+                                        {
+                                            <MudChip T="string" Icon="@Icons.Material.Filled.Person" Color="Color.Secondary" Size="Size.Small">
+                                                @_profile.Gender
+                                            </MudChip>
+                                        }
+                                    </MudStack>
+                                    <MudText Typo="Typo.body1" Color="Color.Secondary">
+                                        <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Class="me-1" />
+                                        @_profile.Email
+                                    </MudText>
+                                </MudStack>
+                            </MudStack>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <!-- University and Lifestyle -->
+                <MudItem xs="12" md="6">
+                    <MudCard Class="h-100">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">
+                                    <MudIcon Icon="@Icons.Material.Filled.School" Class="me-2" />
+                                    Educație și Stil de Viață
+                                </MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudStack Spacing="3">
+                                @if (!string.IsNullOrEmpty(_profile.University))
+                                {
+                                    <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                        <MudIcon Icon="@Icons.Material.Filled.School" Color="Color.Primary" />
+                                        <MudStack Spacing="0">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Universitatea</MudText>
+                                            <MudText Typo="Typo.body1">@_profile.University</MudText>
+                                        </MudStack>
+                                    </MudStack>
+                                }
+
+                                @if (!string.IsNullOrEmpty(_profile.Lifestyle))
+                                {
+                                    <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                        <MudIcon Icon="@Icons.Material.Filled.Psychology" Color="Color.Secondary" />
+                                        <MudStack Spacing="0">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Stilul de Viață</MudText>
+                                            <MudText Typo="Typo.body1" Class="text-capitalize">@_profile.Lifestyle</MudText>
+                                        </MudStack>
+                                    </MudStack>
+                                }
+
+                                <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Color="Color.Tertiary" />
+                                    <MudStack Spacing="0">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">Membru din</MudText>
+                                        <MudText Typo="Typo.body1">@_profile.CreatedAt.ToString("dd MMMM yyyy")</MudText>
+                                    </MudStack>
+                                </MudStack>
+                            </MudStack>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <!-- Interests -->
+                <MudItem xs="12" md="6">
+                    <MudCard Class="h-100">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">
+                                    <MudIcon Icon="@Icons.Material.Filled.Star" Class="me-2" />
+                                    Interese și Hobby-uri
+                                </MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            @if (!string.IsNullOrEmpty(_profile.Interests))
+                            {
+                                <MudStack Row Spacing="1" Wrap="Wrap.Wrap">
+                                    @foreach (var interest in _profile.Interests.Split(',').Select(i => i.Trim()).Where(i => !string.IsNullOrEmpty(i)))
+                                    {
+                                        <MudChip T="string" Text="@interest" Color="Color.Primary" Size="Size.Small" />
+                                    }
+                                </MudStack>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    Nu au fost adăugate încă interese.
+                                </MudText>
+                            }
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <!-- Bio -->
+                <MudItem xs="12">
+                    <MudCard>
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">
+                                    <MudIcon Icon="@Icons.Material.Filled.Description" Class="me-2" />
+                                    Despre Mine
+                                </MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            @if (!string.IsNullOrEmpty(_profile.Bio))
+                            {
+                                <MudText Typo="Typo.body1" Style="line-height: 1.6;">
+                                    @_profile.Bio
+                                </MudText>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    Această persoană nu a adăugat încă o descriere.
+                                </MudText>
+                            }
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+        }
+    </MudContainer>
+}
+
+<style>
+    .text-capitalize {
+        text-transform: capitalize;
+    }
+</style>
+
 @code {
     [Parameter]
     public Guid Id { get; set; }
@@ -11,14 +300,19 @@
     private ProfileDto? _profile;
     private string? _error;
     private bool _isEditing;
+    private bool _isCurrentUserProfile;
     private EditModel _editModel = new();
     private bool _isSaving;
+    private MudForm? _form;
 
     public class EditModel
     {
-        [Required]
+        [Required(ErrorMessage = "Numele complet este obligatoriu")]
         public string FullName { get; set; } = string.Empty;
-        public int Age { get; set; }
+        
+        [Range(18, 65, ErrorMessage = "Vârsta trebuie să fie între 18 și 65 de ani")]
+        public int Age { get; set; } = 20;
+        
         public string? Gender { get; set; }
         public string? University { get; set; }
         public string? Bio { get; set; }
@@ -37,17 +331,24 @@
                 return;
             }
 
-            // populate edit model
-            _editModel = new EditModel
+            // Check if this is the current user's profile
+            var currentProfile = await ProfileService.GetCurrentAsync();
+            _isCurrentUserProfile = currentProfile?.Id == Id;
+
+            // populate edit model only if it's the current user's profile
+            if (_isCurrentUserProfile)
             {
-                FullName = _profile.FullName,
-                Age = _profile.Age,
-                Gender = _profile.Gender,
-                University = _profile.University,
-                Bio = _profile.Bio,
-                Lifestyle = _profile.Lifestyle,
-                Interests = _profile.Interests
-            };
+                _editModel = new EditModel
+                {
+                    FullName = _profile.FullName,
+                    Age = _profile.Age,
+                    Gender = _profile.Gender,
+                    University = _profile.University,
+                    Bio = _profile.Bio,
+                    Lifestyle = _profile.Lifestyle,
+                    Interests = _profile.Interests
+                };
+            }
         }
         catch (UnauthorizedAccessException)
         {
@@ -60,6 +361,7 @@
     }
 
     private void EnableEdit() => _isEditing = true;
+    
     private void CancelEdit()
     {
         _isEditing = false;
@@ -78,7 +380,11 @@
 
     private async Task HandleValidSubmit()
     {
-        if (_profile == null) return;
+        if (_profile == null || _form == null) return;
+        
+        await _form.Validate();
+        if (!_form.IsValid) return;
+        
         _isSaving = true;
         try
         {
@@ -99,10 +405,6 @@
                 _isEditing = false;
             }
         }
-        catch (UnauthorizedAccessException)
-        {
-            Navigation.NavigateTo("/login");
-        }
         catch (Exception ex)
         {
             _error = ex.Message;
@@ -113,119 +415,15 @@
         }
     }
 
-    // helper: compute initials for avatar
     private string GetInitials()
     {
-        if (_profile == null || string.IsNullOrWhiteSpace(_profile.FullName)) return "";
+        if (_profile == null || string.IsNullOrEmpty(_profile.FullName)) return "?";
+        
         var parts = _profile.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0) return "";
+        if (parts.Length == 0) return "?";
+        
         var first = char.ToUpper(parts[0][0]);
         var second = parts.Length > 1 ? char.ToUpper(parts[1][0]) : '\0';
         return second == '\0' ? first.ToString() : $"{first}{second}";
     }
-}
-
-@if (!string.IsNullOrEmpty(_error))
-{
-    <div class="alert alert-danger">@_error</div>
-}
-else if (_profile == null)
-{
-    <p>Se încarcă...</p>
-}
-else
-{
-    <div class="profile-card">
-        <div class="d-flex align-items-center">
-            <div class="avatar">@GetInitials()</div>
-            <div>
-                <h3 class="mb-0">@_profile.FullName</h3>
-                <div class="meta">@_profile.Email</div>
-            </div>
-
-            <div class="ms-auto">
-                @if (!_isEditing)
-                {
-                    <button class="btn btn-outline-primary btn-sm" @onclick="EnableEdit">Edit profile</button>
-                }
-            </div>
-        </div>
-
-        <hr />
-
-        @if (_isEditing)
-        {
-            <EditForm Model="_editModel" OnValidSubmit="HandleValidSubmit">
-                <DataAnnotationsValidator />
-                <ValidationSummary />
-
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label">Nume complet</label>
-                            <InputText class="form-control" @bind-Value="_editModel.FullName" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Vârstă</label>
-                            <InputNumber class="form-control" @bind-Value="_editModel.Age" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Gen</label>
-                            <InputText class="form-control" @bind-Value="_editModel.Gender" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Universitate</label>
-                            <InputText class="form-control" @bind-Value="_editModel.University" />
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label">Bio</label>
-                            <InputTextArea class="form-control" rows="6" @bind-Value="_editModel.Bio" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Lifestyle</label>
-                            <InputText class="form-control" @bind-Value="_editModel.Lifestyle" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Interese</label>
-                            <InputText class="form-control" @bind-Value="_editModel.Interests" />
-                        </div>
-                    </div>
-                </div>
-
-                <div class="d-flex justify-content-end">
-                    <button class="btn btn-primary" type="submit" disabled="@_isSaving">Save</button>
-                    <button class="btn btn-secondary ms-2" type="button" @onclick="CancelEdit" disabled="@_isSaving">Cancel</button>
-                </div>
-            </EditForm>
-        }
-        else
-        {
-            <div class="row">
-                <div class="col-md-6">
-                    <p><strong>Email:</strong> @_profile.Email</p>
-                    <p><strong>Vârstă:</strong> @_profile.Age</p>
-                    <p><strong>Gen:</strong> @_profile.Gender</p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong>Universitate:</strong> @_profile.University</p>
-                    <p><strong>Lifestyle:</strong> @_profile.Lifestyle</p>
-                    <p><strong>Interese:</strong> @_profile.Interests</p>
-                </div>
-            </div>
-
-            <hr />
-            <div>
-                <h5>Despre mine</h5>
-                <p class="text-muted">@_profile.Bio</p>
-            </div>
-        }
-    </div>
 }

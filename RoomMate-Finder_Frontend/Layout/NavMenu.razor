@@ -6,77 +6,142 @@
 @inject IProfileService ProfileService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">RoomMate-Finder</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+<MudAppBar Elevation="1" Dense="false" Color="Color.Primary">
+    <MudIconButton Icon="@Icons.Material.Filled.Menu" 
+                   Color="Color.Inherit" 
+                   Edge="Edge.Start" 
+                   OnClick="@((e) => DrawerToggle())" />
+    
+    <MudSpacer />
+    
+    @* <MudText Typo="Typo.h5" Class="fw-bold"> *@
+    @*     <MudIcon Icon="@Icons.Material.Filled.Home" Class="me-2" /> *@
+    @*     RoomMate Finder *@
+    @* </MudText> *@
+    
+    <MudSpacer />
 
-        <div class="d-flex align-items-center">
-            <AuthorizeView>
-                <Authorized>
-                    <span class="navbar-text me-2">Salut, @context.User.Identity?.Name</span>
-                    <button class="btn btn-outline-light btn-sm" @onclick="OnLogout">Logout</button>
-                </Authorized>
-                <NotAuthorized>
-                    <NavLink class="btn btn-outline-light btn-sm me-2" href="login">Login</NavLink>
-                    <NavLink class="btn btn-light btn-sm" href="register">Register</NavLink>
-                </NotAuthorized>
-            </AuthorizeView>
-        </div>
-    </div>
-</div>
+    <AuthorizeView>
+        <Authorized>
+            <MudChip T="string" Color="Color.Secondary" 
+                     Icon="@Icons.Material.Filled.Person" 
+                     Label="true" 
+                     Class="me-2">
+                Salut, @context.User.Identity?.Name
+            </MudChip>
+            <MudButton Variant="Variant.Outlined" 
+                       Color="Color.Secondary" 
+                       StartIcon="@Icons.Material.Filled.Logout"
+                       OnClick="OnLogout">
+                Logout
+            </MudButton>
+        </Authorized>
+        <NotAuthorized>
+            <MudButton Variant="Variant.Text" 
+                       Color="Color.Secondary" 
+                       StartIcon="@Icons.Material.Filled.Login"
+                       Href="/login"
+                       Class="me-2">
+                Login
+            </MudButton>
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Secondary" 
+                       StartIcon="@Icons.Material.Filled.PersonAdd"
+                       Href="/register">
+                Register
+            </MudButton>
+        </NotAuthorized>
+    </AuthorizeView>
+</MudAppBar>
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
+<MudDrawer @bind-Open="_drawerOpen" 
+           Elevation="2" 
+           ClipMode="DrawerClipMode.Always">
+    <MudDrawerHeader>
+        <MudText Typo="Typo.h6" Class="fw-bold">
+            <MudIcon Icon="@Icons.Material.Filled.MenuBook" Class="me-2" />
+            Meniu Principal
+        </MudText>
+    </MudDrawerHeader>
+    
+    <MudNavMenu>
+        <MudNavLink Href="/" 
+                    Match="NavLinkMatch.All" 
+                    Icon="@Icons.Material.Filled.Dashboard">
+            Dashboard
+        </MudNavLink>
+        
         <AuthorizeView>
             <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="conversations">
-                        <span class="bi bi-chat-dots-fill me-2" aria-hidden="true"></span> Conversații
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <div class="nav-link d-flex justify-content-between align-items-center" role="button" @onclick="ToggleProfiles" aria-expanded="@_profilesOpen">
-                        <span><span class="bi bi-people me-2" aria-hidden="true"></span> Caută colegi</span>
-                        <span class="bi" aria-hidden="true">@((MarkupString)$"<i class=\"{(_profilesOpen ? "bi-caret-up-fill" : "bi-caret-down-fill")}\"></i>")</span>
-                    </div>
-
-                    @if (_profilesOpen)
-                    {
-                        <div class="ps-3">
-                            <NavLink class="nav-link" href="profiles" @onclick:stopPropagation>Toate profilele</NavLink>
-                            <a class="nav-link" href="#" @onclick="@(async () => await GoToMyProfile())" @onclick:preventDefault @onclick:stopPropagation>Profilul meu</a>
-                        </div>
-                    }
-                </div>
+                <MudNavGroup Title="Caută Colegi" 
+                             Icon="@Icons.Material.Filled.People" 
+                             Expanded="true">
+                    <MudNavLink Href="/profiles" 
+                                Icon="@Icons.Material.Filled.ViewList">
+                        Toate Profilele
+                    </MudNavLink>
+                    <MudNavLink OnClick="@(async () => await GoToMyProfile())" 
+                                Icon="@Icons.Material.Filled.AccountCircle">
+                        Profilul Meu
+                    </MudNavLink>
+                </MudNavGroup>
+                
+                <MudNavGroup Title="Matching" 
+                             Icon="@Icons.Material.Filled.Favorite" 
+                             Expanded="false">
+                    <MudNavLink Href="/matches" 
+                                Icon="@Icons.Material.Filled.Whatshot">
+                        Descoperă Oameni
+                    </MudNavLink>
+                    <MudNavLink Href="/my-matches" 
+                                Icon="@Icons.Material.Filled.FavoriteBorder">
+                        Match-urile Mele
+                    </MudNavLink>
+                </MudNavGroup>
+                
+                <MudNavGroup Title="Conversații" 
+                             Icon="@Icons.Material.Filled.Chat" 
+                             Expanded="false">
+                    <MudNavLink Href="/conversations" 
+                                Icon="@Icons.Material.Filled.Forum">
+                        Mesajele Mele
+                    </MudNavLink>
+                </MudNavGroup>
+                
+                <MudNavGroup Title="Camere" 
+                             Icon="@Icons.Material.Filled.Home" 
+                             Expanded="false">
+                    <MudNavLink Href="/listings" 
+                                Icon="@Icons.Material.Filled.Search">
+                        Căută Camere
+                    </MudNavLink>
+                    <MudNavLink Href="/my-listings" 
+                                Icon="@Icons.Material.Filled.AddHome">
+                        Camerele Mele
+                    </MudNavLink>
+                </MudNavGroup>
             </Authorized>
         </AuthorizeView>
-        <!-- Profile button removed from nav menu to be accessible from dashboard -->
-        <!-- Counter and Weather links removed as requested -->
-    </nav>
-</div>
+        
+        <MudDivider Class="my-2" />
+        
+        <MudNavLink Href="/about" 
+                    Icon="@Icons.Material.Filled.Info">
+            Despre Noi
+        </MudNavLink>
+        <MudNavLink Href="/contact" 
+                    Icon="@Icons.Material.Filled.ContactMail">
+            Contact
+        </MudNavLink>
+    </MudNavMenu>
+</MudDrawer>
 
 @code {
-    private bool _collapseNavMenu = true;
-    private bool _profilesOpen;
+    private bool _drawerOpen = true;
 
-    private string? NavMenuCssClass => _collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
+    private void DrawerToggle()
     {
-        _collapseNavMenu = !_collapseNavMenu;
-    }
-
-    private void ToggleProfiles()
-    {
-        _profilesOpen = !_profilesOpen;
+        _drawerOpen = !_drawerOpen;
     }
 
     private async Task OnLogout()

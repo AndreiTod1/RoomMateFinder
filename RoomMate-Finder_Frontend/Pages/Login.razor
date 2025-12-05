@@ -3,58 +3,125 @@
 @inject RoomMate_Finder_Frontend.Services.IAuthService AuthService
 @inject NavigationManager Navigation
 
-<h3>Logare</h3>
+<PageTitle>Login - RoomMate Finder</PageTitle>
 
-<EditForm Model="model" OnValidSubmit="HandleValidSubmit">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudPaper Class="pa-8" Elevation="4">
+        <MudStack Spacing="4" AlignItems="AlignItems.Center">
+            <MudIcon Icon="@Icons.Material.Filled.Login" 
+                     Color="Color.Primary" 
+                     Size="Size.Large" />
+            <MudText Typo="Typo.h4" Class="fw-bold text-center">
+                Bun venit înapoi!
+            </MudText>
+            <MudText Typo="Typo.body1" Align="Align.Center" Class="text-muted">
+                Conectează-te pentru a-ți continua căutarea colegului perfect
+            </MudText>
+        </MudStack>
 
-    <div class="mb-3">
-        <label class="form-label">Email</label>
-        <InputText class="form-control" @bind-Value="model.Email" />
-        <ValidationMessage For="() => model.Email" />
-    </div>
+        <MudForm @ref="form" Model="model">
+            <MudStack Spacing="4" Class="mt-6">
+                <MudTextField @bind-Value="model.Email"
+                              For="@(() => model.Email)"
+                              Label="Email"
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Email" />
 
-    <div class="mb-3">
-        <label class="form-label">Parolă</label>
-        <InputText type="password" class="form-control" @bind-Value="model.Password" />
-        <ValidationMessage For="() => model.Password" />
-    </div>
+                <MudTextField @bind-Value="model.Password"
+                              For="@(() => model.Password)"
+                              Label="Parola"
+                              Variant="Variant.Outlined"
+                              InputType="@(_passwordShow ? InputType.Text : InputType.Password)"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@(_passwordShow ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                              OnAdornmentClick="TogglePasswordVisibility" />
 
-    @if (!string.IsNullOrEmpty(errorMessage))
-    {
-        <div class="alert alert-danger">@errorMessage</div>
-    }
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <MudAlert Severity="Severity.Error" Class="mt-4">
+                        @errorMessage
+                    </MudAlert>
+                }
 
-    <button class="btn btn-primary" type="submit">Loghează-te</button>
-</EditForm>
+                <MudButton OnClick="HandleValidSubmit"
+                           Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Large"
+                           FullWidth="true"
+                           StartIcon="@Icons.Material.Filled.Login"
+                           Class="mt-4">
+                    @if (isLoading)
+                    {
+                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                        <MudText Class="ms-2">Se încarcă...</MudText>
+                    }
+                    else
+                    {
+                        <MudText>Conectează-te</MudText>
+                    }
+                </MudButton>
+            </MudStack>
+        </MudForm>
+
+        <MudDivider Class="my-6" />
+        
+        <MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center">
+            <MudText>Nu ai cont?</MudText>
+            <MudLink Href="/register" Color="Color.Primary">
+                <MudText Class="fw-bold">Înregistrează-te aici</MudText>
+            </MudLink>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
 
 @code {
+    private MudForm? form;
     private LoginModel model = new();
     private string? errorMessage;
+    private bool _passwordShow = false;
+    private bool isLoading = false;
+
+    private void TogglePasswordVisibility()
+    {
+        _passwordShow = !_passwordShow;
+    }
 
     private async Task HandleValidSubmit()
     {
         errorMessage = null;
+        isLoading = true;
+        
         try
         {
-            await AuthService.LoginAsync(model.Email, model.Password);
-            Navigation.NavigateTo("/");
+            if (form != null)
+            {
+                await form.Validate();
+                if (form.IsValid)
+                {
+                    await AuthService.LoginAsync(model.Email, model.Password);
+                    Navigation.NavigateTo("/");
+                }
+            }
         }
-        catch (Exception ex)
+        catch
         {
-            errorMessage = ex.Message;
+            errorMessage = "Credențiale invalide. Te rog să încerci din nou.";
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
 
     public class LoginModel
     {
-        [Required]
-        [EmailAddress]
+        [Required(ErrorMessage = "Email-ul este obligatoriu")]
+        [EmailAddress(ErrorMessage = "Te rog să introduci un email valid")]
         public string Email { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "Parola este obligatorie")]
+        [MinLength(6, ErrorMessage = "Parola trebuie să aibă cel puțin 6 caractere")]
         public string Password { get; set; } = string.Empty;
     }
 }
-

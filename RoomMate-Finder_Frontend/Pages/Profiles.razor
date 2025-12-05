@@ -3,51 +3,302 @@
 @inject IProfileService ProfileService
 @inject NavigationManager Navigation
 
-<h3>Lista Profile</h3>
+<PageTitle>Caută Colegi - RoomMate Finder</PageTitle>
 
-@if (_error != null)
-{
-    <div class="alert alert-danger">@_error</div>
-}
-else if (_profiles == null)
-{
-    <p>Se încarcă...</p>
-}
-else if (!_profiles.Any())
-{
-    <p>Nu există profile.</p>
-}
-else
-{
-    <div class="list-group">
-        @foreach (var p in _profiles)
-        {
-            <a class="list-group-item list-group-item-action" @onclick="@(() => GoToProfile(p.Id))">
-                <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1">@p.FullName</h5>
-                    <small>@p.CreatedAt.ToLocalTime().ToString("g")</small>
-                </div>
-                <p class="mb-1">@p.Bio</p>
-                <small>@p.University</small>
-            </a>
-        }
-    </div>
-}
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-4">
+    <!-- Header Section -->
+    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+        <MudStack>
+            <MudText Typo="Typo.h3" Class="fw-bold">
+                <MudIcon Icon="@Icons.Material.Filled.People" Class="me-3" />
+                Descoperă Colegi de Cameră
+            </MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary">
+                Explorează profilurile și găsește-ți colegul perfect pentru cameră
+            </MudText>
+        </MudStack>
+        
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Primary" 
+                   StartIcon="@Icons.Material.Filled.FilterList"
+                   OnClick="ToggleFilters">
+            Filtre
+        </MudButton>
+    </MudStack>
+
+    <!-- Filters Section -->
+    @if (showFilters)
+    {
+        <MudCard Class="mb-6">
+            <MudCardContent>
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" md="3">
+                        <MudSelect T="string" @bind-Value="selectedUniversity" Label="Universitate" Variant="Variant.Outlined" Clearable="true">
+                            @foreach (var uni in availableUniversities)
+                            {
+                                <MudSelectItem Value="@uni">@uni</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="3">
+                        <MudSelect T="string" @bind-Value="selectedLifestyle" Label="Lifestyle" Variant="Variant.Outlined" Clearable="true">
+                            @foreach (var lifestyle in availableLifestyles)
+                            {
+                                <MudSelectItem Value="@lifestyle">@lifestyle</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="3">
+                        <MudSelect T="string" @bind-Value="selectedGender" Label="Gen" Variant="Variant.Outlined" Clearable="true">
+                            @foreach (var gender in availableGenders)
+                            {
+                                <MudSelectItem Value="@gender">@gender</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="3">
+                        <MudStack Row Spacing="2">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ApplyFilters" FullWidth="true">
+                                Aplică Filtere
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearFilters" FullWidth="true">
+                                Șterge
+                            </MudButton>
+                        </MudStack>
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+        </MudCard>
+    }
+
+    <!-- Content Section -->
+    @if (_error != null)
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4">
+            <MudText>@_error</MudText>
+        </MudAlert>
+    }
+    else if (_profiles == null)
+    {
+        <MudContainer Class="text-center py-8">
+            <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+            <MudText Typo="Typo.h6" Class="mt-4">Se încarcă profilurile...</MudText>
+        </MudContainer>
+    }
+    else if (!filteredProfiles.Any())
+    {
+        <MudContainer Class="text-center py-8">
+            <MudIcon Icon="@Icons.Material.Filled.PersonSearch" Size="Size.Large" Color="Color.Secondary" />
+            <MudText Typo="Typo.h5" Class="mt-4 mb-2">Nu am găsit profile</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary">
+                Încearcă să modifici filtrele sau să revii mai târziu.
+            </MudText>
+            @if (hasActiveFilters)
+            {
+                <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="ClearFilters" Class="mt-3">
+                    Șterge toate filtrele
+                </MudButton>
+            }
+        </MudContainer>
+    }
+    else
+    {
+        <!-- Results Count -->
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+            Afișez @filteredProfiles.Count() din @_profiles.Count profile
+        </MudText>
+
+        <!-- Profiles Grid -->
+        <MudGrid Spacing="4">
+            @foreach (var profile in filteredProfiles)
+            {
+                <MudItem xs="12" sm="6" md="4" lg="3">
+                    <MudCard Class="profile-card h-100" Elevation="2" Style="cursor: pointer;" @onclick="@(() => GoToProfile(profile.Id))">
+                        <MudCardContent Class="pb-2">
+                            <!-- Avatar and Basic Info -->
+                            <MudStack AlignItems="AlignItems.Center" Class="mb-4">
+                                <MudAvatar Color="Color.Primary" Size="Size.Large">
+                                    <MudIcon Icon="@Icons.Material.Filled.Person" />
+                                </MudAvatar>
+                                <MudText Typo="Typo.h6" Class="fw-bold text-center">@profile.FullName</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@profile.Age ani • @profile.Gender</MudText>
+                            </MudStack>
+
+                            <!-- University -->
+                            @if (!string.IsNullOrEmpty(profile.University))
+                            {
+                                <MudStack Row AlignItems="AlignItems.Center" Spacing="1" Class="mb-2">
+                                    <MudIcon Icon="@Icons.Material.Filled.School" Size="Size.Small" Color="Color.Primary" />
+                                    <MudText Typo="Typo.body2">@profile.University</MudText>
+                                </MudStack>
+                            }
+
+                            <!-- Lifestyle -->
+                            @if (!string.IsNullOrEmpty(profile.Lifestyle))
+                            {
+                                <MudStack Row AlignItems="AlignItems.Center" Spacing="1" Class="mb-2">
+                                    <MudIcon Icon="@Icons.Material.Filled.Psychology" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.body2" Class="text-capitalize">@profile.Lifestyle</MudText>
+                                </MudStack>
+                            }
+
+                            <!-- Bio -->
+                            @if (!string.IsNullOrEmpty(profile.Bio))
+                            {
+                                <MudText Typo="Typo.body2" Class="mb-3" Style="line-height: 1.4;">
+                                    @(profile.Bio.Length > 100 ? profile.Bio.Substring(0, 100) + "..." : profile.Bio)
+                                </MudText>
+                            }
+
+                            <!-- Interests Tags -->
+                            @if (!string.IsNullOrEmpty(profile.Interests))
+                            {
+                                <MudStack Row Spacing="1" Wrap="Wrap.Wrap">
+                                    @foreach (var interest in profile.Interests.Split(',').Take(3).Select(i => i.Trim()))
+                                    {
+                                        @if (!string.IsNullOrEmpty(interest))
+                                        {
+                                            <MudChip T="string" Text="@interest" Size="Size.Small" Color="Color.Secondary" />
+                                        }
+                                    }
+                                    @if (profile.Interests.Split(',').Length > 3)
+                                    {
+                                        <MudChip T="string" Text="@($"+{profile.Interests.Split(',').Length - 3} mai multe")" Size="Size.Small" Variant="Variant.Text" />
+                                    }
+                                </MudStack>
+                            }
+                        </MudCardContent>
+                        
+                        <MudCardActions Class="pt-0">
+                            <MudButton Variant="Variant.Text" 
+                                       Color="Color.Primary" 
+                                       FullWidth="true"
+                                       StartIcon="@Icons.Material.Filled.Visibility">
+                                Vezi Profilul
+                            </MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudContainer>
+
+<style>
+    .profile-card {
+        transition: all 0.3s ease;
+    }
+    
+    .profile-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+    }
+    
+    .text-capitalize {
+        text-transform: capitalize;
+    }
+</style>
 
 @code {
     private List<ProfileDto>? _profiles;
     private string? _error;
+    private bool showFilters = false;
+    
+    // Filter properties
+    private string? selectedUniversity;
+    private string? selectedLifestyle;
+    private string? selectedGender;
+    
+    // Available filter options
+    private List<string> availableUniversities = new();
+    private List<string> availableLifestyles = new();
+    private List<string> availableGenders = new();
+
+    private bool hasActiveFilters => !string.IsNullOrEmpty(selectedUniversity) || 
+                                   !string.IsNullOrEmpty(selectedLifestyle) || 
+                                   !string.IsNullOrEmpty(selectedGender);
+
+    private IEnumerable<ProfileDto> filteredProfiles
+    {
+        get
+        {
+            if (_profiles == null) return Enumerable.Empty<ProfileDto>();
+            
+            var filtered = _profiles.AsEnumerable();
+            
+            if (!string.IsNullOrEmpty(selectedUniversity))
+                filtered = filtered.Where(p => p.University.Equals(selectedUniversity, StringComparison.OrdinalIgnoreCase));
+                
+            if (!string.IsNullOrEmpty(selectedLifestyle))
+                filtered = filtered.Where(p => p.Lifestyle.Equals(selectedLifestyle, StringComparison.OrdinalIgnoreCase));
+                
+            if (!string.IsNullOrEmpty(selectedGender))
+                filtered = filtered.Where(p => p.Gender.Equals(selectedGender, StringComparison.OrdinalIgnoreCase));
+            
+            return filtered;
+        }
+    }
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadProfiles();
+    }
+
+    private async Task LoadProfiles()
     {
         try
         {
             _profiles = await ProfileService.GetAllAsync();
+            PopulateFilterOptions();
         }
         catch (Exception ex)
         {
             _error = ex.Message;
         }
+    }
+
+    private void PopulateFilterOptions()
+    {
+        if (_profiles == null) return;
+        
+        availableUniversities = _profiles
+            .Where(p => !string.IsNullOrEmpty(p.University))
+            .Select(p => p.University)
+            .Distinct()
+            .OrderBy(u => u)
+            .ToList();
+            
+        availableLifestyles = _profiles
+            .Where(p => !string.IsNullOrEmpty(p.Lifestyle))
+            .Select(p => p.Lifestyle)
+            .Distinct()
+            .OrderBy(l => l)
+            .ToList();
+            
+        availableGenders = _profiles
+            .Where(p => !string.IsNullOrEmpty(p.Gender))
+            .Select(p => p.Gender)
+            .Distinct()
+            .OrderBy(g => g)
+            .ToList();
+    }
+
+    private void ToggleFilters()
+    {
+        showFilters = !showFilters;
+    }
+
+    private void ApplyFilters()
+    {
+        // Filters are automatically applied through the filteredProfiles property
+        showFilters = false;
+    }
+
+    private void ClearFilters()
+    {
+        selectedUniversity = null;
+        selectedLifestyle = null;
+        selectedGender = null;
     }
 
     private void GoToProfile(Guid id)
