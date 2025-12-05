@@ -13,4 +13,5 @@ public class Profile
     public string Lifestyle { get; set; } = string.Empty;
     public string Interests { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public ICollection<RoomListing> RoomListings { get; set; } = new List<RoomListing>();
 }

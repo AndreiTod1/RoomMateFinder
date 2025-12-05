@@ -1,0 +1,27 @@
+﻿namespace RoomMate_Finder_Frontend.Services;
+
+public interface IConversationService
+{
+    Task<List<ConversationDto>> GetConversationsAsync();
+    Task<List<MessageDto>> GetMessagesAsync(Guid conversationId);
+    Task<ConversationDto?> StartConversationAsync(Guid otherUserId);
+    Task<MessageDto?> SendMessageAsync(Guid conversationId, string content);
+    Task MarkMessagesAsReadAsync(Guid conversationId);
+}
+
+public record ConversationDto(
+    Guid Id,
+    Guid OtherUserId,
+    string OtherUserName,
+    DateTime CreatedAt
+);
+
+public record MessageDto(
+    Guid Id,
+    Guid SenderId,
+    string SenderName,
+    string Content,
+    DateTime SentAt,
+    bool IsRead
+);
+
