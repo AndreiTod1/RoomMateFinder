@@ -39,6 +39,7 @@
       <Folder Include="Exceptions\" />
       <Folder Include="Features\Conversations\" />
       <Folder Include="Tests\" />
+      <Folder Include="wwwroot\" />
     </ItemGroup>
 
 </Project>
