@@ -1,0 +1,110 @@
+@page "/matches"
+@using RoomMate_Finder_Frontend.Services
+@using RoomMate_Finder_Frontend.Models
+@inject IMatchingService MatchingService
+@inject IProfileService ProfileService
+@inject NavigationManager Navigation
+
+<PageTitle>Descoperă Oameni</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-4">
+    <MudText Typo="Typo.h4" Class="mb-2">Descoperă oameni</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Vezi profiluri recomandate ordonate după scorul de compatibilitate.</MudText>
+
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_error != null)
+    {
+        <MudAlert Severity="Severity.Error">@_error</MudAlert>
+    }
+    else if (!_profiles.Any())
+    {
+        <MudText>No profiles available at the moment.</MudText>
+    }
+    else
+    {
+        <MudGrid Spacing="3">
+            @foreach (var p in _profiles)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <MudCard Elevation="2">
+                        <MudCardContent>
+                            <MudText Typo="Typo.h6">@p.FullName</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@p.Age ani • @p.Gender</MudText>
+                            <MudText Typo="Typo.body2">@p.University</MudText>
+                            <MudText Typo="Typo.subtitle2" Class="mt-2">Compatibilitate: @p.CompatibilityScore</MudText>
+                        </MudCardContent>
+                        <MudCardActions>
+                            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => OnLike(p.UserId)">Like</MudButton>
+                            <MudButton Color="Color.Default" Variant="Variant.Outlined" OnClick="() => OnPass(p.UserId)">Pass</MudButton>
+                            <MudButton Color="Color.Secondary" Variant="Variant.Text" OnClick="() => ShowDetails(p.UserId)">Detalii</MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    private List<MatchProfileDto> _profiles = new();
+    private bool _loading = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var me = await ProfileService.GetCurrentAsync();
+            if (me == null)
+            {
+                Navigation.NavigateTo("/login");
+                return;
+            }
+
+            _profiles = await MatchingService.GetDiscoverProfilesAsync(me.Id);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OnLike(Guid targetId)
+    {
+        var me = await ProfileService.GetCurrentAsync();
+        if (me == null) { Navigation.NavigateTo("/login"); return; }
+
+        var res = await MatchingService.LikeProfileAsync(me.Id, targetId);
+        if (res.IsMatch)
+        {
+            // navigate to my matches
+            Navigation.NavigateTo($"/my-matches");
+        }
+        else
+        {
+            // remove profile from list
+            _profiles.RemoveAll(x => x.UserId == targetId);
+        }
+    }
+
+    private async Task OnPass(Guid targetId)
+    {
+        var me = await ProfileService.GetCurrentAsync();
+        if (me == null) { Navigation.NavigateTo("/login"); return; }
+
+        await MatchingService.PassProfileAsync(me.Id, targetId);
+        _profiles.RemoveAll(x => x.UserId == targetId);
+    }
+
+    private void ShowDetails(Guid targetId)
+    {
+        Navigation.NavigateTo($"/profile/{targetId}");
+    }
+}

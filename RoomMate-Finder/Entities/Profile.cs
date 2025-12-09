@@ -15,4 +15,11 @@ public class Profile
     public string? ProfilePicturePath { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public ICollection<RoomListing> RoomListings { get; set; } = new List<RoomListing>();
+
+    // Inverse navigation properties for matching features
+    public ICollection<UserAction> SentActions { get; set; } = new List<UserAction>();
+    public ICollection<UserAction> ReceivedActions { get; set; } = new List<UserAction>();
+
+    public ICollection<Match> MatchesInitiated { get; set; } = new List<Match>();
+    public ICollection<Match> MatchesReceived { get; set; } = new List<Match>();
 }
