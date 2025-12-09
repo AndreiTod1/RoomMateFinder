@@ -12,5 +12,6 @@ public record GetMatchesResponse(
     string Interests,
     double CompatibilityScore,
     string CompatibilityLevel,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    string? ProfilePicturePath // added field for profile pictures
 );
