@@ -1,4 +1,4 @@
-﻿@using RoomMate_Finder_Frontend.Services
+﻿﻿@using RoomMate_Finder_Frontend.Services
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 @inject IAuthService AuthService
@@ -115,9 +115,23 @@
                                 Icon="@Icons.Material.Filled.Search">
                         Căută Camere
                     </MudNavLink>
-                    <MudNavLink Href="/my-listings" 
-                                Icon="@Icons.Material.Filled.AddHome">
-                        Camerele Mele
+                </MudNavGroup>
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+                <MudDivider Class="my-2" />
+                <MudNavGroup Title="Administrare" 
+                             Icon="@Icons.Material.Filled.AdminPanelSettings" 
+                             Expanded="true">
+                    <MudNavLink Href="/admin/users" 
+                                Icon="@Icons.Material.Filled.People">
+                        Utilizatori
+                    </MudNavLink>
+                    <MudNavLink Href="/admin/listings" 
+                                Icon="@Icons.Material.Filled.Home">
+                        Anunțuri
                     </MudNavLink>
                 </MudNavGroup>
             </Authorized>

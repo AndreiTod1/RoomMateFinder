@@ -17,8 +17,13 @@ public class SearchListingsHandler : IRequestHandler<SearchListingsRequest, Sear
     {
         var query = _dbContext.RoomListings
             .Include(l => l.Owner)
-            .Where(l => l.IsActive)
             .AsQueryable();
+
+        // Filter by IsActive unless IncludeInactive is true
+        if (!request.IncludeInactive)
+        {
+            query = query.Where(l => l.IsActive);
+        }
 
         if (!string.IsNullOrWhiteSpace(request.City))
         {
@@ -61,6 +66,11 @@ public class SearchListingsHandler : IRequestHandler<SearchListingsRequest, Sear
             }
         }
 
+        if (request.OwnerId.HasValue)
+        {
+            query = query.Where(l => l.OwnerId == request.OwnerId.Value);
+        }
+
         var totalCount = await query.CountAsync(cancellationToken);
 
         var page = request.Page <= 0 ? 1 : request.Page;
@@ -83,7 +93,8 @@ public class SearchListingsHandler : IRequestHandler<SearchListingsRequest, Sear
                 AvailableFrom = l.AvailableFrom,
                 Amenities = l.Amenities
                     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .ToList()
+                    .ToList(),
+                IsActive = l.IsActive
             })
             .ToListAsync(cancellationToken);
 

@@ -1,0 +1,181 @@
+﻿@page "/admin/users"
+@using Microsoft.AspNetCore.Authorization
+@using RoomMate_Finder_Frontend.Services
+@attribute [Authorize(Roles = "Admin")]
+@inject IProfileService ProfileService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject HttpClient Http
+
+<PageTitle>Admin - Users</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-6">
+    
+    <MudText Typo="Typo.h5" Class="mb-2 fw-bold">Manage Users</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">View and manage all registered users</MudText>
+
+    <MudPaper Elevation="0" Outlined="true" Class="rounded-lg">
+        
+        <div class="pa-4 d-flex align-center gap-3" style="border-bottom: 1px solid #e0e0e0; background: #fafafa;">
+            <MudIcon Icon="@Icons.Material.Filled.Search" Color="Color.Secondary" />
+            <input type="text" @bind="_searchString" @bind:event="oninput" @onkeydown="OnSearchKeyDown"
+                   placeholder="Search users... (press Enter)" 
+                   style="border:none; outline:none; background:transparent; width:100%; font-size: 0.95rem;" />
+            <MudChip T="string" Size="Size.Small" Color="Color.Primary">@_totalUserCount users</MudChip>
+        </div>
+
+        @if (_isLoading)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+        }
+        else if (_users.Count == 0)
+        {
+            <div class="pa-8 d-flex flex-column align-center">
+                <MudIcon Icon="@Icons.Material.Filled.PersonOff" Size="Size.Large" Color="Color.Secondary" Class="mb-4" />
+                <MudText Typo="Typo.body1" Color="Color.Secondary">No users found</MudText>
+            </div>
+        }
+        else
+        {
+            @foreach (var user in _users)
+            {
+                var isAdmin = user.Role == "Admin";
+                <div class="d-flex align-center pa-4" style="border-bottom: 1px solid #eee; cursor: pointer;" @onclick="() => NavigateToProfile(user.Id)">
+                    
+                    <MudAvatar Size="Size.Medium" Color="@(isAdmin ? Color.Warning : Color.Primary)" Variant="Variant.Outlined" Class="mr-4">
+                        @if (!string.IsNullOrEmpty(user.ProfilePicturePath))
+                        {
+                            <MudImage Src="@GetFullImageUrl(user.ProfilePicturePath)" ObjectFit="ObjectFit.Cover" />
+                        }
+                        else
+                        {
+                            @(user.FullName.Length > 0 ? user.FullName[0].ToString().ToUpper() : "?")
+                        }
+                    </MudAvatar>
+
+                    <div style="flex-grow: 1;">
+                        <div class="d-flex align-center gap-2">
+                            <MudText Typo="Typo.subtitle2" Class="fw-bold">@user.FullName</MudText>
+                            @if(isAdmin)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text" Style="font-size: 0.7rem; height: 20px;">ADMIN</MudChip>
+                            }
+                        </div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@user.Email</MudText>
+                    </div>
+
+                    <div class="d-flex gap-1" @onclick:stopPropagation="true">
+                        <MudIconButton Icon="@(isAdmin ? Icons.Material.Filled.ArrowDownward : Icons.Material.Filled.ArrowUpward)" 
+                                       Size="Size.Small" Color="Color.Default" OnClick="@(() => ToggleRole(user))" 
+                                       Title="@(isAdmin ? "Demote to User" : "Promote to Admin")" />
+                        <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" Color="Color.Error" 
+                                       OnClick="@(() => DeleteUser(user))" Title="Delete User" />
+                    </div>
+                </div>
+            }
+
+            <div class="d-flex justify-center pa-4">
+                <MudPagination Color="Color.Primary" Count="@TotalPages" Selected="@_currentPage" SelectedChanged="OnPageChanged" Size="Size.Small" />
+            </div>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<UserDto> _users = new();
+    private string _searchString = "";
+    private bool _isLoading = true;
+    private int _currentPage = 1;
+    private int _pageSize = 15;
+    private int _totalUserCount;
+    private int TotalPages => (int)Math.Ceiling((double)_totalUserCount / _pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        _isLoading = true;
+        try
+        {
+            var response = await ProfileService.GetAllUsersAsync(_currentPage, _pageSize, _searchString);
+            _users = response.Users;
+            _totalUserCount = response.TotalCount;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading users: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OnSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            _currentPage = 1;
+            await LoadUsers();
+        }
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await LoadUsers();
+    }
+
+    private string GetFullImageUrl(string? relativePath)
+    {
+        if (string.IsNullOrEmpty(relativePath)) return string.Empty;
+        if (relativePath.StartsWith("http")) return relativePath;
+        var baseUrl = Http.BaseAddress?.ToString().TrimEnd('/') ?? "http://localhost:5111";
+        return $"{baseUrl}{relativePath}";
+    }
+
+    private void NavigateToProfile(Guid userId) => Navigation.NavigateTo($"/profile/{userId}");
+
+    private async Task ToggleRole(UserDto user)
+    {
+        var newRole = user.Role == "Admin" ? "User" : "Admin";
+        var message = user.Role == "User" ? $"Promote {user.FullName} to Admin?" : $"Demote {user.FullName} to User?";
+        var confirm = await DialogService.ShowMessageBox("Confirm", message, yesText: "Yes", cancelText: "Cancel");
+        if (confirm == true)
+        {
+            try
+            {
+                await ProfileService.UpdateRoleAsync(user.Id, newRole);
+                Snackbar.Add("Role updated", Severity.Success);
+                await LoadUsers();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteUser(UserDto user)
+    {
+        var confirm = await DialogService.ShowMessageBox("Delete User", $"Delete {user.FullName}?", yesText: "Delete", cancelText: "Cancel");
+        if (confirm == true)
+        {
+            try
+            {
+                await ProfileService.DeleteProfileAsync(user.Id);
+                Snackbar.Add("User deleted", Severity.Success);
+                await LoadUsers();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}
+

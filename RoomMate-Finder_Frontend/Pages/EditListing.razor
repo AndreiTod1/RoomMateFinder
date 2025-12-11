@@ -1,0 +1,133 @@
+@page "/edit-listing/{Id:guid}"
+@using Microsoft.AspNetCore.Authorization
+@using RoomMate_Finder_Frontend.Services
+@attribute [Authorize]
+@inject IListingService ListingService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Edit Listing</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="py-6">
+    <MudText Typo="Typo.h5" Class="mb-4 fw-bold">Edit Listing</MudText>
+
+    @if (_isLoading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else if (_listing == null)
+    {
+        <MudAlert Severity="Severity.Error">Listing not found</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="0" Outlined="true" Class="pa-6 rounded-lg">
+            <MudForm @bind-IsValid="_isValid">
+                <MudStack Spacing="4">
+                    <MudTextField T="string" @bind-Value="_model.Title" Label="Title" Required="true" Variant="Variant.Outlined" />
+                    <MudTextField T="string" @bind-Value="_model.Description" Label="Description" Lines="4" Required="true" Variant="Variant.Outlined" />
+                    
+                    <MudGrid>
+                        <MudItem xs="6">
+                            <MudTextField T="string" @bind-Value="_model.City" Label="City" Required="true" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudTextField T="string" @bind-Value="_model.Area" Label="Area" Required="true" Variant="Variant.Outlined" />
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudNumericField T="decimal" @bind-Value="_model.Price" Label="Price (€/month)" Min="1" Required="true" Variant="Variant.Outlined" />
+                    <MudDatePicker @bind-Date="_availableFromDate" Label="Available From" Variant="Variant.Outlined" />
+                    <MudTextField T="string" @bind-Value="_amenitiesText" Label="Amenities (comma-separated)" Variant="Variant.Outlined" HelperText="e.g. WiFi, AC, Balcony" />
+                    
+                    <MudSwitch T="bool" @bind-Value="_model.IsActive" Label="Active" Color="Color.Primary" />
+
+                    <div class="d-flex gap-2 mt-4">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveChanges" Disabled="@(!_isValid || _isSubmitting)">
+                            @if (_isSubmitting) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+                            Save Changes
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Default" OnClick="GoBack">Cancel</MudButton>
+                    </div>
+                </MudStack>
+            </MudForm>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private bool _isValid;
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private ListingDto? _listing;
+    private EditModel _model = new();
+    private DateTime? _availableFromDate;
+    private string _amenitiesText = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _listing = await ListingService.GetByIdAsync(Id);
+        if (_listing != null)
+        {
+            _model = new EditModel
+            {
+                Title = _listing.Title,
+                Description = _listing.Description,
+                City = _listing.City,
+                Area = _listing.Area,
+                Price = _listing.Price,
+                IsActive = _listing.IsActive
+            };
+            _availableFromDate = _listing.AvailableFrom;
+            _amenitiesText = string.Join(", ", _listing.Amenities);
+        }
+        _isLoading = false;
+    }
+
+    private async Task SaveChanges()
+    {
+        if (!_isValid) return;
+        _isSubmitting = true;
+
+        try
+        {
+            var amenities = _amenitiesText.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            var request = new UpdateListingRequest(
+                _model.Title,
+                _model.Description,
+                _model.City,
+                _model.Area,
+                _model.Price,
+                (_availableFromDate ?? DateTime.Today).ToUniversalTime(),
+                amenities,
+                _model.IsActive
+            );
+
+            await ListingService.UpdateAsync(Id, request);
+            Snackbar.Add("Listing updated!", Severity.Success);
+            GoBack();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void GoBack() => Navigation.NavigateTo("/admin/listings");
+
+    private class EditModel
+    {
+        public string Title { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string City { get; set; } = "";
+        public string Area { get; set; } = "";
+        public decimal Price { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+}

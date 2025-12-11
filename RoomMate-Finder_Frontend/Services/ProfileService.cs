@@ -17,6 +17,43 @@ public class ProfileService : IProfileService
         _http = http;
     }
 
+    public async Task<List<ProfileDto>> GetAdminsAsync()
+    {
+        var resp = await _http.GetFromJsonAsync<List<ProfileDto>>("/api/admins");
+        return resp ?? new List<ProfileDto>();
+    }
+
+    public async Task DeleteProfileAsync(Guid id)
+    {
+        var resp = await _http.DeleteAsync($"/api/admins/users/{id}");
+        if (!resp.IsSuccessStatusCode)
+        {
+            var error = await resp.Content.ReadAsStringAsync();
+            throw new InvalidOperationException($"Delete failed: {error}");
+        }
+    }
+
+    public async Task UpdateRoleAsync(Guid id, string role)
+    {
+        var resp = await _http.PutAsJsonAsync($"/api/admins/users/{id}/role", role);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var error = await resp.Content.ReadAsStringAsync();
+            throw new InvalidOperationException($"Update role failed: {error}");
+        }
+    }
+
+    public async Task<PaginatedUsersResponse> GetAllUsersAsync(int page, int pageSize, string? search)
+    {
+        var url = $"/api/admins/users?page={page}&pageSize={pageSize}";
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            url += $"&search={Uri.EscapeDataString(search)}";
+        }
+        var resp = await _http.GetFromJsonAsync<PaginatedUsersResponse>(url);
+        return resp ?? new PaginatedUsersResponse(new List<UserDto>(), 0, page, pageSize);
+    }
+
     public async Task<List<ProfileDto>> GetAllAsync()
     {
         var resp = await _http.GetFromJsonAsync<List<ProfileDto>>("/profiles");

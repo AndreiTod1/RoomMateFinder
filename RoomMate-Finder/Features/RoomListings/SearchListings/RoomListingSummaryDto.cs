@@ -4,12 +4,13 @@ public class RoomListingSummaryDto
 {
     public Guid Id { get; set; }
     public Guid OwnerId { get; set; }
-    public string OwnerFullName { get; set; }
-    public string Title { get; set; }
-    public string City { get; set; }
-    public string Area { get; set; }
+    public required string OwnerFullName { get; set; }
+    public required string Title { get; set; }
+    public required string City { get; set; }
+    public required string Area { get; set; }
     public decimal Price { get; set; }
     public DateTime AvailableFrom { get; set; }
-    public List<string> Amenities { get; set; }
+    public List<string> Amenities { get; set; } = new();
+    public bool IsActive { get; set; }
 }
 

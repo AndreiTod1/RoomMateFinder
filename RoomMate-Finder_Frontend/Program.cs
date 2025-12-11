@@ -17,7 +17,16 @@ if (string.IsNullOrWhiteSpace(apiBase))
     apiBase = "http://localhost:5111";
 }
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBase) });
+// Register AuthTokenHandler
+builder.Services.AddScoped<AuthTokenHandler>();
+
+// Configure HttpClient with the AuthTokenHandler to automatically add JWT token
+builder.Services.AddScoped(sp =>
+{
+    var handler = sp.GetRequiredService<AuthTokenHandler>();
+    handler.InnerHandler = new HttpClientHandler();
+    return new HttpClient(handler) { BaseAddress = new Uri(apiBase) };
+});
 
 // MudBlazor services
 builder.Services.AddMudServices();
@@ -29,6 +38,7 @@ builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredServ
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
+builder.Services.AddScoped<IListingService, ListingService>();
 builder.Services.AddScoped<IMatchingService, MatchingService>();
 
 await builder.Build().RunAsync();

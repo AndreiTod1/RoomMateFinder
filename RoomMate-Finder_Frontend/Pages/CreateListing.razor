@@ -1,0 +1,127 @@
+@page "/create-listing"
+@using Microsoft.AspNetCore.Authorization
+@using RoomMate_Finder_Frontend.Services
+@using System.Security.Claims
+@attribute [Authorize(Roles = "Admin")]
+@inject IListingService ListingService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Create Room Listing - RoomMate Finder</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="py-6">
+    <MudCard Elevation="3" Class="pa-6" Style="border-radius: 16px;">
+        <MudCardContent>
+            <MudStack AlignItems="AlignItems.Center" Class="mb-6">
+                <MudIcon Icon="@Icons.Material.Filled.AddHome" Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.h4" Class="fw-bold">Post a New Room</MudText>
+                <MudText Typo="Typo.body1" Color="Color.Secondary">Fill in the details to list your available room.</MudText>
+            </MudStack>
+
+            <MudForm @bind-IsValid="_isValid">
+                <MudGrid Spacing="3">
+                    <MudItem xs="12">
+                        <MudTextField T="string" @bind-Value="_model.Title" Label="Title" Variant="Variant.Outlined" Required="true" RequiredError="Title is required" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudTextField T="string" @bind-Value="_model.Description" Label="Description" Variant="Variant.Outlined" Lines="4" Required="true" RequiredError="Description is required" />
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudTextField T="string" @bind-Value="_model.City" Label="City" Variant="Variant.Outlined" Required="true" RequiredError="City is required" />
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudTextField T="string" @bind-Value="_model.Area" Label="Area / Neighborhood" Variant="Variant.Outlined" Required="true" RequiredError="Area is required" />
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField T="decimal" @bind-Value="_model.Price" Label="Price (€/month)" Variant="Variant.Outlined" Min="0" Required="true" RequiredError="Price is required" />
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudDatePicker @bind-Date="_availableFromDate" Label="Available From" Variant="Variant.Outlined" Required="true" RequiredError="Date is required" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudTextField T="string" @bind-Value="_amenitiesText" Label="Amenities (comma separated)" Variant="Variant.Outlined" HelperText="e.g. WiFi, Balcony, Washing Machine" />
+                    </MudItem>
+                </MudGrid>
+            </MudForm>
+        </MudCardContent>
+        <MudCardActions Class="pa-4 pt-0">
+            <MudSpacer />
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" Href="/admin/listings">Cancel</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Send" Disabled="@(!_isValid || _isSubmitting)" OnClick="SubmitListing">
+                @if (_isSubmitting)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
+                }
+                Post Listing
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private bool _isValid;
+    private bool _isSubmitting;
+    private CreateListingModel _model = new();
+    private DateTime? _availableFromDate = DateTime.Today.AddDays(7);
+    private string _amenitiesText = "";
+
+    private class CreateListingModel
+    {
+        public string Title { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string City { get; set; } = "";
+        public string Area { get; set; } = "";
+        public decimal Price { get; set; }
+    }
+
+    private async Task SubmitListing()
+    {
+        if (!_isValid) return;
+
+        _isSubmitting = true;
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var userIdClaim = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(userIdClaim, out var ownerId))
+            {
+                Snackbar.Add("Could not identify user", Severity.Error);
+                return;
+            }
+
+            var amenities = _amenitiesText
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+
+            var request = new CreateListingRequest(
+                _model.Title,
+                _model.Description,
+                _model.City,
+                _model.Area,
+                _model.Price,
+                (_availableFromDate ?? DateTime.Today).ToUniversalTime(),
+                amenities,
+                ownerId
+            );
+
+            await ListingService.CreateAsync(request);
+            Snackbar.Add("Listing created successfully!", Severity.Success);
+            Navigation.NavigateTo("/admin/listings");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}
