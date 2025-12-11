@@ -17,7 +17,7 @@ public class GetListingByIdHandler : IRequestHandler<GetListingByIdRequest, GetL
     {
         var listing = await _dbContext.RoomListings
             .Include(l => l.Owner)
-            .FirstOrDefaultAsync(l => l.Id == request.Id && l.IsActive, cancellationToken);
+            .FirstOrDefaultAsync(l => l.Id == request.Id, cancellationToken);
 
         if (listing == null)
         {

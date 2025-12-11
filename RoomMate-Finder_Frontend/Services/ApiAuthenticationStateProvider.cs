@@ -92,6 +92,16 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
             claims.Add(new Claim(ClaimTypes.NameIdentifier, claims.First(c => c.Type == "sub").Value));
         }
 
+        if (!claims.Any(c => c.Type == ClaimTypes.Role) && claims.Any(c => c.Type == "role"))
+        {
+            claims.Add(new Claim(ClaimTypes.Role, claims.First(c => c.Type == "role").Value));
+        }
+
+        if (!claims.Any(c => c.Type == ClaimTypes.Role) && claims.Any(c => c.Type == "Role"))
+        {
+            claims.Add(new Claim(ClaimTypes.Role, claims.First(c => c.Type == "Role").Value));
+        }
+
         return claims;
     }
 

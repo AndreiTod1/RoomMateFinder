@@ -1,6 +1,6 @@
-﻿namespace RoomMate_Finder.Features.Profiles.GetProfiles;
+namespace RoomMate_Finder.Features.Admins.GetAdmins;
 
-public record GetProfilesResponse(
+public record ProfileResponse(
     Guid Id,
     string Email,
     string FullName,
@@ -10,7 +10,7 @@ public record GetProfilesResponse(
     string Bio,
     string Lifestyle,
     string Interests,
-    DateTime CreatedAt,
     string? ProfilePicturePath,
+    DateTime CreatedAt,
     string Role
 );

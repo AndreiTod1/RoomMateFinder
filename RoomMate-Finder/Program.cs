@@ -12,6 +12,7 @@ using RoomMate_Finder.Features.Matching.CalculateCompatibility.Services;
 using RoomMate_Finder.Features.Conversations;
 using RoomMate_Finder.Features.RoomListings;
 using RoomMate_Finder.Features.Reviews;
+using RoomMate_Finder.Features.Admins;
 using RoomMate_Finder.Infrastructure.Persistence;
 using RoomMate_Finder.Validators;
 using Microsoft.OpenApi.Models;
@@ -251,10 +252,19 @@ static async Task InitializeDatabaseAsync(WebApplication app)
         // Use migrations instead of EnsureCreated
         await dbContext.Database.MigrateAsync();
         Console.WriteLine("✓ Database migrations applied successfully");
+
+        // Seed Data ONLY if --seed argument is present
+        var args = Environment.GetCommandLineArgs();
+        if (args.Contains("--seed"))
+        {
+            Console.WriteLine("🌱 Seeding database...");
+            await DataSeeder.SeedAsync(dbContext);
+            Console.WriteLine("✓ Database seeded successfully");
+        }
     }
     catch (Exception ex)
     {
-        Console.Error.WriteLine($"✗ Database migration error: {ex.Message}");
+        Console.Error.WriteLine($"✗ Database migration/seeding error: {ex.Message}");
         Console.Error.WriteLine(ex.StackTrace);
         throw;
     }
@@ -288,6 +298,7 @@ static void ConfigureEndpoints(WebApplication app)
     app.MapMatchingEndpoints();
     app.MapConversationsEndpoints();
     app.MapReviewsEndpoints();
+    app.MapAdminsEndpoints();
     Console.WriteLine("✓ Endpoints configured");
 }
 

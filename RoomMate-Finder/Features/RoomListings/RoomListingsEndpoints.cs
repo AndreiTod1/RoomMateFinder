@@ -1,4 +1,5 @@
 using RoomMate_Finder.Features.RoomListings.CreateListing;
+using RoomMate_Finder.Features.RoomListings.DeleteListing;
 using RoomMate_Finder.Features.RoomListings.GetListingById;
 using RoomMate_Finder.Features.RoomListings.SearchListings;
 using RoomMate_Finder.Features.RoomListings.UpdateListing;
@@ -13,6 +14,7 @@ public static class RoomListingsEndpoints
         app.MapSearchListingsEndpoint();
         app.MapGetListingByIdEndpoint();
         app.MapUpdateListingEndpoint();
+        app.MapDeleteListingEndpoint();
 
         return app;
     }

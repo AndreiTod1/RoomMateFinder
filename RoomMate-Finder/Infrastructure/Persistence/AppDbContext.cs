@@ -10,7 +10,7 @@ public class AppDbContext : DbContext
     {
     }
 
-    public DbSet<Profile> Profiles { get; set; } = null!;
+    public DbSet<Profile> Profiles { get; set; }
     public DbSet<UserAction> UserActions { get; set; } = null!;
     public DbSet<Match> Matches { get; set; } = null!;
     public DbSet<Conversation> Conversations { get; set; } = null!;

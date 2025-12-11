@@ -11,6 +11,8 @@ public class SearchListingsRequest : IRequest<SearchListingsResponse>
     public decimal? MaxPrice { get; set; }
     public List<string>? Amenities { get; set; }
     public DateTime? AvailableFrom { get; set; }
+    public Guid? OwnerId { get; set; }
+    public bool IncludeInactive { get; set; } = false;
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 20;
 }
