@@ -1,0 +1,89 @@
+@page "/my-matches"
+@using RoomMate_Finder_Frontend.Services
+@using RoomMate_Finder_Frontend.Models
+@inject IMatchingService MatchingService
+@inject IProfileService ProfileService
+@inject NavigationManager Navigation
+
+<PageTitle>Match-urile mele</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-4">
+    <MudText Typo="Typo.h4" Class="mb-2">Match-urile mele</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Persoanele cu care ați avut un match.</MudText>
+
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_error != null)
+    {
+        <MudAlert Severity="Severity.Error">@_error</MudAlert>
+    }
+    else if (!_matches.Any())
+    {
+        <MudText>Nu aveți match-uri încă.</MudText>
+    }
+    else
+    {
+        <MudGrid Spacing="3">
+            @foreach (var m in _matches)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <MudCard Elevation="2">
+                        <MudCardContent>
+                            <MudText Typo="Typo.h6">@m.FullName</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@m.University • @m.Age ani</MudText>
+                            @if (!string.IsNullOrEmpty(m.Bio))
+                            {
+                                <MudText Typo="Typo.body2" Class="mt-2">@(m.Bio.Length > 120 ? m.Bio.Substring(0,120)+"..." : m.Bio)</MudText>
+                            }
+                        </MudCardContent>
+                        <MudCardActions>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="() => OpenConversation(m.UserId)">Mesaj</MudButton>
+                            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="() => ViewProfile(m.UserId)">Vezi Profil</MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    private List<UserMatchDto> _matches = new();
+    private bool _loading = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var me = await ProfileService.GetCurrentAsync();
+            if (me == null)
+            {
+                Navigation.NavigateTo("/login");
+                return;
+            }
+
+            _matches = await MatchingService.GetMyMatchesAsync(me.Id);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OpenConversation(Guid userId)
+    {
+        Navigation.NavigateTo($"/conversations");
+    }
+
+    private void ViewProfile(Guid userId)
+    {
+        Navigation.NavigateTo($"/profile/{userId}");
+    }
+}

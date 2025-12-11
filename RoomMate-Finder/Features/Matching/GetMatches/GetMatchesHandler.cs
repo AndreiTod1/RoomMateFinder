@@ -80,7 +80,8 @@ public class GetMatchesHandler : IRequestHandler<GetMatchesRequest, List<GetMatc
                 profile.Interests,
                 Math.Round(compatibilityResult.OverallScore, 2),
                 compatibilityResult.CompatibilityLevel,
-                profile.CreatedAt
+                profile.CreatedAt,
+                profile.ProfilePicturePath // new mapping so Discover can show images
             );
 
             matches.Add(match);
