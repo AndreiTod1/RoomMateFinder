@@ -1,0 +1,160 @@
+@page "/matches"
+@using RoomMate_Finder_Frontend.Services
+@using RoomMate_Finder_Frontend.Models
+@inject IMatchingService MatchingService
+@inject IProfileService ProfileService
+@inject NavigationManager Navigation
+@inject HttpClient Http
+
+<PageTitle>Descoperă Oameni</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-4">
+    <MudText Typo="Typo.h4" Class="mb-2">Descoperă oameni</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Vezi profiluri recomandate ordonate după scorul de compatibilitate.</MudText>
+
+    @if (_loading)
+    {
+        <div class="d-flex justify-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+        </div>
+    }
+    else if (_error != null)
+    {
+        <MudAlert Severity="Severity.Error">@_error</MudAlert>
+    }
+    else if (!_profiles.Any())
+    {
+        <MudText>No profiles available at the moment.</MudText>
+    }
+    else
+    {
+        <!-- Show one large profile card at a time (stacked style) -->
+        @if (CurrentProfile is not null)
+        {
+            <div class="d-flex justify-center">
+                <MudCard Elevation="6" Style="width: 680px;">
+                    <div style="position:relative; display:flex; justify-content:center; align-items:center; padding-top:24px; padding-bottom:24px; background:#f5f5f5;">
+                        @if (!string.IsNullOrEmpty(CurrentProfile.ProfilePicturePath))
+                        {
+                            <img src="@GetFullImageUrl(CurrentProfile.ProfilePicturePath)" alt="Profile image" style="width:220px;height:220px;object-fit:cover;display:block;border-radius:50%;" />
+                        }
+                        else
+                        {
+                            <MudAvatar Size="Size.Large" Style="width:220px;height:220px;font-size:2.5rem;">
+                                @GetInitials(CurrentProfile.FullName)
+                            </MudAvatar>
+                        }
+
+                        <div style="position:absolute;left:16px;bottom:16px;background:rgba(0,0,0,0.55);color:#fff;padding:8px 12px;border-radius:6px;">
+                            <div style="font-weight:600;">@CurrentProfile.FullName, @CurrentProfile.Age</div>
+                            <div style="font-size:0.9rem;opacity:0.9;">@CurrentProfile.University</div>
+                        </div>
+                        <div style="position:absolute;right:16px;top:16px;background:rgba(255,255,255,0.9);padding:6px 10px;border-radius:6px;">
+                            <div style="font-weight:700;">Compat: @Math.Round(CurrentProfile.CompatibilityScore)/100</div>
+                            <div style="font-size:0.75rem;color:#555;">@CurrentProfile.CompatibilityLevel</div>
+                        </div>
+                    </div>
+
+                    <MudCardContent>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@CurrentProfile.Bio</MudText>
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2" Class="mt-4">
+                            <MudChip T="string" Icon="@Icons.Material.Filled.School" Color="Color.Info" Size="Size.Small">@CurrentProfile.University</MudChip>
+                            <MudChip T="string" Icon="@Icons.Material.Filled.Person" Color="Color.Secondary" Size="Size.Small">@CurrentProfile.Gender</MudChip>
+                            <MudChip T="string" Icon="@Icons.Material.Filled.LightMode" Color="Color.Primary" Size="Size.Small">@CurrentProfile.Lifestyle</MudChip>
+                        </MudStack>
+                    </MudCardContent>
+
+                    <MudCardActions Class="d-flex justify-space-between">
+                        <MudButton Color="Color.Default" Variant="Variant.Outlined" OnClick="() => OnPass(CurrentProfile.UserId)">Pass</MudButton>
+
+                        <div>
+                            <MudButton Color="Color.Secondary" Variant="Variant.Text" OnClick="() => ShowDetails(CurrentProfile.UserId)">Detalii</MudButton>
+                            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => OnLike(CurrentProfile.UserId)" Class="ms-2">Like</MudButton>
+                        </div>
+                    </MudCardActions>
+                </MudCard>
+            </div>
+        }
+    }
+</MudContainer>
+
+@code {
+    private List<MatchProfileDto> _profiles = new();
+    private bool _loading = true;
+    private string? _error;
+
+    private MatchProfileDto? CurrentProfile => _profiles.FirstOrDefault();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var me = await ProfileService.GetCurrentAsync();
+            if (me == null)
+            {
+                Navigation.NavigateTo("/login");
+                return;
+            }
+
+            _profiles = await MatchingService.GetDiscoverProfilesAsync(me.Id);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OnLike(Guid targetId)
+    {
+        var me = await ProfileService.GetCurrentAsync();
+        if (me == null) { Navigation.NavigateTo("/login"); return; }
+
+        var res = await MatchingService.LikeProfileAsync(me.Id, targetId);
+        if (res.IsMatch)
+        {
+            Navigation.NavigateTo($"/my-matches");
+        }
+        else
+        {
+            _profiles.RemoveAll(x => x.UserId == targetId);
+        }
+    }
+
+    private async Task OnPass(Guid targetId)
+    {
+        var me = await ProfileService.GetCurrentAsync();
+        if (me == null) { Navigation.NavigateTo("/login"); return; }
+
+        await MatchingService.PassProfileAsync(me.Id, targetId);
+        _profiles.RemoveAll(x => x.UserId == targetId);
+    }
+
+    private void ShowDetails(Guid targetId)
+    {
+        Navigation.NavigateTo($"/profile/{targetId}");
+    }
+
+    private string GetFullImageUrl(string? relativePath)
+    {
+        if (string.IsNullOrEmpty(relativePath))
+            return string.Empty;
+
+        if (relativePath.StartsWith("http"))
+            return relativePath;
+
+        var baseUrl = Http.BaseAddress?.ToString().TrimEnd('/') ?? "http://localhost:5111";
+        return $"{baseUrl}{relativePath}";
+    }
+
+    private string GetInitials(string? fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName)) return "?";
+        var parts = fullName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0].Substring(0, 1).ToUpperInvariant();
+        return (parts[0].Substring(0,1) + parts[^1].Substring(0,1)).ToUpperInvariant();
+    }
+}

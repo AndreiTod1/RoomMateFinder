@@ -35,14 +35,14 @@ public class AppDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.ActionType).HasConversion<int>();
             
-            // Configure relationships
+            // Configure relationships - use inverse navigation properties on Profile
             entity.HasOne(e => e.User)
-                  .WithMany()
+                  .WithMany(p => p.SentActions)
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
                   
             entity.HasOne(e => e.TargetUser)
-                  .WithMany()
+                  .WithMany(p => p.ReceivedActions)
                   .HasForeignKey(e => e.TargetUserId)
                   .OnDelete(DeleteBehavior.Cascade);
                   
@@ -56,14 +56,14 @@ public class AppDbContext : DbContext
             entity.ToTable("matches", "public");
             entity.HasKey(e => e.Id);
             
-            // Configure relationships
+            // Configure relationships - use inverse navigation properties on Profile
             entity.HasOne(e => e.User1)
-                  .WithMany()
+                  .WithMany(p => p.MatchesInitiated)
                   .HasForeignKey(e => e.User1Id)
                   .OnDelete(DeleteBehavior.Cascade);
                   
             entity.HasOne(e => e.User2)
-                  .WithMany()
+                  .WithMany(p => p.MatchesReceived)
                   .HasForeignKey(e => e.User2Id)
                   .OnDelete(DeleteBehavior.Cascade);
                   

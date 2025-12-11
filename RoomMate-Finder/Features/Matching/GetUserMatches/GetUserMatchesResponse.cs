@@ -2,7 +2,7 @@ namespace RoomMate_Finder.Features.Matching.GetUserMatches;
 
 public record GetUserMatchesResponse(
     Guid MatchId,
-    Guid MatchedUserId,
+    Guid UserId,
     string Email,
     string FullName,
     int Age,

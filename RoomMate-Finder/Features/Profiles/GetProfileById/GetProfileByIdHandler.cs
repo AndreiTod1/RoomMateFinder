@@ -4,7 +4,7 @@ using RoomMate_Finder.Infrastructure.Persistence;
 
 namespace RoomMate_Finder.Features.Profiles.GetProfileById;
 
-public class GetProfileByIdHandler : IRequestHandler<GetProfileByIdRequest, GetProfileByIdResponse>
+public class GetProfileByIdHandler : IRequestHandler<GetProfileByIdRequest, GetProfileByIdResponse?>
 {
     private readonly AppDbContext _dbContext;
 
@@ -13,7 +13,7 @@ public class GetProfileByIdHandler : IRequestHandler<GetProfileByIdRequest, GetP
         _dbContext = dbContext;
     }
 
-    public async Task<GetProfileByIdResponse> Handle(GetProfileByIdRequest request, CancellationToken cancellationToken)
+    public async Task<GetProfileByIdResponse?> Handle(GetProfileByIdRequest request, CancellationToken cancellationToken)
     {
         var profile = await _dbContext.Profiles
             .AsNoTracking()
@@ -35,7 +35,8 @@ public class GetProfileByIdHandler : IRequestHandler<GetProfileByIdRequest, GetP
 
         if (profile is null)
         {
-            throw new InvalidOperationException("Profile not found");
+            // Return null so the endpoint can translate to 404 Not Found
+            return null;
         }
 
         return profile;

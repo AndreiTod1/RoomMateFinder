@@ -56,8 +56,47 @@ public class LikeProfileHandler : IRequestHandler<LikeProfileRequest, LikeProfil
         {
             // Create a match
             var match = await CreateMatch(request.UserId, request.TargetUserId, cancellationToken);
+
+            // Create a conversation for the matched users (ensure consistent ordering)
+            var convUser1Id = match.User1Id;
+            var convUser2Id = match.User2Id;
+
+            // Check if a conversation already exists (respecting ordering)
+            var existingConv = await _dbContext.Conversations
+                .FirstOrDefaultAsync(c => c.User1Id == convUser1Id && c.User2Id == convUser2Id, cancellationToken);
+
+            if (existingConv != null)
+            {
+                // Conversation already exists - no need to create or add a welcome message
+            }
+            else
+            {
+                var conversation = new Conversation
+                {
+                    Id = Guid.NewGuid(),
+                    User1Id = convUser1Id,
+                    User2Id = convUser2Id,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _dbContext.Conversations.Add(conversation);
+
+                // Optionally add an initial welcome message from the user who just liked
+                var initialMessage = new Message
+                {
+                    Id = Guid.NewGuid(),
+                    ConversationId = conversation.Id,
+                    SenderId = request.UserId,
+                    Content = "Hey — nice to match! :)",
+                    SentAt = DateTime.UtcNow,
+                    IsRead = false
+                };
+
+                _dbContext.Messages.Add(initialMessage);
+            }
+
             await _dbContext.SaveChangesAsync(cancellationToken);
-            
+
             return new LikeProfileResponse(
                 true, 
                 "It's a match! You both liked each other!", 
