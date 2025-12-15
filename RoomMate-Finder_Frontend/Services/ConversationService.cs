@@ -90,6 +90,8 @@ public class ConversationService : IConversationService
                         result.ConversationId,
                         otherUserId,
                         "", // Name will be populated by the UI
+                        null, // ProfilePicture
+                        null, // Role
                         DateTime.UtcNow
                     );
                 }
@@ -128,6 +130,7 @@ public class ConversationService : IConversationService
                         result.MessageId,
                         Guid.Empty, // Will be the current user
                         "",
+                        null, // SenderRole will be populated on refresh
                         content,
                         DateTime.UtcNow,
                         false

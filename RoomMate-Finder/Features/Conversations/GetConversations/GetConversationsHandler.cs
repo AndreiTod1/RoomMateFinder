@@ -35,6 +35,8 @@ public class GetConversationsHandler : IRequestHandler<GetConversationsRequest, 
                 c.Id,
                 otherUser.Id,
                 otherUser.FullName,
+                otherUser.ProfilePicturePath,
+                otherUser.Role,
                 c.CreatedAt
             );
         }).ToList();

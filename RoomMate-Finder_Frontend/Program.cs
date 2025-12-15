@@ -40,5 +40,6 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<IListingService, ListingService>();
 builder.Services.AddScoped<IMatchingService, MatchingService>();
+builder.Services.AddScoped<IChatService, ChatService>();
 
 await builder.Build().RunAsync();

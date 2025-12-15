@@ -8,6 +8,8 @@ public record ConversationDto(
     Guid Id,
     Guid OtherUserId,
     string OtherUserName,
+    string? OtherUserProfilePicture,
+    string? OtherUserRole,
     DateTime CreatedAt
 );
 

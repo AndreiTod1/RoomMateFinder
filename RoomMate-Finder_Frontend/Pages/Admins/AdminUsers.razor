@@ -66,11 +66,14 @@
                     </div>
 
                     <div class="d-flex gap-1" @onclick:stopPropagation="true">
-                        <MudIconButton Icon="@(isAdmin ? Icons.Material.Filled.ArrowDownward : Icons.Material.Filled.ArrowUpward)" 
-                                       Size="Size.Small" Color="Color.Default" OnClick="@(() => ToggleRole(user))" 
-                                       Title="@(isAdmin ? "Demote to User" : "Promote to Admin")" />
-                        <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" Color="Color.Error" 
-                                       OnClick="@(() => DeleteUser(user))" Title="Delete User" />
+                        <MudTooltip Text="@(isAdmin ? "Demote to User" : "Promote to Admin")">
+                            <MudIconButton Icon="@(isAdmin ? Icons.Material.Filled.ArrowDownward : Icons.Material.Filled.ArrowUpward)" 
+                                           Size="Size.Small" Color="Color.Default" OnClick="@(() => ToggleRole(user))" />
+                        </MudTooltip>
+                        <MudTooltip Text="Delete User">
+                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" Color="Color.Error" 
+                                           OnClick="@(() => DeleteUser(user))" />
+                        </MudTooltip>
                     </div>
                 </div>
             }

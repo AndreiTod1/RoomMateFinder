@@ -42,6 +42,7 @@ public class GetMessagesHandler : IRequestHandler<GetMessagesRequest, GetMessage
             m.Id,
             m.SenderId,
             m.Sender.FullName,
+            m.Sender.Role,
             m.Content,
             m.SentAt,
             m.IsRead

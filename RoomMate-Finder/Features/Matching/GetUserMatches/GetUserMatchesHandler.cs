@@ -41,7 +41,8 @@ public class GetUserMatchesHandler : IRequestHandler<GetUserMatchesRequest, List
                 matchedUser.Lifestyle,
                 matchedUser.Interests,
                 match.CreatedAt,
-                match.IsActive
+                match.IsActive,
+                matchedUser.ProfilePicturePath
             ));
         }
 

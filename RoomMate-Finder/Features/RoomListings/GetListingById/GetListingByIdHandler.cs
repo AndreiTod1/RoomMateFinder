@@ -40,7 +40,10 @@ public class GetListingByIdHandler : IRequestHandler<GetListingByIdRequest, GetL
                 .ToList(),
             CreatedAt = listing.CreatedAt,
             UpdatedAt = listing.UpdatedAt,
-            IsActive = listing.IsActive
+            IsActive = listing.IsActive,
+            ImagePaths = listing.ImagePaths
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList()
         };
     }
 }

@@ -94,7 +94,8 @@ public class SearchListingsHandler : IRequestHandler<SearchListingsRequest, Sear
                 Amenities = l.Amenities
                     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                     .ToList(),
-                IsActive = l.IsActive
+                IsActive = l.IsActive,
+                ThumbnailPath = l.ImagePaths.Split(',', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
             })
             .ToListAsync(cancellationToken);
 

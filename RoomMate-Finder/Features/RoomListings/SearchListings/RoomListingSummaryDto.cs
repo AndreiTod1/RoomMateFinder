@@ -12,5 +12,6 @@ public class RoomListingSummaryDto
     public DateTime AvailableFrom { get; set; }
     public List<string> Amenities { get; set; } = new();
     public bool IsActive { get; set; }
+    public string? ThumbnailPath { get; set; }
 }
 

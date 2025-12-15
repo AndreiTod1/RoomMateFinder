@@ -1,92 +1,115 @@
 ﻿@page "/conversations"
+@page "/messages"
 @using Microsoft.AspNetCore.Authorization
 @using RoomMate_Finder_Frontend.Services
 @attribute [Authorize]
 @inject IConversationService ConversationService
 @inject NavigationManager Navigation
+@inject IConfiguration Configuration
 
-<PageTitle>Conversații</PageTitle>
+<PageTitle>Mesaje - RoomMate Finder</PageTitle>
 
-<div class="conversations-page">
-    <div class="conversations-header">
-        <h2 class="conversations-header-title">
-            <i class="bi bi-chat-dots-fill text-primary"></i>
-            Conversațiile mele
-        </h2>
-    </div>
+<MudContainer MaxWidth="MaxWidth.Medium" Class="py-6">
+    <MudText Typo="Typo.h4" Class="mb-6 d-flex align-center gap-2">
+        <MudIcon Icon="@Icons.Material.Filled.Chat" Color="Color.Primary" />
+        Mesajele mele
+    </MudText>
 
     @if (_isLoading)
     {
-        <div class="conversations-loading">
-            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">Se încarcă...</span>
-            </div>
-            <p>Se încarcă conversațiile...</p>
-        </div>
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+            <MudText Typo="Typo.body1" Class="mt-4 text-secondary">Se încarcă conversațiile...</MudText>
+        </MudPaper>
     }
     else if (!string.IsNullOrEmpty(_errorMessage))
     {
-        <div class="alert alert-danger shadow-sm border-0 d-flex align-items-center conversations-error" role="alert">
-            <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
-            <div>@_errorMessage</div>
-        </div>
+        <MudAlert Severity="Severity.Error" Class="mb-4">@_errorMessage</MudAlert>
     }
     else if (_conversations == null || !_conversations.Any())
     {
-        <div class="conversations-empty">
-            <div class="conversations-empty-icon">
-                <i class="bi bi-chat-left-text"></i>
-            </div>
-            <h4>Nicio conversație încă</h4>
-            <p>Începeți o conversație cu alți utilizatori pentru a le vedea aici.</p>
-            <a href="/profiles" class="btn btn-primary btn-lg">
-                <i class="bi bi-people-fill me-2"></i>
-                Descoperă profiluri
-            </a>
-        </div>
+        <MudPaper Class="pa-8 text-center" Elevation="0" Outlined="true">
+            <MudIcon Icon="@Icons.Material.Filled.ChatBubbleOutline" Size="Size.Large" Color="Color.Secondary" Style="font-size: 4rem;" />
+            <MudText Typo="Typo.h6" Class="mt-4 mb-2">Nicio conversație încă</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                Începeți o conversație cu proprietarii de camere pentru a le vedea aici.
+            </MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/listings" StartIcon="@Icons.Material.Filled.Search">
+                Caută camere
+            </MudButton>
+        </MudPaper>
     }
     else
     {
-        <div class="conversations-card-list">
+        <MudPaper Elevation="0" Outlined="true" Class="rounded-lg overflow-hidden">
             @foreach (var conversation in _conversations.OrderByDescending(c => c.CreatedAt))
             {
-                <div class="conversation-card" @onclick="@(() => NavigateToConversation(conversation.Id))">
-                    <div class="conversation-card-body">
-                        <div class="conversation-avatar">
-                            <div class="conversation-avatar-circle">
-                                <i class="bi bi-person-fill"></i>
-                            </div>
+                <div class="conversation-item d-flex align-center pa-4" 
+                     style="border-bottom: 1px solid var(--mud-palette-divider); cursor: pointer; transition: background 0.2s;"
+                     @onclick="@(() => NavigateToConversation(conversation.Id))">
+                    
+                    <!-- Profile Picture -->
+                    @if (!string.IsNullOrEmpty(conversation.OtherUserProfilePicture))
+                    {
+                        <MudAvatar Size="Size.Large" Class="mr-4" Style="border: 2px solid var(--mud-palette-primary-lighten);">
+                            <MudImage Src="@GetProfilePictureUrl(conversation.OtherUserProfilePicture)" />
+                        </MudAvatar>
+                    }
+                    else
+                    {
+                        <MudAvatar Size="Size.Large" Color="Color.Primary" Class="mr-4">
+                            @GetInitials(conversation.OtherUserName)
+                        </MudAvatar>
+                    }
+                    
+                    <!-- User Info -->
+                    <div style="flex-grow: 1;">
+                        <div class="d-flex align-center gap-2 mb-1">
+                            <MudText Typo="Typo.subtitle1" Class="fw-bold">@conversation.OtherUserName</MudText>
+                            @if (!string.IsNullOrEmpty(conversation.OtherUserRole))
+                            {
+                                <MudChip T="string" 
+                                         Size="Size.Small" 
+                                         Color="@(conversation.OtherUserRole == "Admin" ? Color.Warning : Color.Default)"
+                                         Variant="Variant.Text"
+                                         Style="font-size: 0.7rem; height: 20px;">
+                                    @conversation.OtherUserRole
+                                </MudChip>
+                            }
                         </div>
-                        <div class="conversation-main">
-                            <div class="conversation-main-header">
-                                <h5 class="conversation-name">@conversation.OtherUserName</h5>
-                                <span class="conversation-meta-badge">
-                                    <i class="bi bi-clock"></i>
-                                    @GetRelativeTime(conversation.CreatedAt)
-                                </span>
-                            </div>
-                            <p class="conversation-subtitle">
-                                <i class="bi bi-calendar3"></i>
-                                Conversație începută la @conversation.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
-                            </p>
-                        </div>
-                        <div class="conversation-chevron">
-                            <i class="bi bi-chevron-right"></i>
-                        </div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="d-flex align-center gap-1">
+                            <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" />
+                            @GetRelativeTime(conversation.CreatedAt)
+                        </MudText>
                     </div>
+                    
+                    <!-- Arrow -->
+                    <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Secondary" />
                 </div>
             }
-        </div>
+        </MudPaper>
+        
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-4 text-center">
+            @_conversations.Count conversații
+        </MudText>
     }
-</div>
+</MudContainer>
+
+<style>
+    .conversation-item:hover {
+        background-color: var(--mud-palette-action-default-hover);
+    }
+</style>
 
 @code {
     private List<ConversationDto>? _conversations;
     private bool _isLoading = true;
     private string? _errorMessage;
+    private string _apiBaseUrl = "";
 
     protected override async Task OnInitializedAsync()
     {
+        _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "http://localhost:5111";
         await LoadConversations();
     }
 
@@ -105,7 +128,7 @@
         }
         catch (Exception ex)
         {
-            _errorMessage = $"A apărut o eroare la încărcarea conversațiilor: {ex.Message}";
+            _errorMessage = $"A apărut o eroare: {ex.Message}";
         }
         finally
         {
@@ -118,6 +141,21 @@
         Navigation.NavigateTo($"/conversations/{conversationId}");
     }
     
+    private string GetProfilePictureUrl(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return "";
+        return path.StartsWith("http") ? path : $"{_apiBaseUrl}{path}";
+    }
+    
+    private string GetInitials(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        return name.Length >= 2 ? name.Substring(0, 2).ToUpper() : name.ToUpper();
+    }
+    
     private string GetRelativeTime(DateTime dateTime)
     {
         var timeSpan = DateTime.UtcNow - dateTime;
@@ -125,16 +163,16 @@
         if (timeSpan.TotalMinutes < 1)
             return "Acum";
         if (timeSpan.TotalMinutes < 60)
-            return $"{(int)timeSpan.TotalMinutes}m";
+            return $"Acum {(int)timeSpan.TotalMinutes} min";
         if (timeSpan.TotalHours < 24)
-            return $"{(int)timeSpan.TotalHours}h";
+            return $"Acum {(int)timeSpan.TotalHours} ore";
         if (timeSpan.TotalDays < 7)
-            return $"{(int)timeSpan.TotalDays}z";
+            return $"Acum {(int)timeSpan.TotalDays} zile";
         if (timeSpan.TotalDays < 30)
-            return $"{(int)(timeSpan.TotalDays / 7)}săpt";
+            return $"Acum {(int)(timeSpan.TotalDays / 7)} săptămâni";
         if (timeSpan.TotalDays < 365)
-            return $"{(int)(timeSpan.TotalDays / 30)}luni";
+            return $"Acum {(int)(timeSpan.TotalDays / 30)} luni";
         
-        return $"{(int)(timeSpan.TotalDays / 365)}ani";
+        return dateTime.ToLocalTime().ToString("dd MMM yyyy");
     }
 }

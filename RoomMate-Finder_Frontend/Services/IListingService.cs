@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Components.Forms;
 
 namespace RoomMate_Finder_Frontend.Services;
 
@@ -41,7 +42,8 @@ public record ListingSummaryDto(
     decimal Price,
     DateTime AvailableFrom,
     List<string> Amenities,
-    bool IsActive
+    bool IsActive,
+    string? ThumbnailPath = null
 );
 
 public record ListingDto(
@@ -55,7 +57,9 @@ public record ListingDto(
     DateTime AvailableFrom,
     List<string> Amenities,
     DateTime CreatedAt,
-    bool IsActive
+    bool IsActive,
+    List<string>? ImagePaths = null,
+    string? OwnerFullName = null
 );
 
 public record CreateListingRequest(
@@ -66,7 +70,8 @@ public record CreateListingRequest(
     decimal Price,
     DateTime AvailableFrom,
     List<string> Amenities,
-    Guid OwnerId
+    Guid OwnerId,
+    List<IBrowserFile>? Images = null
 );
 
 public record UpdateListingRequest(

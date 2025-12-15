@@ -5,6 +5,7 @@
 @inject IListingService ListingService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IConfiguration Configuration
 
 <PageTitle>Available Rooms - RoomMate Finder</PageTitle>
 
@@ -73,7 +74,19 @@
             @foreach (var listing in listings)
             {
                 <MudItem xs="12" sm="6" md="4" lg="3">
-                    <MudCard Class="listing-card h-100" Elevation="3" Style="border-radius: 16px; cursor: pointer;">
+                    <MudCard Class="listing-card h-100" Elevation="3" Style="border-radius: 16px; cursor: pointer;" @onclick="@(() => ViewRoom(listing.Id))">
+                        <!-- Thumbnail Image -->
+                        @if (!string.IsNullOrEmpty(listing.ThumbnailPath))
+                        {
+                            <MudCardMedia Image="@GetImageUrl(listing.ThumbnailPath)" Height="180" />
+                        }
+                        else
+                        {
+                            <div class="d-flex align-center justify-center" style="height: 180px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Large" Style="color: rgba(255,255,255,0.8);" />
+                            </div>
+                        }
+                        
                         <MudCardContent Class="pa-4">
                             <MudStack Spacing="2">
                                 <!-- Price Badge -->
@@ -152,9 +165,11 @@
     private string? filterCity;
     private decimal? filterMinPrice;
     private decimal? filterMaxPrice;
+    private string _apiBaseUrl = "";
 
     protected override async Task OnInitializedAsync()
     {
+        _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "http://localhost:5111";
         await LoadListings();
     }
 
@@ -206,5 +221,15 @@
     {
         currentPage = page;
         await LoadListings();
+    }
+
+    private string GetImageUrl(string path)
+    {
+        return path.StartsWith("http") ? path : $"{_apiBaseUrl}{path}";
+    }
+
+    private void ViewRoom(Guid id)
+    {
+        Navigation.NavigateTo($"/room/{id}");
     }
 }

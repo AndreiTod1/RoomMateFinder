@@ -1,88 +1,189 @@
 @page "/matches"
+@page "/discover"
 @using RoomMate_Finder_Frontend.Services
 @using RoomMate_Finder_Frontend.Models
 @inject IMatchingService MatchingService
 @inject IProfileService ProfileService
 @inject NavigationManager Navigation
 @inject HttpClient Http
+@inject ISnackbar Snackbar
 
-<PageTitle>Descoperă Oameni</PageTitle>
+<PageTitle>Descoperă - RoomMate Finder</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="py-4">
-    <MudText Typo="Typo.h4" Class="mb-2">Descoperă oameni</MudText>
-    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Vezi profiluri recomandate ordonate după scorul de compatibilitate.</MudText>
+<style>
+    /* Absolute positioning to guarantee no scroll on the main page body */
+    .discover-absolute-wrapper {
+        position: fixed;
+        top: 64px; /* Adjust if header height differs */
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #f8f9fa;
+        overflow: hidden; /* Crucial: no scroll */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 1; /* Ensure it's above base layer but below modals */
+    }
 
+    /* Mobile sidebar adjustment if needed */
+    @@media (min-width: 960px) {
+        .discover-absolute-wrapper {
+            left: 260px; /* Adjust based on Sidebar width if it pushes content */
+            /* If using MudBlazor MainLayout with Drawer Open, content usually shifts. 
+               Using 'position: absolute' inside the Main content div is safer than fixed relative to viewport 
+               if the sidebar pushes content. Let's try height: 100% of parent instead if possible. 
+               But 'fixed' guarantees no window scroll. We just need to respect the left margin. */
+             left: var(--mud-drawer-width-left);
+        }
+    }
+    
+    /* Better approach: Assume this is inside ResizeListener or MainLayout content div 
+       which has overflow-y: auto. We want to stop THAT scroll. */
+    
+    .discover-card-container {
+        width: 100%;
+        max-width: 340px;
+        position: relative;
+    }
+
+    .profile-card {
+        background: white;
+        border-radius: 24px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .card-top {
+        padding: 30px 20px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: white;
+    }
+
+    .action-row {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        padding: 0 20px 30px;
+    }
+
+    .btn-action {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    
+    .btn-action:hover:not(:disabled) {
+        transform: scale(1.1);
+    }
+    
+    .btn-pass { background: white; color: #ef4444; border: 1px solid #fee2e2; }
+    .btn-info { width: 44px; height: 44px; background: #f3f4f6; color: #6b7280; margin-top: 6px; }
+    .btn-like { background: #10b981; color: white; border: none; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+
+    .compatibility-float {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: #eef2ff;
+        color: #4f46e5;
+        font-weight: 700;
+        font-size: 0.8rem;
+        padding: 6px 12px;
+        border-radius: 20px;
+    }
+</style>
+
+<div class="discover-absolute-wrapper">
     @if (_loading)
     {
-        <div class="d-flex justify-center">
-            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-        </div>
+        <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
     }
     else if (_error != null)
     {
-        <MudAlert Severity="Severity.Error">@_error</MudAlert>
+        <MudAlert Severity="Severity.Error" Style="max-width: 400px;">@_error</MudAlert>
     }
     else if (!_profiles.Any())
     {
-        <MudText>No profiles available at the moment.</MudText>
+        <div class="text-center pa-4">
+            <MudIcon Icon="@Icons.Material.Filled.SentimentSatisfiedAlt" Size="Size.Large" Style="font-size: 4rem; color: #d1d5db;" />
+            <MudText Typo="Typo.h5" Class="mt-4 mb-2" Style="font-weight: 600; color: #374151;">Gata pe moment!</MudText>
+            <MudText Color="Color.Secondary" Class="mb-6">Nu mai sunt profiluri disponibile.</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="rounded-pill" Href="/my-matches">Vezi Match-uri</MudButton>
+        </div>
     }
-    else
+    else if (CurrentProfile is not null)
     {
-        <!-- Show one large profile card at a time (stacked style) -->
-        @if (CurrentProfile is not null)
-        {
-            <div class="d-flex justify-center">
-                <MudCard Elevation="6" Style="width: 680px;">
-                    <div style="position:relative; display:flex; justify-content:center; align-items:center; padding-top:24px; padding-bottom:24px; background:#f5f5f5;">
-                        @if (!string.IsNullOrEmpty(CurrentProfile.ProfilePicturePath))
-                        {
-                            <img src="@GetFullImageUrl(CurrentProfile.ProfilePicturePath)" alt="Profile image" style="width:220px;height:220px;object-fit:cover;display:block;border-radius:50%;" />
-                        }
-                        else
-                        {
-                            <MudAvatar Size="Size.Large" Style="width:220px;height:220px;font-size:2.5rem;">
-                                @GetInitials(CurrentProfile.FullName)
-                            </MudAvatar>
-                        }
+        <div class="discover-card-container">
+            <div class="profile-card">
+                <div class="compatibility-float">@Math.Round(CurrentProfile.CompatibilityScore)%</div>
+                
+                <div class="card-top">
+                    <!-- Circular Avatar -->
+                    @if (!string.IsNullOrEmpty(CurrentProfile.ProfilePicturePath))
+                    {
+                        <MudAvatar Style="width: 140px; height: 140px; border: 4px solid #f8fafc; box-shadow: 0 8px 20px rgba(0,0,0,0.1);">
+                            <MudImage Src="@GetFullImageUrl(CurrentProfile.ProfilePicturePath)" />
+                        </MudAvatar>
+                    }
+                    else
+                    {
+                        <MudAvatar Color="Color.Primary" Style="width: 140px; height: 140px; font-size: 3rem; border: 4px solid #f8fafc;">
+                            @GetInitials(CurrentProfile.FullName)
+                        </MudAvatar>
+                    }
 
-                        <div style="position:absolute;left:16px;bottom:16px;background:rgba(0,0,0,0.55);color:#fff;padding:8px 12px;border-radius:6px;">
-                            <div style="font-weight:600;">@CurrentProfile.FullName, @CurrentProfile.Age</div>
-                            <div style="font-size:0.9rem;opacity:0.9;">@CurrentProfile.University</div>
-                        </div>
-                        <div style="position:absolute;right:16px;top:16px;background:rgba(255,255,255,0.9);padding:6px 10px;border-radius:6px;">
-                            <div style="font-weight:700;">Compat: @Math.Round(CurrentProfile.CompatibilityScore)/100</div>
-                            <div style="font-size:0.75rem;color:#555;">@CurrentProfile.CompatibilityLevel</div>
-                        </div>
+                    <MudText Typo="Typo.h5" Class="mt-4 mb-1" Style="font-weight: 700; color: #1e293b;">@CurrentProfile.FullName, @CurrentProfile.Age</MudText>
+                    
+                    <div class="d-flex align-center gap-1 mb-4" style="color: #64748b;">
+                        <MudIcon Icon="@Icons.Material.Filled.School" Size="Size.Small" />
+                        <MudText Typo="Typo.body2">@CurrentProfile.University</MudText>
                     </div>
 
-                    <MudCardContent>
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">@CurrentProfile.Bio</MudText>
-                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2" Class="mt-4">
-                            <MudChip T="string" Icon="@Icons.Material.Filled.School" Color="Color.Info" Size="Size.Small">@CurrentProfile.University</MudChip>
-                            <MudChip T="string" Icon="@Icons.Material.Filled.Person" Color="Color.Secondary" Size="Size.Small">@CurrentProfile.Gender</MudChip>
-                            <MudChip T="string" Icon="@Icons.Material.Filled.LightMode" Color="Color.Primary" Size="Size.Small">@CurrentProfile.Lifestyle</MudChip>
-                        </MudStack>
-                    </MudCardContent>
+                    <div class="d-flex gap-2 flex-wrap justify-center mb-2">
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Surface">@CurrentProfile.Gender</MudChip>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Surface">@CurrentProfile.Lifestyle</MudChip>
+                    </div>
+                </div>
 
-                    <MudCardActions Class="d-flex justify-space-between">
-                        <MudButton Color="Color.Default" Variant="Variant.Outlined" OnClick="() => OnPass(CurrentProfile.UserId)">Pass</MudButton>
-
-                        <div>
-                            <MudButton Color="Color.Secondary" Variant="Variant.Text" OnClick="() => ShowDetails(CurrentProfile.UserId)">Detalii</MudButton>
-                            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => OnLike(CurrentProfile.UserId)" Class="ms-2">Like</MudButton>
-                        </div>
-                    </MudCardActions>
-                </MudCard>
+                <div class="action-row">
+                    <button class="btn-action btn-pass" @onclick="() => OnPass(CurrentProfile.UserId)" disabled="@_actionInProgress">
+                        <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Medium" />
+                    </button>
+                    
+                    <button class="btn-action btn-info" @onclick="() => ShowDetails(CurrentProfile.UserId)">
+                        <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
+                    </button>
+                    
+                    <button class="btn-action btn-like" @onclick="() => OnLike(CurrentProfile.UserId)" disabled="@_actionInProgress">
+                        <MudIcon Icon="@Icons.Material.Filled.Favorite" Size="Size.Medium" />
+                    </button>
+                </div>
             </div>
-        }
+            
+            <MudText Align="Align.Center" Typo="Typo.caption" Class="mt-4 d-block" Style="color: #94a3b8;">
+                Încă @(_profiles.Count - 1) profiluri
+            </MudText>
+        </div>
     }
-</MudContainer>
+</div>
 
 @code {
     private List<MatchProfileDto> _profiles = new();
     private bool _loading = true;
+    private bool _actionInProgress = false;
     private string? _error;
-
     private MatchProfileDto? CurrentProfile => _profiles.FirstOrDefault();
 
     protected override async Task OnInitializedAsync()
@@ -90,71 +191,60 @@
         try
         {
             var me = await ProfileService.GetCurrentAsync();
-            if (me == null)
-            {
-                Navigation.NavigateTo("/login");
-                return;
-            }
-
+            if (me == null) { Navigation.NavigateTo("/login"); return; }
             _profiles = await MatchingService.GetDiscoverProfilesAsync(me.Id);
         }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-        finally
-        {
-            _loading = false;
-        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _loading = false; }
     }
 
     private async Task OnLike(Guid targetId)
     {
-        var me = await ProfileService.GetCurrentAsync();
-        if (me == null) { Navigation.NavigateTo("/login"); return; }
-
-        var res = await MatchingService.LikeProfileAsync(me.Id, targetId);
-        if (res.IsMatch)
+        _actionInProgress = true;
+        try
         {
-            Navigation.NavigateTo($"/my-matches");
+            var me = await ProfileService.GetCurrentAsync();
+            if (me == null) { Navigation.NavigateTo("/login"); return; }
+            var res = await MatchingService.LikeProfileAsync(me.Id, targetId);
+            if (res.IsMatch)
+            {
+                Snackbar.Add("Match nou!", Severity.Success);
+                Navigation.NavigateTo($"/my-matches");
+            }
+            else
+            {
+                _profiles.RemoveAll(x => x.UserId == targetId);
+            }
         }
-        else
-        {
-            _profiles.RemoveAll(x => x.UserId == targetId);
-        }
+        finally { _actionInProgress = false; }
     }
 
     private async Task OnPass(Guid targetId)
     {
-        var me = await ProfileService.GetCurrentAsync();
-        if (me == null) { Navigation.NavigateTo("/login"); return; }
-
-        await MatchingService.PassProfileAsync(me.Id, targetId);
-        _profiles.RemoveAll(x => x.UserId == targetId);
+        _actionInProgress = true;
+        try
+        {
+            var me = await ProfileService.GetCurrentAsync();
+            if (me == null) { Navigation.NavigateTo("/login"); return; }
+            await MatchingService.PassProfileAsync(me.Id, targetId);
+            _profiles.RemoveAll(x => x.UserId == targetId);
+        }
+        finally { _actionInProgress = false; }
     }
 
-    private void ShowDetails(Guid targetId)
+    private void ShowDetails(Guid targetId) => Navigation.NavigateTo($"/profile/{targetId}");
+
+    private string GetFullImageUrl(string? path)
     {
-        Navigation.NavigateTo($"/profile/{targetId}");
+        if (string.IsNullOrEmpty(path)) return "";
+        if (path.StartsWith("http")) return path;
+        return $"{Http.BaseAddress?.ToString().TrimEnd('/') ?? "http://localhost:5111"}{path}";
     }
 
-    private string GetFullImageUrl(string? relativePath)
+    private string GetInitials(string? name)
     {
-        if (string.IsNullOrEmpty(relativePath))
-            return string.Empty;
-
-        if (relativePath.StartsWith("http"))
-            return relativePath;
-
-        var baseUrl = Http.BaseAddress?.ToString().TrimEnd('/') ?? "http://localhost:5111";
-        return $"{baseUrl}{relativePath}";
-    }
-
-    private string GetInitials(string? fullName)
-    {
-        if (string.IsNullOrWhiteSpace(fullName)) return "?";
-        var parts = fullName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 1) return parts[0].Substring(0, 1).ToUpperInvariant();
-        return (parts[0].Substring(0,1) + parts[^1].Substring(0,1)).ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length == 1 ? parts[0][0].ToString().ToUpper() : $"{parts[0][0]}{parts[^1][0]}".ToUpper();
     }
 }

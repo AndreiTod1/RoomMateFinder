@@ -1,0 +1,292 @@
+@page "/room/{Id:guid}"
+@using RoomMate_Finder_Frontend.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@inject IListingService ListingService
+@inject IConversationService ConversationService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IConfiguration Configuration
+
+<PageTitle>@(_listing?.Title ?? "Room Details") - RoomMate Finder</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-6">
+    @if (_isLoading)
+    {
+        <MudContainer Class="text-center py-8">
+            <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+            <MudText Typo="Typo.h6" Class="mt-4">Loading room details...</MudText>
+        </MudContainer>
+    }
+    else if (_listing == null)
+    {
+        <MudContainer Class="text-center py-8">
+            <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Error" />
+            <MudText Typo="Typo.h5" Class="mt-4 mb-2">Room not found</MudText>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="/listings">
+                Back to Listings
+            </MudButton>
+        </MudContainer>
+    }
+    else
+    {
+        <!-- Back Button -->
+        <MudButton Variant="Variant.Text" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.ArrowBack" 
+                   OnClick="@(() => Navigation.NavigateTo("/listings"))" Class="mb-4">
+            Back to Listings
+        </MudButton>
+
+        <MudGrid Spacing="4">
+            <!-- Image Gallery -->
+            <MudItem xs="12" md="7">
+                <MudPaper Elevation="2" Class="rounded-lg overflow-hidden">
+                    @if (_listing.ImagePaths != null && _listing.ImagePaths.Any())
+                    {
+                        <div style="position: relative;">
+                            <MudImage Src="@GetImageUrl(_selectedImageIndex)" 
+                                      Alt="@_listing.Title" 
+                                      ObjectFit="ObjectFit.Cover"
+                                      Style="width: 100%; height: 400px; object-fit: cover;" />
+                            
+                            @if (_listing.ImagePaths.Count > 1)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" 
+                                               Color="Color.Default" 
+                                               Style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.8);"
+                                               OnClick="PreviousImage" />
+                                <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" 
+                                               Color="Color.Default" 
+                                               Style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.8);"
+                                               OnClick="NextImage" />
+                            }
+                        </div>
+                        
+                        @if (_listing.ImagePaths.Count > 1)
+                        {
+                            <div class="d-flex gap-2 pa-3 overflow-x-auto">
+                                @for (int i = 0; i < _listing.ImagePaths.Count; i++)
+                                {
+                                    var index = i;
+                                    <MudImage Src="@GetImageUrl(index)" 
+                                              Alt="@($"Thumbnail {index + 1}")"
+                                              ObjectFit="ObjectFit.Cover"
+                                              Class="@($"rounded cursor-pointer {(index == _selectedImageIndex ? "mud-border-primary" : "")}")"
+                                              Style="@($"width: 80px; height: 60px; object-fit: cover; border: {(index == _selectedImageIndex ? "3px solid var(--mud-palette-primary)" : "1px solid #ddd")}; cursor: pointer;")"
+                                              @onclick="@(() => SelectImage(index))" />
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="d-flex align-center justify-center" style="height: 400px; background: #f5f5f5;">
+                            <MudStack AlignItems="AlignItems.Center">
+                                <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Large" Color="Color.Secondary" />
+                                <MudText Typo="Typo.body1" Color="Color.Secondary">No images available</MudText>
+                            </MudStack>
+                        </div>
+                    }
+                </MudPaper>
+            </MudItem>
+
+            <!-- Room Details -->
+            <MudItem xs="12" md="5">
+                <MudCard Elevation="2" Class="rounded-lg h-100">
+                    <MudCardContent Class="pa-5">
+                        <MudStack Spacing="3">
+                            <!-- Price -->
+                            <MudChip T="string" Color="Color.Primary" Size="Size.Large" Icon="@Icons.Material.Filled.Euro">
+                                @_listing.Price €/month
+                            </MudChip>
+
+                            <!-- Title -->
+                            <MudText Typo="Typo.h4" Class="fw-bold">@_listing.Title</MudText>
+
+                            <!-- Location -->
+                            <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIcon Icon="@Icons.Material.Filled.LocationOn" Color="Color.Primary" />
+                                <MudText Typo="Typo.h6">@_listing.City, @_listing.Area</MudText>
+                            </MudStack>
+
+                            <!-- Available From -->
+                            <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Color="Color.Secondary" />
+                                <MudText Typo="Typo.body1">
+                                    Available from @_listing.AvailableFrom.ToLongDateString()
+                                </MudText>
+                            </MudStack>
+
+                            <MudDivider Class="my-2" />
+
+                            <!-- Description -->
+                            <MudText Typo="Typo.subtitle1" Class="fw-bold">Description</MudText>
+                            <MudText Typo="Typo.body1" Style="white-space: pre-wrap;">@_listing.Description</MudText>
+
+                            <MudDivider Class="my-2" />
+
+                            <!-- Amenities -->
+                            @if (_listing.Amenities.Any())
+                            {
+                                <MudText Typo="Typo.subtitle1" Class="fw-bold">Amenities</MudText>
+                                <MudStack Row Wrap="Wrap.Wrap" Spacing="1">
+                                    @foreach (var amenity in _listing.Amenities)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" 
+                                                 Icon="@Icons.Material.Filled.Check" Color="Color.Success">
+                                            @amenity
+                                        </MudChip>
+                                    }
+                                </MudStack>
+                            }
+
+                            <MudDivider Class="my-2" />
+
+                            <!-- Owner Info -->
+                            <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                <MudAvatar Color="Color.Primary">
+                                    <MudIcon Icon="@Icons.Material.Filled.Person" />
+                                </MudAvatar>
+                                <div>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">Listed by</MudText>
+                                <MudText Typo="Typo.subtitle1" Class="fw-bold">@(_listing.OwnerFullName ?? "Room Owner")</MudText>
+                                </div>
+                            </MudStack>
+
+                            <!-- Contact Button -->
+                            <MudButton Variant="Variant.Filled" 
+                                       Color="Color.Primary" 
+                                       FullWidth="true" 
+                                       Size="Size.Large"
+                                       StartIcon="@Icons.Material.Filled.Email"
+                                       Class="mt-3"
+                                       Disabled="@_isContactingOwner"
+                                       OnClick="@ContactOwner">
+                                @if (_isContactingOwner)
+                                {
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                    <span>Starting conversation...</span>
+                                }
+                                else
+                                {
+                                    <span>Contact Owner</span>
+                                }
+                            </MudButton>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private ListingDto? _listing;
+    private bool _isLoading = true;
+    private int _selectedImageIndex = 0;
+    private string _apiBaseUrl = "";
+
+    private bool _isContactingOwner = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "http://localhost:5111";
+        await LoadListing();
+    }
+
+    private async Task LoadListing()
+    {
+        _isLoading = true;
+        try
+        {
+            var response = await ListingService.GetByIdAsync(Id);
+            _listing = response;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading room: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private string GetImageUrl(int index)
+    {
+        if (_listing?.ImagePaths == null || index >= _listing.ImagePaths.Count)
+            return "";
+        var path = _listing.ImagePaths[index];
+        return path.StartsWith("http") ? path : $"{_apiBaseUrl}{path}";
+    }
+
+    private void SelectImage(int index)
+    {
+        _selectedImageIndex = index;
+    }
+
+    private void NextImage()
+    {
+        if (_listing?.ImagePaths != null && _listing.ImagePaths.Any())
+        {
+            _selectedImageIndex = (_selectedImageIndex + 1) % _listing.ImagePaths.Count;
+        }
+    }
+
+    private void PreviousImage()
+    {
+        if (_listing?.ImagePaths != null && _listing.ImagePaths.Any())
+        {
+            _selectedImageIndex = (_selectedImageIndex - 1 + _listing.ImagePaths.Count) % _listing.ImagePaths.Count;
+        }
+    }
+
+    private async Task ContactOwner()
+    {
+        if (_listing == null) return;
+
+        // Check if user is authenticated
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var userIdClaim = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var currentUserId))
+        {
+            Snackbar.Add("Please log in to contact the owner", Severity.Warning);
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        // Check if trying to contact yourself
+        if (currentUserId == _listing.OwnerId)
+        {
+            Snackbar.Add("This is your own listing", Severity.Info);
+            return;
+        }
+
+        _isContactingOwner = true;
+        try
+        {
+            var conversation = await ConversationService.StartConversationAsync(_listing.OwnerId);
+            if (conversation != null)
+            {
+                Snackbar.Add($"Conversation started with {_listing.OwnerFullName ?? "the owner"}", Severity.Success);
+                Navigation.NavigateTo("/messages");
+            }
+            else
+            {
+                Snackbar.Add("Failed to start conversation", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isContactingOwner = false;
+        }
+    }
+}

@@ -8,6 +8,7 @@ public record MessageDto(
     Guid Id,
     Guid SenderId,
     string SenderName,
+    string? SenderRole,
     string Content,
     DateTime SentAt,
     bool IsRead
