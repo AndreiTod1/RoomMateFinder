@@ -13,6 +13,8 @@ public record ConversationDto(
     Guid Id,
     Guid OtherUserId,
     string OtherUserName,
+    string? OtherUserProfilePicture,
+    string? OtherUserRole,
     DateTime CreatedAt
 );
 
@@ -20,6 +22,7 @@ public record MessageDto(
     Guid Id,
     Guid SenderId,
     string SenderName,
+    string? SenderRole,
     string Content,
     DateTime SentAt,
     bool IsRead

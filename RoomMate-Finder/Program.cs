@@ -15,6 +15,7 @@ using RoomMate_Finder.Features.Reviews;
 using RoomMate_Finder.Features.Admins;
 using RoomMate_Finder.Infrastructure.Persistence;
 using RoomMate_Finder.Validators;
+using RoomMate_Finder.Hubs;
 using Microsoft.OpenApi.Models;
 
 LoadEnvironmentVariables();
@@ -133,6 +134,10 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
             { securityScheme, Array.Empty<string>() }
         });
     });
+    
+    // SignalR for real-time messaging
+    services.AddSignalR();
+    Console.WriteLine("✓ SignalR configured for real-time messaging");
 }
 
 static void ConfigureJwtAuthentication(IServiceCollection services)
@@ -299,7 +304,12 @@ static void ConfigureEndpoints(WebApplication app)
     app.MapConversationsEndpoints();
     app.MapReviewsEndpoints();
     app.MapAdminsEndpoints();
+    
+    // SignalR Hub endpoint
+    app.MapHub<ChatHub>("/hubs/chat");
+    
     Console.WriteLine("✓ Endpoints configured");
+    Console.WriteLine("✓ SignalR hub available at /hubs/chat");
 }
 
 static void ConfigureCompatibilityServices(IServiceCollection services)

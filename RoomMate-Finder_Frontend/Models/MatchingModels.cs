@@ -51,7 +51,8 @@ public record UserMatchDto(
     string Lifestyle,
     string Interests,
     DateTime MatchedAt,
-    bool IsActive
+    bool IsActive,
+    string? ProfilePicturePath = null
 );
 
 public record LikeResponseDto(bool Success, string Message, bool IsMatch = false, Guid? MatchId = null);

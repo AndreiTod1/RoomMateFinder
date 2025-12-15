@@ -12,5 +12,6 @@ public record GetUserMatchesResponse(
     string Lifestyle,
     string Interests,
     DateTime MatchedAt,
-    bool IsActive
+    bool IsActive,
+    string? ProfilePicturePath = null
 );

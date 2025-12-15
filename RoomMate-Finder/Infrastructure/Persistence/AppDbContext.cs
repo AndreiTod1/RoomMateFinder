@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<Conversation> Conversations { get; set; } = null!;
     public DbSet<Message> Messages { get; set; } = null!;
     public DbSet<RoomListing> RoomListings { get; set; } = null!;
+    public DbSet<RoomListingImage> RoomListingImages { get; set; } = null!;
     public DbSet<Review> Reviews { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -133,6 +134,18 @@ public class AppDbContext : DbContext
             entity.HasIndex(rl => rl.City);
             entity.HasIndex(rl => rl.IsActive);
             entity.HasIndex(rl => rl.CreatedAt);
+        });
+
+        modelBuilder.Entity<RoomListingImage>(entity =>
+        {
+            entity.ToTable("room_listing_images", "public");
+            
+            entity.HasOne(i => i.RoomListing)
+                .WithMany(rl => rl.Images)
+                .HasForeignKey(i => i.RoomListingId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            entity.HasIndex(i => i.RoomListingId);
         });
     }
 }

@@ -1,5 +1,6 @@
 @page "/create-listing"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
 @using RoomMate_Finder_Frontend.Services
 @using System.Security.Claims
 @attribute [Authorize(Roles = "Admin")]
@@ -48,6 +49,51 @@
                     <MudItem xs="12">
                         <MudTextField T="string" @bind-Value="_amenitiesText" Label="Amenities (comma separated)" Variant="Variant.Outlined" HelperText="e.g. WiFi, Balcony, Washing Machine" />
                     </MudItem>
+
+                    <!-- Image Upload Section -->
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Room Images (max 8)</MudText>
+                        <MudFileUpload T="IReadOnlyList<IBrowserFile>" 
+                                       FilesChanged="OnImagesSelected" 
+                                       Accept=".jpg,.jpeg,.png,.webp"
+                                       MaximumFileCount="8">
+                            <ActivatorContent>
+                                <MudButton Variant="Variant.Outlined" 
+                                           Color="Color.Primary" 
+                                           StartIcon="@Icons.Material.Filled.CloudUpload">
+                                    Select Images
+                                </MudButton>
+                            </ActivatorContent>
+                        </MudFileUpload>
+                        
+                        @if (!string.IsNullOrEmpty(_imageError))
+                        {
+                            <MudAlert Severity="Severity.Error" Class="mt-2">@_imageError</MudAlert>
+                        }
+                        
+                        @if (_selectedImages.Count > 0)
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">
+                                @_selectedImages.Count image(s) selected
+                            </MudText>
+                            
+                            <MudGrid Class="mt-3" Spacing="2">
+                                @foreach (var preview in _imagePreviews)
+                                {
+                                    <MudItem xs="6" sm="4" md="3">
+                                        <MudCard Style="position: relative;">
+                                            <MudCardMedia Image="@preview.DataUrl" Height="120" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Close" 
+                                                           Color="Color.Error" 
+                                                           Size="Size.Small"
+                                                           Style="position: absolute; top: 4px; right: 4px; background: rgba(255,255,255,0.8);"
+                                                           OnClick="@(() => RemoveImage(preview.Index))" />
+                                        </MudCard>
+                                    </MudItem>
+                                }
+                            </MudGrid>
+                        }
+                    </MudItem>
                 </MudGrid>
             </MudForm>
         </MudCardContent>
@@ -71,6 +117,9 @@
     private CreateListingModel _model = new();
     private DateTime? _availableFromDate = DateTime.Today.AddDays(7);
     private string _amenitiesText = "";
+    private List<IBrowserFile> _selectedImages = new();
+    private List<ImagePreview> _imagePreviews = new();
+    private string? _imageError;
 
     private class CreateListingModel
     {
@@ -79,6 +128,82 @@
         public string City { get; set; } = "";
         public string Area { get; set; } = "";
         public decimal Price { get; set; }
+    }
+
+    private class ImagePreview
+    {
+        public int Index { get; set; }
+        public string DataUrl { get; set; } = "";
+    }
+
+    private async Task OnImagesSelected(IReadOnlyList<IBrowserFile> files)
+    {
+        _imageError = null;
+        
+        if (_selectedImages.Count + files.Count > 8)
+        {
+            _imageError = "Maximum 8 images allowed. Please remove some images first.";
+            return;
+        }
+
+        foreach (var file in files)
+        {
+            // Validate file type
+            var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/webp" };
+            if (!allowedTypes.Contains(file.ContentType.ToLower()))
+            {
+                _imageError = $"Invalid file type: {file.Name}. Only JPG, PNG, and WebP are allowed.";
+                continue;
+            }
+
+            // Validate file size (5MB)
+            if (file.Size > 5 * 1024 * 1024)
+            {
+                _imageError = $"File too large: {file.Name}. Maximum size is 5MB.";
+                continue;
+            }
+
+            _selectedImages.Add(file);
+            
+            // Generate preview
+            try
+            {
+                using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                var base64 = Convert.ToBase64String(ms.ToArray());
+                var dataUrl = $"data:{file.ContentType};base64,{base64}";
+                
+                _imagePreviews.Add(new ImagePreview
+                {
+                    Index = _selectedImages.Count - 1,
+                    DataUrl = dataUrl
+                });
+            }
+            catch
+            {
+                // If preview fails, still keep the image in the list
+            }
+        }
+        
+        StateHasChanged();
+    }
+
+    private void RemoveImage(int index)
+    {
+        if (index >= 0 && index < _selectedImages.Count)
+        {
+            _selectedImages.RemoveAt(index);
+            _imagePreviews.RemoveAt(index);
+            
+            // Re-index remaining previews
+            for (int i = 0; i < _imagePreviews.Count; i++)
+            {
+                _imagePreviews[i].Index = i;
+            }
+        }
+        _imageError = null;
+        StateHasChanged();
     }
 
     private async Task SubmitListing()
@@ -108,7 +233,8 @@
                 _model.Price,
                 (_availableFromDate ?? DateTime.Today).ToUniversalTime(),
                 amenities,
-                ownerId
+                ownerId,
+                _selectedImages.Count > 0 ? _selectedImages : null
             );
 
             await ListingService.CreateAsync(request);

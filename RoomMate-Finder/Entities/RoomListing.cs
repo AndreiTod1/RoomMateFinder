@@ -32,7 +32,13 @@ public class RoomListing
     [MaxLength(500)] // Limitez pentru că e stocat ca string comma-separated
     public string Amenities { get; set; } = string.Empty; // comma-separated list
     
+    [MaxLength(2000)] // Max 8 images * ~200 chars per path
+    public string ImagePaths { get; set; } = string.Empty; // comma-separated list of image paths
+    
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     public bool IsActive { get; set; } = true;
+    
+    // Keep for backward compatibility, will be removed in future migration
+    public ICollection<RoomListingImage> Images { get; set; } = new List<RoomListingImage>();
 }

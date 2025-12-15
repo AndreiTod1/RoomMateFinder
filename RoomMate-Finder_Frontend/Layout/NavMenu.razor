@@ -76,10 +76,7 @@
                 <MudNavGroup Title="Caută Colegi" 
                              Icon="@Icons.Material.Filled.People" 
                              Expanded="true">
-                    <MudNavLink Href="/profiles" 
-                                Icon="@Icons.Material.Filled.ViewList">
-                        Toate Profilele
-                    </MudNavLink>
+
                     <MudNavLink OnClick="@(async () => await GoToMyProfile())" 
                                 Icon="@Icons.Material.Filled.AccountCircle">
                         Profilul Meu
@@ -205,7 +202,7 @@
             // ignore
         }
 
-        // fallback: go to profiles list
-        Navigation.NavigateTo("/profiles");
+        // fallback: go to home
+        Navigation.NavigateTo("/");
     }
 }

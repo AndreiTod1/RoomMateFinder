@@ -4,122 +4,198 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 @attribute [Authorize]
+@implements IAsyncDisposable
 @inject IConversationService ConversationService
+@inject IChatService ChatService
+@inject IAuthService AuthService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
+@inject IConfiguration Configuration
+@inject ISnackbar Snackbar
 
-<PageTitle>Chat</PageTitle>
+<PageTitle>Chat - RoomMate Finder</PageTitle>
 
-<div class="chat-container">
+<style>
+    /* Ensure no scroll on body by fixing the container */
+    .chat-fixed-layout {
+        position: fixed;
+        top: 64px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        flex-direction: column;
+        background-color: #f0f2f5;
+        z-index: 5;
+    }
+
+    /* Message bubble styling */
+    .msg-bubble {
+        padding: 10px 16px;
+        position: relative;
+        font-size: 0.95rem;
+        line-height: 1.4;
+        max-width: 70%;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    
+    .msg-mine {
+        background: linear-gradient(135deg, #0084ff 0%, #0078eb 100%);
+        color: white;
+        border-radius: 18px 18px 4px 18px;
+        align-self: flex-end;
+    }
+    
+    .msg-theirs {
+        background: white;
+        color: #1c1e21;
+        border-radius: 18px 18px 18px 4px;
+        align-self: flex-start;
+    }
+
+    .msg-time {
+        font-size: 0.7rem;
+        margin-top: 4px;
+        opacity: 0.7;
+        text-align: right;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 2px;
+    }
+</style>
+
+<div class="chat-fixed-layout" style="@(Navigation.Uri.Contains("conversations") ? "left: var(--mud-drawer-width-left, 0px);" : "")">
     @if (_isLoading)
     {
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary"></div>
-            <p class="mt-2">Se încarcă...</p>
+        <div class="d-flex align-center justify-center flex-grow-1">
+            <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
         </div>
     }
     else if (!string.IsNullOrEmpty(_errorMessage))
     {
-        <div class="alert alert-danger m-4">@_errorMessage</div>
-        <button class="btn btn-primary m-4" @onclick="GoBack">Înapoi</button>
+        <div class="d-flex flex-column align-center justify-center flex-grow-1 pa-4">
+            <MudAlert Severity="Severity.Error">@_errorMessage</MudAlert>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="GoBack" Class="mt-4">Înapoi</MudButton>
+        </div>
     }
     else
     {
-        <header class="chat-header">
-            <div class="header-content">
-                <button class="back-btn" @onclick="GoBack">
-                    <span class="back-icon">&#8592;</span>
-                </button>
-                <div class="avatar">
-                    @(_otherUserName.Length > 0 ? _otherUserName[0].ToString().ToUpper() : "?")
-                </div>
-                <h5 class="username">@_otherUserName</h5>
-            </div>
-        </header>
-
-        <div class="messages-area">
-            <div class="messages-list">
-                @if (_messages == null || !_messages.Any())
+        <!-- Header -->
+        <div class="d-flex align-center px-4 py-2 bg-white" style="border-bottom: 1px solid #e0e0e0; height: 60px; flex-shrink: 0;">
+            <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" OnClick="GoBack" Color="Color.Inherit" Class="mr-2" />
+            
+            <div class="d-flex align-center gap-3 flex-grow-1">
+                @if (!string.IsNullOrEmpty(_otherUserProfilePicture))
                 {
-                    <div class="empty-state">
-                        <i class="bi bi-chat-dots fs-1 mb-3"></i>
-                        <p>Niciun mesaj încă. Începe conversația!</p>
-                    </div>
+                    <MudAvatar Size="Size.Medium">
+                        <MudImage Src="@GetProfilePictureUrl(_otherUserProfilePicture)" />
+                    </MudAvatar>
                 }
                 else
                 {
-                    DateTime? lastDate = null;
-                    foreach (var msg in _messages.OrderBy(m => m.SentAt))
-                    {
-                        var currentDate = msg.SentAt.ToLocalTime().Date;
-                        if (lastDate == null || currentDate != lastDate.Value)
-                        {
-                            <div class="day-separator">
-                                <span>@currentDate.ToString("dd MMMM yyyy")</span>
-                            </div>
-                            lastDate = currentDate;
-                        }
-
-                        var isMine = msg.SenderId == _currentUserId;
-                        <div class="message @(isMine ? "sent" : "received")">
-                            <div class="message-bubble">
-                                <p class="message-text">@msg.Content</p>
-                                <div class="message-meta">
-                                    <span>@msg.SentAt.ToLocalTime().ToString("HH:mm")</span>
-                                    @if (isMine)
-                                    {
-                                        <i class="bi bi-check2@(msg.IsRead ? "-all text-info" : "")"></i>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    }
+                    <MudAvatar Color="Color.Primary" Size="Size.Medium">
+                        @GetInitials(_otherUserName)
+                    </MudAvatar>
                 }
+                
+                <div class="d-flex flex-column">
+                    <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">@_otherUserName</MudText>
+                    @if (!string.IsNullOrEmpty(_otherUserRole))
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Style="line-height: 1;">@_otherUserRole</MudText>
+                    }
+                </div>
             </div>
         </div>
 
-        <div class="input-area">
-            <div class="input-wrapper">
-                <input type="text" 
-                       class="message-input" 
-                       placeholder="Scrie un mesaj..." 
-                       @bind="_newMessage"
-                       @bind:event="oninput"
-                       @onkeydown="HandleKeyDown"
-                       disabled="@_isSending">
-                <button class="send-btn" 
-                        @onclick="SendMessage" 
-                        disabled="@(string.IsNullOrWhiteSpace(_newMessage) || _isSending)">
-                    @if (_isSending)
+        <!-- Messages Area -->
+        <div class="flex-grow-1 overflow-y-auto px-4 py-4 d-flex flex-column gap-2" style="background-color: #f0f2f5;">
+            @if (_messages == null || !_messages.Any())
+            {
+                <div class="d-flex flex-column align-center justify-center flex-grow-1" style="opacity: 0.5;">
+                    <MudIcon Icon="@Icons.Material.Filled.Upcoming" Size="Size.Large" />
+                    <MudText>Începe conversația!</MudText>
+                </div>
+            }
+            else
+            {
+                DateTime? lastDate = null;
+                @foreach (var msg in _messages.OrderBy(m => m.SentAt))
+                {
+                    var currentDate = msg.SentAt.ToLocalTime().Date;
+                    if (lastDate == null || currentDate != lastDate.Value)
                     {
-                        <span class="spinner-border spinner-border-sm"></span>
+                        <div class="d-flex justify-center my-3">
+                             <span style="font-size: 0.75rem; background: rgba(0,0,0,0.05); padding: 2px 8px; border-radius: 10px; color: #65676b;">
+                                 @currentDate.ToString("dd MMM")
+                             </span>
+                        </div>
+                        lastDate = currentDate;
                     }
-                    else
-                    {
-                        <i class="bi bi-send-fill"></i>
-                    }
-                </button>
-            </div>
+
+                    var isMine = msg.SenderId == _currentUserId;
+                    <div class="msg-bubble @(isMine ? "msg-mine" : "msg-theirs")">
+                        @msg.Content
+                        <div class="msg-time">
+                            @msg.SentAt.ToLocalTime().ToString("HH:mm")
+                            @if (isMine)
+                            {
+                                <MudIcon Icon="@(msg.IsRead ? Icons.Material.Filled.DoneAll : Icons.Material.Filled.Done)" 
+                                         Size="Size.Small" 
+                                         Style="@($"font-size: 0.9rem; {(msg.IsRead ? "color: #00e676;" : "color: rgba(255,255,255,0.7);")}")" />
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        <!-- Input Area -->
+        <div class="px-3 py-2 bg-white d-flex align-center gap-2" style="border-top: 1px solid #e0e0e0; flex-shrink: 0;">
+             <MudTextField @bind-Value="_newMessage" 
+                          Placeholder="Scrie un mesaj..." 
+                          Variant="Variant.Outlined" 
+                          Margin="Margin.Dense"
+                          Class="rounded-pill"
+                          Style="background-color: #f0f2f5; border: none;"
+                          Immediate="true"
+                          OnKeyDown="HandleKeyDown"
+                          Disabled="_isSending"/>
+            
+            <MudIconButton Icon="@Icons.Material.Filled.Send" 
+                           Color="Color.Primary" 
+                           Variant="Variant.Filled" 
+                           Size="Size.Medium"
+                           OnClick="SendMessage"
+                           Disabled="@(string.IsNullOrWhiteSpace(_newMessage) || _isSending)" 
+                           Class="rounded-circle" />
         </div>
     }
 </div>
 
 @code {
-    [Parameter]
-    public Guid ConversationId { get; set; }
-
+    [Parameter] public Guid ConversationId { get; set; }
     private List<MessageDto>? _messages;
     private string _newMessage = string.Empty;
     private bool _isLoading = true;
     private bool _isSending;
     private string? _errorMessage;
     private string _otherUserName = "Utilizator";
+    private string? _otherUserProfilePicture;
+    private string? _otherUserRole;
     private Guid _currentUserId;
+    private string _apiBaseUrl = "";
 
     protected override async Task OnInitializedAsync()
     {
+        _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "http://localhost:5111";
         await GetCurrentUserId();
+        // Load messages first to see if we can get basic info
         await LoadMessages();
+        // Then try to enrich with full conversation details
+        await LoadConversationDetails(); 
+        await ConnectToSignalR();
     }
 
     private async Task GetCurrentUserId()
@@ -129,8 +205,70 @@
         if (user.Identity?.IsAuthenticated == true)
         {
             var idClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (Guid.TryParse(idClaim, out var id))
-                _currentUserId = id;
+            if (Guid.TryParse(idClaim, out var id)) _currentUserId = id;
+        }
+    }
+
+    private async Task LoadConversationDetails()
+    {
+        try
+        {
+            var conversations = await ConversationService.GetConversationsAsync();
+            var currentConv = conversations.FirstOrDefault(c => c.Id == ConversationId);
+            if (currentConv != null)
+            {
+                _otherUserName = currentConv.OtherUserName;
+                _otherUserProfilePicture = currentConv.OtherUserProfilePicture;
+                _otherUserRole = currentConv.OtherUserRole;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex) 
+        {
+            Console.WriteLine($"Error fetching conversation details: {ex.Message}");
+        }
+    }
+
+    private async Task ConnectToSignalR()
+    {
+        try
+        {
+            var token = await AuthService.GetTokenAsync();
+            if(!string.IsNullOrEmpty(token))
+            {
+                await ChatService.ConnectAsync(token);
+                await ChatService.JoinConversationAsync(ConversationId);
+                ChatService.OnMessageReceived += HandleMessageReceived;
+                ChatService.OnMessagesRead += HandleMessagesRead;
+                
+                // Mark all messages as read now that we are connected
+                await ChatService.MarkAsReadAsync(ConversationId);
+            }
+        }
+        catch { }
+    }
+
+    private void HandleMessageReceived(ChatMessageDto message)
+    {
+        if (message.ConversationId == ConversationId)
+        {
+            _messages ??= new List<MessageDto>();
+            _messages.Add(new MessageDto(message.Id, message.SenderId, message.SenderName, message.SenderRole, message.Content, message.SentAt, message.IsRead));
+            if (message.SenderId != _currentUserId) _ = ChatService.MarkAsReadAsync(ConversationId);
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void HandleMessagesRead(Guid conversationId, Guid userId)
+    {
+        if (conversationId == ConversationId && _messages != null)
+        {
+            for(int i=0; i<_messages.Count; i++)
+            {
+                var m = _messages[i];
+                if (m.SenderId == _currentUserId && !m.IsRead) _messages[i] = m with { IsRead = true };
+            }
+            InvokeAsync(StateHasChanged);
         }
     }
 
@@ -141,58 +279,44 @@
             _isLoading = true;
             _messages = await ConversationService.GetMessagesAsync(ConversationId);
             
-            if (_messages?.Any() == true)
+            // Initial fallback from messages
+            if (string.IsNullOrEmpty(_otherUserName) || _otherUserName == "Utilizator")
             {
-                var otherMsg = _messages.FirstOrDefault(m => m.SenderId != _currentUserId);
-                if (otherMsg != null)
-                    _otherUserName = otherMsg.SenderName;
+                var other = _messages?.FirstOrDefault(m => m.SenderId != _currentUserId);
+                if(other != null) 
+                { 
+                    _otherUserName = other.SenderName; 
+                    _otherUserRole = other.SenderRole; 
+                }
             }
-
             await ConversationService.MarkMessagesAsReadAsync(ConversationId);
         }
-        catch (Exception ex)
-        {
-            _errorMessage = $"Eroare: {ex.Message}";
-        }
-        finally
-        {
-            _isLoading = false;
-        }
+        catch (Exception ex) { _errorMessage = ex.Message; }
+        finally { _isLoading = false; }
     }
 
     private async Task SendMessage()
     {
         if (string.IsNullOrWhiteSpace(_newMessage) || _isSending) return;
-
         try
         {
             _isSending = true;
-            var content = _newMessage;
+            var content = _newMessage.Trim();
             _newMessage = string.Empty;
-
-            var sent = await ConversationService.SendMessageAsync(ConversationId, content);
-            if (sent != null)
+            if (ChatService.IsConnected) await ChatService.SendMessageAsync(ConversationId, content);
+            else
             {
-                _messages ??= new List<MessageDto>();
-                _messages.Add(sent with { SenderId = _currentUserId, SenderName = "Tu", IsRead = false });
-                StateHasChanged();
+                var sent = await ConversationService.SendMessageAsync(ConversationId, content);
+                if (sent != null) { _messages ??= new List<MessageDto>(); _messages.Add(sent with { SenderId = _currentUserId, SenderName = "Tu", IsRead = false }); }
             }
         }
-        catch (Exception ex)
-        {
-            _errorMessage = $"Eroare: {ex.Message}";
-        }
-        finally
-        {
-            _isSending = false;
-        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _isSending = false; }
     }
 
-    private async Task HandleKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter" && !e.ShiftKey)
-            await SendMessage();
-    }
-
+    private async Task HandleKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter" && !e.ShiftKey) await SendMessage(); }
+    private string GetProfilePictureUrl(string? p) => string.IsNullOrEmpty(p) ? "" : (p.StartsWith("http") ? p : $"{_apiBaseUrl}{p}");
+    private string GetInitials(string n) => string.IsNullOrEmpty(n) ? "?" : (n.Contains(' ') ? $"{n.Split(' ')[0][0]}{n.Split(' ')[1][0]}" : n.Substring(0, Math.Min(2, n.Length))).ToUpper();
     private void GoBack() => Navigation.NavigateTo("/conversations");
+    public async ValueTask DisposeAsync() { ChatService.OnMessageReceived -= HandleMessageReceived; ChatService.OnMessagesRead -= HandleMessagesRead; await ChatService.LeaveConversationAsync(ConversationId); }
 }
