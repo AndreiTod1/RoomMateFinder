@@ -47,13 +47,13 @@
             @foreach (var conversation in _conversations.OrderByDescending(c => c.CreatedAt))
             {
                 <div class="conversation-item d-flex align-center pa-4" 
-                     style="border-bottom: 1px solid var(--mud-palette-divider); cursor: pointer; transition: background 0.2s;"
+                     style="border-bottom: 1px solid #e0e0e0; cursor: pointer; transition: background 0.2s;"
                      @onclick="@(() => NavigateToConversation(conversation.Id))">
                     
                     <!-- Profile Picture -->
                     @if (!string.IsNullOrEmpty(conversation.OtherUserProfilePicture))
                     {
-                        <MudAvatar Size="Size.Large" Class="mr-4" Style="border: 2px solid var(--mud-palette-primary-lighten);">
+                        <MudAvatar Size="Size.Large" Class="mr-4">
                             <MudImage Src="@GetProfilePictureUrl(conversation.OtherUserProfilePicture)" />
                         </MudAvatar>
                     }
@@ -85,7 +85,7 @@
                         </MudText>
                     </div>
                     
-                    <!-- Arrow -->
+                    <!-- Arrow with notification badge -->
                     <div class="d-flex align-center gap-2">
                         @if (NotificationService.HasUnreadMessages(conversation.Id))
                         {
@@ -99,9 +99,6 @@
                         <MudIcon Icon="@Icons.Material.Filled.ChevronRight" 
                                  Color="@(NotificationService.HasUnreadMessages(conversation.Id) ? Color.Primary : Color.Secondary)" />
                     </div>
-                    
-                    <!-- Arrow -->
-                    <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Secondary" />
                 </div>
             }
         </MudPaper>
@@ -114,14 +111,7 @@
 
 <style>
     .conversation-item:hover {
-        background-color: var(--mud-palette-action-default-hover);
-    }
-    }
-</MudContainer>
-
-<style>
-    .conversation-item:hover {
-        background-color: var(--mud-palette-action-default-hover);
+        background-color: rgba(0,0,0,0.04);
     }
 </style>
 
@@ -142,7 +132,6 @@
     {
         InvokeAsync(StateHasChanged);
     }
-
 
     private async Task LoadConversations()
     {
@@ -213,3 +202,4 @@
         NotificationService.OnNotificationsChanged -= HandleNotificationsChanged;
     }
 }
+
