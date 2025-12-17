@@ -5,6 +5,8 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components.Forms;
+using RoomMate_Finder_Frontend.Models;
+using System.Linq;
 
 namespace RoomMate_Finder_Frontend.Services;
 
@@ -183,4 +185,22 @@ public class ProfileService : IProfileService
         var text = await resp.Content.ReadAsStringAsync();
         throw new InvalidOperationException(string.IsNullOrWhiteSpace(text) ? "Update failed" : text);
     }
+
+    public async Task<IEnumerable<Review>> GetUserReviews(Guid userId)
+    {
+        try
+        {
+            var response = await _http.GetFromJsonAsync<GetUserReviewsResponse>($"/profiles/{userId}/reviews");
+            return response?.Reviews ?? Enumerable.Empty<Review>();
+        }
+        catch (Exception)
+        {
+            return Enumerable.Empty<Review>();
+        }
+    }
+}
+
+public class GetUserReviewsResponse
+{
+    public IEnumerable<Review> Reviews { get; set; } = Enumerable.Empty<Review>();
 }

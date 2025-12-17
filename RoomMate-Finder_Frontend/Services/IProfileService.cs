@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components.Forms;
+using RoomMate_Finder_Frontend.Models;
 
 namespace RoomMate_Finder_Frontend.Services
 {
@@ -15,6 +16,7 @@ namespace RoomMate_Finder_Frontend.Services
         Task<ProfileDto?> GetByIdAsync(Guid id);
         Task<ProfileDto?> GetCurrentAsync();
         Task<ProfileDto?> UpdateAsync(Guid id, UpdateProfileRequestDto update, IBrowserFile? profilePictureFile = null);
+        Task<IEnumerable<Review>> GetUserReviews(Guid userId);
     }
 
     public record ProfileDto(
