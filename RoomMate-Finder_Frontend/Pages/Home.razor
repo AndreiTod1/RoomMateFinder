@@ -36,8 +36,8 @@
         De ce să alegi RoomMate Finder?
     </MudText>
     
-    <MudGrid Spacing="4">
-        <MudItem xs="12" md="4">
+    <MudGrid Spacing="4" Justify="Justify.Center">
+        <MudItem xs="12" sm="6" md="3">
             <MudCard Class="h-100 pa-4 text-center">
                 <MudCardContent>
                     <MudIcon Icon="@Icons.Material.Filled.Psychology" 
@@ -48,14 +48,13 @@
                         Matching Inteligent
                     </MudText>
                     <MudText Typo="Typo.body1">
-                        Algoritmul nostru analizează compatibilitatea bazată pe lifestyle, 
-                        preferințe și personalitate pentru a-ți găsi colegul perfect.
+                        Algoritmul nostru analizează compatibilitatea pentru a-ți găsi colegul perfect.
                     </MudText>
                 </MudCardContent>
             </MudCard>
         </MudItem>
         
-        <MudItem xs="12" md="4">
+        <MudItem xs="12" sm="6" md="3">
             <MudCard Class="h-100 pa-4 text-center">
                 <MudCardContent>
                     <MudIcon Icon="@Icons.Material.Filled.Chat" 
@@ -66,17 +65,16 @@
                         Chat Securizat
                     </MudText>
                     <MudText Typo="Typo.body1">
-                        Comunică în siguranță cu potențialii colegi prin sistemul nostru 
-                        de mesagerie integrat și sigur.
+                        Comunică în siguranță cu potențialii colegi prin sistemul nostru de mesagerie.
                     </MudText>
                 </MudCardContent>
             </MudCard>
         </MudItem>
         
-        <MudItem xs="12" md="4">
+        <MudItem xs="12" sm="6" md="3">
             <MudCard Class="h-100 pa-4 text-center">
                 <MudCardContent>
-                    <MudIcon Icon="@Icons.Material.Filled.Verified" 
+                    <MudIcon Icon="@Icons.Material.Filled.VerifiedUser" 
                              Color="Color.Primary" 
                              Size="Size.Large" 
                              Class="mb-3" />
@@ -84,8 +82,24 @@
                         Profiluri Verificate
                     </MudText>
                     <MudText Typo="Typo.body1">
-                        Toți utilizatorii sunt verificați, iar sistemul de review-uri 
-                        te ajută să faci alegerea corectă.
+                        Sistemul de review-uri te ajută să faci alegerea corectă și sigură.
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Class="h-100 pa-4 text-center">
+                <MudCardContent>
+                    <MudIcon Icon="@Icons.Material.Filled.Apartment"
+                             Color="Color.Primary"
+                             Size="Size.Large"
+                             Class="mb-3" />
+                    <MudText Typo="Typo.h5" Class="mb-3 fw-bold">
+                        Anunțuri de Camere
+                    </MudText>
+                    <MudText Typo="Typo.body1">
+                        Găsește și publică anunțuri pentru camere și apartamente direct pe platformă.
                     </MudText>
                 </MudCardContent>
             </MudCard>
@@ -94,61 +108,45 @@
 </MudContainer>
 
 <!-- How it works Section -->
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-5">
-    <MudPaper Class="pa-6" Style="background: #f8f9fa;">
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-5">
+    <MudPaper Class="pa-6" Elevation="3" Style="background: #f8f9fa;">
         <MudText Typo="Typo.h3" Align="Align.Center" Class="mb-6 fw-bold">
             Cum funcționează?
         </MudText>
         
         <MudGrid Spacing="4" Justify="Justify.Center">
-            <MudItem xs="12" md="3">
+            <MudItem xs="12" md="4">
                 <MudStack AlignItems="AlignItems.Center" Class="text-center">
-                    <MudAvatar Color="Color.Primary" Size="Size.Large" Class="mb-3">
-                        <MudText Typo="Typo.h4">1</MudText>
+                    <MudAvatar Style="background-color: var(--mud-palette-primary); color: white;" Size="Size.Large" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Person" />
                     </MudAvatar>
-                    <MudText Typo="Typo.h6" Class="fw-bold mb-2">Creează-ți Profilul</MudText>
+                    <MudText Typo="Typo.h6" Class="fw-bold mb-2">1. Creează-ți Profilul</MudText>
                     <MudText Typo="Typo.body2">
-                        Completează profilul cu informații despre tine, 
-                        preferințele tale și ce cauți la un coleg.
+                        Adaugă detalii despre tine și preferințele tale pentru a-ți personaliza căutarea.
                     </MudText>
                 </MudStack>
             </MudItem>
             
-            <MudItem xs="12" md="3">
+            <MudItem xs="12" md="4">
                 <MudStack AlignItems="AlignItems.Center" Class="text-center">
-                    <MudAvatar Color="Color.Secondary" Size="Size.Large" Class="mb-3">
-                        <MudText Typo="Typo.h4">2</MudText>
+                    <MudAvatar Style="background-color: var(--mud-palette-secondary); color: white;" Size="Size.Large" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Search" />
                     </MudAvatar>
-                    <MudText Typo="Typo.h6" Class="fw-bold mb-2">Descoperă Match-uri</MudText>
+                    <MudText Typo="Typo.h6" Class="fw-bold mb-2">2. Găsește Colegi & Camere</MudText>
                     <MudText Typo="Typo.body2">
-                        Algoritmul nostru îți propune persoane compatibile 
-                        cu tine. Dă like sau pass pentru fiecare profil.
+                        Explorează profiluri compatibile și anunțuri cu camere disponibile.
                     </MudText>
                 </MudStack>
             </MudItem>
             
-            <MudItem xs="12" md="3">
+            <MudItem xs="12" md="4">
                 <MudStack AlignItems="AlignItems.Center" Class="text-center">
-                    <MudAvatar Color="Color.Tertiary" Size="Size.Large" Class="mb-3">
-                        <MudText Typo="Typo.h4">3</MudText>
+                    <MudAvatar Style="background-color: var(--mud-palette-tertiary); color: white;" Size="Size.Large" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.ConnectWithoutContact" />
                     </MudAvatar>
-                    <MudText Typo="Typo.h6" Class="fw-bold mb-2">Conectează-te</MudText>
+                    <MudText Typo="Typo.h6" Class="fw-bold mb-2">3. Conectează-te</MudText>
                     <MudText Typo="Typo.body2">
-                        Când există un match mutual, puteți începe 
-                        să vorbiți și să vă cunoașteți mai bine.
-                    </MudText>
-                </MudStack>
-            </MudItem>
-            
-            <MudItem xs="12" md="3">
-                <MudStack AlignItems="AlignItems.Center" Class="text-center">
-                    <MudAvatar Color="Color.Success" Size="Size.Large" Class="mb-3">
-                        <MudText Typo="Typo.h4">4</MudText>
-                    </MudAvatar>
-                    <MudText Typo="Typo.h6" Class="fw-bold mb-2">Găsește Camera</MudText>
-                    <MudText Typo="Typo.body2">
-                        Căutați împreună o cameră sau apartament 
-                        care să vă convină amândurora.
+                        Inițiază conversații sigure pentru a vă cunoaște mai bine înainte de a vă muta împreună.
                     </MudText>
                 </MudStack>
             </MudItem>
