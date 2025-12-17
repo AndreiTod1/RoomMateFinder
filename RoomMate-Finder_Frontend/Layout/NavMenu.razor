@@ -2,10 +2,12 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 @using RoomMate_Finder_Frontend.Services
+@implements IDisposable
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
 @inject IProfileService ProfileService
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject INotificationService NotificationService
 
 <MudAppBar Elevation="1" Dense="false" Color="Color.Primary">
     <MudIconButton Icon="@Icons.Material.Filled.Menu" 
@@ -102,7 +104,18 @@
                              Expanded="false">
                     <MudNavLink Href="/conversations" 
                                 Icon="@Icons.Material.Filled.Forum">
-                        Mesajele Mele
+                        <div class="d-flex align-center justify-space-between" style="width: 100%;">
+                            <span>Mesajele Mele</span>
+                            @if (NotificationService.UnreadConversationsCount > 0)
+                            {
+                                <MudChip T="string" 
+                                         Size="Size.Small" 
+                                         Color="Color.Error"
+                                         Style="min-width: 24px; height: 20px; font-size: 0.75rem;">
+                                    @NotificationService.UnreadConversationsCount
+                                </MudChip>
+                            }
+                        </div>
                     </MudNavLink>
                 </MudNavGroup>
                 
@@ -160,6 +173,17 @@
 @code {
     private bool _drawerOpen = true;
 
+    protected override async Task OnInitializedAsync()
+    {
+        await NotificationService.InitializeAsync();
+        NotificationService.OnNotificationsChanged += HandleNotificationsChanged;
+    }
+
+    private void HandleNotificationsChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
     private void DrawerToggle()
     {
         _drawerOpen = !_drawerOpen;
@@ -169,6 +193,11 @@
     {
         await AuthService.LogoutAsync();
         Navigation.NavigateTo("/");
+    }
+
+    public void Dispose()
+    {
+        NotificationService.OnNotificationsChanged -= HandleNotificationsChanged;
     }
 
     private async Task GoToMyProfile()

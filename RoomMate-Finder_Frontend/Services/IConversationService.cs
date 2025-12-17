@@ -1,4 +1,4 @@
-﻿namespace RoomMate_Finder_Frontend.Services;
+﻿﻿namespace RoomMate_Finder_Frontend.Services;
 
 public interface IConversationService
 {
@@ -7,6 +7,7 @@ public interface IConversationService
     Task<ConversationDto?> StartConversationAsync(Guid otherUserId);
     Task<MessageDto?> SendMessageAsync(Guid conversationId, string content);
     Task MarkMessagesAsReadAsync(Guid conversationId);
+    Task<UnreadConversationsResponse?> GetUnreadConversationsAsync();
 }
 
 public record ConversationDto(
@@ -26,5 +27,15 @@ public record MessageDto(
     string Content,
     DateTime SentAt,
     bool IsRead
+);
+
+public record UnreadConversationsResponse(
+    List<UnreadConversationDto> UnreadConversations,
+    int TotalUnreadMessages
+);
+
+public record UnreadConversationDto(
+    Guid ConversationId,
+    int UnreadCount
 );
 

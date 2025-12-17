@@ -165,12 +165,14 @@ public class ChatHub : Hub
     public async Task StartTyping(Guid conversationId)
     {
         var userId = GetUserId();
+        Console.WriteLine($"[ChatHub] StartTyping: user={userId}, conv={conversationId}");
         await Clients.OthersInGroup($"conversation_{conversationId}").SendAsync("UserTyping", conversationId, userId);
     }
 
     public async Task StopTyping(Guid conversationId)
     {
         var userId = GetUserId();
+        Console.WriteLine($"[ChatHub] StopTyping: user={userId}, conv={conversationId}");
         await Clients.OthersInGroup($"conversation_{conversationId}").SendAsync("UserStoppedTyping", conversationId, userId);
     }
 
