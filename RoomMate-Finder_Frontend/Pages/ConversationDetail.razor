@@ -113,6 +113,9 @@
 </style>
 
 <div class="chat-fixed-layout">
+</style>
+
+<div class="chat-fixed-layout" style="@(Navigation.Uri.Contains("conversations") ? "left: var(--mud-drawer-width-left, 0px);" : "")">
     @if (_isLoading)
     {
         <div class="d-flex align-center justify-center flex-grow-1">
@@ -156,12 +159,17 @@
                     {
                         <MudText Typo="Typo.caption" Color="Color.Secondary" Style="line-height: 1;">@_otherUserRole</MudText>
                     }
+                    @if (!string.IsNullOrEmpty(_otherUserRole))
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Style="line-height: 1;">@_otherUserRole</MudText>
+                    }
                 </div>
             </div>
         </div>
 
         <!-- Messages Area -->
         <div id="messages-container" class="flex-grow-1 overflow-y-auto px-4 py-4 d-flex flex-column gap-2" style="background-color: #f0f2f5;">
+        <div class="flex-grow-1 overflow-y-auto px-4 py-4 d-flex flex-column gap-2" style="background-color: #f0f2f5;">
             @if (_messages == null || !_messages.Any())
             {
                 <div class="d-flex flex-column align-center justify-center flex-grow-1" style="opacity: 0.5;">
@@ -213,6 +221,7 @@
                 }
             }
             <div id="messages-end"></div>
+            }
         </div>
 
         <!-- Input Area -->
@@ -370,7 +379,7 @@
         }
     }
 
-    private async Task LoadMessages()
+    private async Task LoadConversationDetails()
     {
         try
         {
@@ -396,10 +405,23 @@
             StateHasChanged();
             await Task.Delay(100);
             await ScrollToBottomAsync();
+            var conversations = await ConversationService.GetConversationsAsync();
+            var currentConv = conversations.FirstOrDefault(c => c.Id == ConversationId);
+            if (currentConv != null)
+            {
+                _otherUserName = currentConv.OtherUserName;
+                _otherUserProfilePicture = currentConv.OtherUserProfilePicture;
+                _otherUserRole = currentConv.OtherUserRole;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex) 
+        {
+            Console.WriteLine($"Error fetching conversation details: {ex.Message}");
         }
     }
 
-    private async Task SendMessage()
+    private async Task ConnectToSignalR()
     {
         if (string.IsNullOrWhiteSpace(_newMessage) || _isSending) return;
         try
@@ -495,4 +517,92 @@
         ChatService.OnUserStoppedTyping -= HandleUserStoppedTyping;
         await ChatService.LeaveConversationAsync(ConversationId); 
     }
+        try
+        {
+            var token = await AuthService.GetTokenAsync();
+            if(!string.IsNullOrEmpty(token))
+            {
+                await ChatService.ConnectAsync(token);
+                await ChatService.JoinConversationAsync(ConversationId);
+                ChatService.OnMessageReceived += HandleMessageReceived;
+                ChatService.OnMessagesRead += HandleMessagesRead;
+                
+                // Mark all messages as read now that we are connected
+                await ChatService.MarkAsReadAsync(ConversationId);
+            }
+        }
+        catch { }
+    }
+
+    private void HandleMessageReceived(ChatMessageDto message)
+    {
+        if (message.ConversationId == ConversationId)
+        {
+            _messages ??= new List<MessageDto>();
+            _messages.Add(new MessageDto(message.Id, message.SenderId, message.SenderName, message.SenderRole, message.Content, message.SentAt, message.IsRead));
+            if (message.SenderId != _currentUserId) _ = ChatService.MarkAsReadAsync(ConversationId);
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void HandleMessagesRead(Guid conversationId, Guid userId)
+    {
+        if (conversationId == ConversationId && _messages != null)
+        {
+            for(int i=0; i<_messages.Count; i++)
+            {
+                var m = _messages[i];
+                if (m.SenderId == _currentUserId && !m.IsRead) _messages[i] = m with { IsRead = true };
+            }
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task LoadMessages()
+    {
+        try
+        {
+            _isLoading = true;
+            _messages = await ConversationService.GetMessagesAsync(ConversationId);
+            
+            // Initial fallback from messages
+            if (string.IsNullOrEmpty(_otherUserName) || _otherUserName == "Utilizator")
+            {
+                var other = _messages?.FirstOrDefault(m => m.SenderId != _currentUserId);
+                if(other != null) 
+                { 
+                    _otherUserName = other.SenderName; 
+                    _otherUserRole = other.SenderRole; 
+                }
+            }
+            await ConversationService.MarkMessagesAsReadAsync(ConversationId);
+        }
+        catch (Exception ex) { _errorMessage = ex.Message; }
+        finally { _isLoading = false; }
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(_newMessage) || _isSending) return;
+        try
+        {
+            _isSending = true;
+            var content = _newMessage.Trim();
+            _newMessage = string.Empty;
+            if (ChatService.IsConnected) await ChatService.SendMessageAsync(ConversationId, content);
+            else
+            {
+                var sent = await ConversationService.SendMessageAsync(ConversationId, content);
+                if (sent != null) { _messages ??= new List<MessageDto>(); _messages.Add(sent with { SenderId = _currentUserId, SenderName = "Tu", IsRead = false }); }
+            }
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _isSending = false; }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter" && !e.ShiftKey) await SendMessage(); }
+    private string GetProfilePictureUrl(string? p) => string.IsNullOrEmpty(p) ? "" : (p.StartsWith("http") ? p : $"{_apiBaseUrl}{p}");
+    private string GetInitials(string n) => string.IsNullOrEmpty(n) ? "?" : (n.Contains(' ') ? $"{n.Split(' ')[0][0]}{n.Split(' ')[1][0]}" : n.Substring(0, Math.Min(2, n.Length))).ToUpper();
+    private void GoBack() => Navigation.NavigateTo("/conversations");
+    public async ValueTask DisposeAsync() { ChatService.OnMessageReceived -= HandleMessageReceived; ChatService.OnMessagesRead -= HandleMessagesRead; await ChatService.LeaveConversationAsync(ConversationId); }
 }

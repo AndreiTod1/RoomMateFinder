@@ -2,6 +2,7 @@
 @using RoomMate_Finder_Frontend.Services
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Components.Forms
+@using RoomMate_Finder_Frontend.Models
 @using RoomMate_Finder_Frontend.Shared
 @inject IProfileService ProfileService
 @inject NavigationManager Navigation
@@ -298,6 +299,53 @@ else
                         </MudCardContent>
                     </MudCard>
                 </MudItem>
+
+                <!-- Reviews section (new) -->
+                <MudItem xs="12">
+                    <MudCard Class="mt-4">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">
+                                    <MudIcon Icon="@Icons.Material.Filled.RateReview" Class="me-2" />
+                                    Recenzii primite
+                                </MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            @if (_reviews == null)
+                            {
+                                <MudProgressCircular Indeterminate="true" />
+                            }
+                            else if (!_reviews.Any())
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    Acest utilizator nu are încă recenzii.
+                                </MudText>
+                            }
+                            else
+                            {
+                                <MudList T="Review">
+                                    @foreach (var review in _reviews)
+                                    {
+                                        <MudListItem T="Review">
+                                            <MudStack Spacing="1">
+                                                <MudText Typo="Typo.subtitle2">@review.ReviewerFullName</MudText>
+                                                <MudRating SelectedValue="review.Rating" ReadOnly="true" MaxValue="5" Size="Size.Small" />
+                                                @if (!string.IsNullOrWhiteSpace(review.Comment))
+                                                {
+                                                    <MudText Typo="Typo.body2">@review.Comment</MudText>
+                                                }
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                    @review.CreatedAt.ToString("dd MMM yyyy, HH:mm")
+                                                </MudText>
+                                            </MudStack>
+                                        </MudListItem>
+                                    }
+                                </MudList>
+                            }
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
             </MudGrid>
         }
     </MudContainer>
@@ -327,6 +375,7 @@ else
     private string? _newProfilePicturePreview;
     private ProfilePictureUpload? _profilePictureUpload;
     private long _imageCacheBuster = DateTime.UtcNow.Ticks;
+    private IEnumerable<Review>? _reviews;
 
     public class EditModel
     {
@@ -371,6 +420,11 @@ else
                     Lifestyle = _profile.Lifestyle,
                     Interests = _profile.Interests
                 };
+            }
+
+            if (_profile != null)
+            {
+                _reviews = await ProfileService.GetUserReviews(_profile.Id);
             }
         }
         catch (UnauthorizedAccessException)

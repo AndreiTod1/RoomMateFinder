@@ -99,6 +99,9 @@
                         <MudIcon Icon="@Icons.Material.Filled.ChevronRight" 
                                  Color="@(NotificationService.HasUnreadMessages(conversation.Id) ? Color.Primary : Color.Secondary)" />
                     </div>
+                    
+                    <!-- Arrow -->
+                    <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Secondary" />
                 </div>
             }
         </MudPaper>
@@ -106,6 +109,13 @@
         <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-4 text-center">
             @_conversations.Count conversații
         </MudText>
+    }
+</MudContainer>
+
+<style>
+    .conversation-item:hover {
+        background-color: var(--mud-palette-action-default-hover);
+    }
     }
 </MudContainer>
 

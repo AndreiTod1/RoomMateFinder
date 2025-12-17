@@ -1,4 +1,4 @@
-﻿﻿@using RoomMate_Finder_Frontend.Services
+﻿@using RoomMate_Finder_Frontend.Services
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 @using RoomMate_Finder_Frontend.Services
@@ -125,6 +125,15 @@
                     <MudNavLink Href="/listings" 
                                 Icon="@Icons.Material.Filled.Search">
                         Căută Camere
+                    </MudNavLink>
+                </MudNavGroup>
+                
+                <MudNavGroup Title="Recenzii" 
+                             Icon="@Icons.Material.Filled.RateReview" 
+                             Expanded="false">
+                    <MudNavLink Href="/leave-review" 
+                                Icon="@Icons.Material.Filled.Create">
+                        Lasă o recenzie
                     </MudNavLink>
                 </MudNavGroup>
             </Authorized>
