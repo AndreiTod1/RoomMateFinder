@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+﻿﻿using System.Net.Http.Json;
 
 namespace RoomMate_Finder_Frontend.Services;
 
@@ -154,12 +154,35 @@ public class ConversationService : IConversationService
     {
         try
         {
-            var request = new MarkMessagesAsReadRequest(conversationId);
-            await _http.PutAsJsonAsync($"/conversations/{conversationId}/read", request);
+            await _http.PutAsync($"/conversations/{conversationId}/messages/mark-read", null);
         }
         catch (Exception)
         {
             // Silently fail
+        }
+    }
+
+    public async Task<UnreadConversationsResponse?> GetUnreadConversationsAsync()
+    {
+        try
+        {
+            var response = await _http.GetAsync("/conversations/unread");
+            
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                return null;
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<UnreadConversationsResponse>();
+            }
+
+            return null;
+        }
+        catch (Exception)
+        {
+            return null;
         }
     }
 
@@ -170,6 +193,5 @@ public class ConversationService : IConversationService
     private record StartConversationResponse(Guid ConversationId);
     private record SendMessageRequest(Guid ConversationId, string Content);
     private record SendMessageResponse(Guid MessageId);
-    private record MarkMessagesAsReadRequest(Guid ConversationId);
 }
 

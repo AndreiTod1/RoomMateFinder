@@ -8,10 +8,12 @@
 @inject IConversationService ConversationService
 @inject IChatService ChatService
 @inject IAuthService AuthService
+@inject INotificationService NotificationService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IConfiguration Configuration
 @inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Chat - RoomMate Finder</PageTitle>
 
@@ -63,9 +65,54 @@
         justify-content: flex-end;
         gap: 2px;
     }
+
+    /* Typing indicator animation */
+    .typing-indicator {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .typing-indicator span {
+        width: 8px;
+        height: 8px;
+        background-color: #90949c;
+        border-radius: 50%;
+        animation: typing 1.4s infinite ease-in-out both;
+    }
+    
+    .typing-indicator span:nth-child(1) {
+        animation-delay: 0s;
+    }
+    
+    .typing-indicator span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    
+    .typing-indicator span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    
+    @@keyframes typing {
+        0%, 80%, 100% {
+            transform: scale(0.6);
+            opacity: 0.5;
+        }
+        40% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    /* Responsive: on larger screens, account for drawer width */
+    @@media (min-width: 960px) {
+        .chat-fixed-layout {
+            left: 256px; /* MudDrawer default width */
+        }
+    }
 </style>
 
-<div class="chat-fixed-layout" style="@(Navigation.Uri.Contains("conversations") ? "left: var(--mud-drawer-width-left, 0px);" : "")">
+<div class="chat-fixed-layout">
     @if (_isLoading)
     {
         <div class="d-flex align-center justify-center flex-grow-1">
@@ -101,7 +148,11 @@
                 
                 <div class="d-flex flex-column">
                     <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">@_otherUserName</MudText>
-                    @if (!string.IsNullOrEmpty(_otherUserRole))
+                    @if (_otherUserIsTyping)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Success" Style="line-height: 1; font-style: italic;">scrie...</MudText>
+                    }
+                    else if (!string.IsNullOrEmpty(_otherUserRole))
                     {
                         <MudText Typo="Typo.caption" Color="Color.Secondary" Style="line-height: 1;">@_otherUserRole</MudText>
                     }
@@ -110,7 +161,7 @@
         </div>
 
         <!-- Messages Area -->
-        <div class="flex-grow-1 overflow-y-auto px-4 py-4 d-flex flex-column gap-2" style="background-color: #f0f2f5;">
+        <div id="messages-container" class="flex-grow-1 overflow-y-auto px-4 py-4 d-flex flex-column gap-2" style="background-color: #f0f2f5;">
             @if (_messages == null || !_messages.Any())
             {
                 <div class="d-flex flex-column align-center justify-center flex-grow-1" style="opacity: 0.5;">
@@ -148,7 +199,20 @@
                         </div>
                     </div>
                 }
+                
+                @* Typing indicator *@
+                @if (_otherUserIsTyping)
+                {
+                    <div class="msg-bubble msg-theirs" style="padding: 8px 16px;">
+                        <div class="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                }
             }
+            <div id="messages-end"></div>
         </div>
 
         <!-- Input Area -->
@@ -160,6 +224,7 @@
                           Class="rounded-pill"
                           Style="background-color: #f0f2f5; border: none;"
                           Immediate="true"
+                          TextChanged="OnTextChanged"
                           OnKeyDown="HandleKeyDown"
                           Disabled="_isSending"/>
             
@@ -186,11 +251,15 @@
     private string? _otherUserRole;
     private Guid _currentUserId;
     private string _apiBaseUrl = "";
+    private bool _otherUserIsTyping = false;
+    private System.Timers.Timer? _typingTimer;
 
     protected override async Task OnInitializedAsync()
     {
         _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "http://localhost:5111";
         await GetCurrentUserId();
+        // Mark this conversation as read in notifications
+        await NotificationService.MarkConversationAsReadAsync(ConversationId);
         // Load messages first to see if we can get basic info
         await LoadMessages();
         // Then try to enrich with full conversation details
@@ -240,12 +309,36 @@
                 await ChatService.JoinConversationAsync(ConversationId);
                 ChatService.OnMessageReceived += HandleMessageReceived;
                 ChatService.OnMessagesRead += HandleMessagesRead;
+                ChatService.OnUserTyping += HandleUserTyping;
+                ChatService.OnUserStoppedTyping += HandleUserStoppedTyping;
                 
                 // Mark all messages as read now that we are connected
                 await ChatService.MarkAsReadAsync(ConversationId);
             }
         }
         catch { }
+    }
+
+    private void HandleUserTyping(Guid conversationId, Guid userId)
+    {
+        Console.WriteLine($"[ConversationDetail] UserTyping received: conv={conversationId}, user={userId}, currentConv={ConversationId}, currentUser={_currentUserId}");
+        if (conversationId == ConversationId && userId != _currentUserId)
+        {
+            _otherUserIsTyping = true;
+            Console.WriteLine("[ConversationDetail] Setting _otherUserIsTyping = true");
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void HandleUserStoppedTyping(Guid conversationId, Guid userId)
+    {
+        Console.WriteLine($"[ConversationDetail] UserStoppedTyping received: conv={conversationId}, user={userId}");
+        if (conversationId == ConversationId && userId != _currentUserId)
+        {
+            _otherUserIsTyping = false;
+            Console.WriteLine("[ConversationDetail] Setting _otherUserIsTyping = false");
+            InvokeAsync(StateHasChanged);
+        }
     }
 
     private void HandleMessageReceived(ChatMessageDto message)
@@ -255,7 +348,12 @@
             _messages ??= new List<MessageDto>();
             _messages.Add(new MessageDto(message.Id, message.SenderId, message.SenderName, message.SenderRole, message.Content, message.SentAt, message.IsRead));
             if (message.SenderId != _currentUserId) _ = ChatService.MarkAsReadAsync(ConversationId);
-            InvokeAsync(StateHasChanged);
+            InvokeAsync(async () => 
+            {
+                StateHasChanged();
+                await Task.Delay(50); // Small delay for DOM update
+                await ScrollToBottomAsync();
+            });
         }
     }
 
@@ -292,7 +390,13 @@
             await ConversationService.MarkMessagesAsReadAsync(ConversationId);
         }
         catch (Exception ex) { _errorMessage = ex.Message; }
-        finally { _isLoading = false; }
+        finally 
+        { 
+            _isLoading = false;
+            StateHasChanged();
+            await Task.Delay(100);
+            await ScrollToBottomAsync();
+        }
     }
 
     private async Task SendMessage()
@@ -303,20 +407,92 @@
             _isSending = true;
             var content = _newMessage.Trim();
             _newMessage = string.Empty;
-            if (ChatService.IsConnected) await ChatService.SendMessageAsync(ConversationId, content);
+            if (ChatService.IsConnected) 
+            {
+                await ChatService.SendMessageAsync(ConversationId, content);
+            }
             else
             {
                 var sent = await ConversationService.SendMessageAsync(ConversationId, content);
-                if (sent != null) { _messages ??= new List<MessageDto>(); _messages.Add(sent with { SenderId = _currentUserId, SenderName = "Tu", IsRead = false }); }
+                if (sent != null) 
+                { 
+                    _messages ??= new List<MessageDto>(); 
+                    _messages.Add(sent with { SenderId = _currentUserId, SenderName = "Tu", IsRead = false });
+                    StateHasChanged();
+                    await Task.Delay(50);
+                    await ScrollToBottomAsync();
+                }
             }
         }
         catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
         finally { _isSending = false; }
     }
 
-    private async Task HandleKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter" && !e.ShiftKey) await SendMessage(); }
+    private async Task HandleKeyDown(KeyboardEventArgs e) 
+    { 
+        if (e.Key == "Enter" && !e.ShiftKey) 
+        {
+            await StopTypingIndicator();
+            await SendMessage(); 
+        }
+    }
+
+    private async Task OnTextChanged(string text)
+    {
+        _newMessage = text;
+        if (!string.IsNullOrEmpty(text))
+        {
+            await StartTypingIndicator();
+        }
+    }
+    
+    private async Task StartTypingIndicator()
+    {
+        if (ChatService.IsConnected)
+        {
+            Console.WriteLine("[ConversationDetail] Sending StartTyping...");
+            await ChatService.StartTypingAsync(ConversationId);
+            
+            // Reset timer
+            _typingTimer?.Stop();
+            _typingTimer?.Dispose();
+            _typingTimer = new System.Timers.Timer(2000); // 2 secunde
+            _typingTimer.Elapsed += async (s, e) => await StopTypingIndicator();
+            _typingTimer.AutoReset = false;
+            _typingTimer.Start();
+        }
+    }
+    
+    private async Task StopTypingIndicator()
+    {
+        _typingTimer?.Stop();
+        if (ChatService.IsConnected)
+        {
+            Console.WriteLine("[ConversationDetail] Sending StopTyping...");
+            await ChatService.StopTypingAsync(ConversationId);
+        }
+    }
+
+    private async Task ScrollToBottomAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("eval", "document.getElementById('messages-end')?.scrollIntoView({ behavior: 'smooth' })");
+        }
+        catch { }
+    }
+
     private string GetProfilePictureUrl(string? p) => string.IsNullOrEmpty(p) ? "" : (p.StartsWith("http") ? p : $"{_apiBaseUrl}{p}");
     private string GetInitials(string n) => string.IsNullOrEmpty(n) ? "?" : (n.Contains(' ') ? $"{n.Split(' ')[0][0]}{n.Split(' ')[1][0]}" : n.Substring(0, Math.Min(2, n.Length))).ToUpper();
     private void GoBack() => Navigation.NavigateTo("/conversations");
-    public async ValueTask DisposeAsync() { ChatService.OnMessageReceived -= HandleMessageReceived; ChatService.OnMessagesRead -= HandleMessagesRead; await ChatService.LeaveConversationAsync(ConversationId); }
+    public async ValueTask DisposeAsync() 
+    { 
+        _typingTimer?.Stop();
+        _typingTimer?.Dispose();
+        ChatService.OnMessageReceived -= HandleMessageReceived; 
+        ChatService.OnMessagesRead -= HandleMessagesRead; 
+        ChatService.OnUserTyping -= HandleUserTyping;
+        ChatService.OnUserStoppedTyping -= HandleUserStoppedTyping;
+        await ChatService.LeaveConversationAsync(ConversationId); 
+    }
 }

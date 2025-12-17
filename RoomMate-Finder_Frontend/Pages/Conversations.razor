@@ -3,7 +3,9 @@
 @using Microsoft.AspNetCore.Authorization
 @using RoomMate_Finder_Frontend.Services
 @attribute [Authorize]
+@implements IDisposable
 @inject IConversationService ConversationService
+@inject INotificationService NotificationService
 @inject NavigationManager Navigation
 @inject IConfiguration Configuration
 
@@ -84,7 +86,19 @@
                     </div>
                     
                     <!-- Arrow -->
-                    <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Secondary" />
+                    <div class="d-flex align-center gap-2">
+                        @if (NotificationService.HasUnreadMessages(conversation.Id))
+                        {
+                            <MudChip T="string" 
+                                     Size="Size.Small" 
+                                     Color="Color.Error"
+                                     Style="font-size: 0.7rem; height: 22px; font-weight: 600;">
+                                NOU
+                            </MudChip>
+                        }
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" 
+                                 Color="@(NotificationService.HasUnreadMessages(conversation.Id) ? Color.Primary : Color.Secondary)" />
+                    </div>
                 </div>
             }
         </MudPaper>
@@ -110,8 +124,15 @@
     protected override async Task OnInitializedAsync()
     {
         _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "http://localhost:5111";
+        NotificationService.OnNotificationsChanged += HandleNotificationsChanged;
         await LoadConversations();
     }
+
+    private void HandleNotificationsChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
 
     private async Task LoadConversations()
     {
@@ -136,8 +157,9 @@
         }
     }
     
-    private void NavigateToConversation(Guid conversationId)
+    private async Task NavigateToConversation(Guid conversationId)
     {
+        await NotificationService.MarkConversationAsReadAsync(conversationId);
         Navigation.NavigateTo($"/conversations/{conversationId}");
     }
     
@@ -174,5 +196,10 @@
             return $"Acum {(int)(timeSpan.TotalDays / 30)} luni";
         
         return dateTime.ToLocalTime().ToString("dd MMM yyyy");
+    }
+
+    public void Dispose()
+    {
+        NotificationService.OnNotificationsChanged -= HandleNotificationsChanged;
     }
 }

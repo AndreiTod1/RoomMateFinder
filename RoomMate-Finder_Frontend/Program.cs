@@ -41,5 +41,6 @@ builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<IListingService, ListingService>();
 builder.Services.AddScoped<IMatchingService, MatchingService>();
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 await builder.Build().RunAsync();

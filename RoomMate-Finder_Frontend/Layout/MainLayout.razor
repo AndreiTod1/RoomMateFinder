@@ -1,4 +1,14 @@
 ﻿@inherits LayoutComponentBase
+@using RoomMate_Finder_Frontend.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@implements IDisposable
+@inject IChatService ChatService
+@inject IAuthService AuthService
+@inject IConversationService ConversationService
+@inject INotificationService NotificationService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
 
 <MudThemeProvider />
 <MudPopoverProvider />
@@ -13,3 +23,115 @@
         </MudContainer>
     </MudMainContent>
 </MudLayout>
+
+@code {
+    private bool _isConnected = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await NotificationService.InitializeAsync();
+        AuthStateProvider.AuthenticationStateChanged += OnAuthStateChanged;
+        
+        // Try to connect and sync on startup
+        await TryConnectAndSync();
+    }
+
+    private async void OnAuthStateChanged(Task<AuthenticationState> task)
+    {
+        var authState = await task;
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            await TryConnectAndSync();
+        }
+        else
+        {
+            // User logged out
+            _isConnected = false;
+            await NotificationService.ClearAllAsync();
+        }
+    }
+
+    private async Task TryConnectAndSync()
+    {
+        try
+        {
+            var token = await AuthService.GetTokenAsync();
+            if (string.IsNullOrEmpty(token)) return;
+
+            // Sync unread messages from server (for when user was offline)
+            await SyncUnreadFromServer();
+
+            // Connect to SignalR for real-time notifications
+            if (!_isConnected && !ChatService.IsConnected)
+            {
+                await ChatService.ConnectAsync(token);
+                ChatService.OnNewMessageNotification += HandleNewMessageNotification;
+                _isConnected = true;
+                Console.WriteLine("[MainLayout] SignalR connected globally");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MainLayout] Error: {ex.Message}");
+        }
+    }
+
+    private async Task SyncUnreadFromServer()
+    {
+        try
+        {
+            var unread = await ConversationService.GetUnreadConversationsAsync();
+            if (unread != null && unread.UnreadConversations.Count > 0)
+            {
+                var ids = unread.UnreadConversations.Select(x => x.ConversationId);
+                await NotificationService.SyncFromServerAsync(ids);
+                Console.WriteLine($"[MainLayout] Synced {unread.TotalUnreadMessages} unread messages from server");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MainLayout] Error syncing from server: {ex.Message}");
+        }
+    }
+
+    private void HandleNewMessageNotification(Guid conversationId, string senderName)
+    {
+        // Check if user is already viewing this conversation
+        var currentUri = Navigation.Uri;
+        var isOnThisConversation = currentUri.Contains($"/conversations/{conversationId}");
+        
+        if (isOnThisConversation)
+        {
+            Console.WriteLine($"[MainLayout] User is already on conversation {conversationId}, skipping notification");
+            return;
+        }
+
+        Console.WriteLine($"[MainLayout] New message from {senderName}");
+        _ = NotificationService.AddUnreadConversationAsync(conversationId);
+        
+        InvokeAsync(() =>
+        {
+            Snackbar.Add($"📩 Mesaj nou de la {senderName}", Severity.Info, config =>
+            {
+                config.Icon = Icons.Material.Filled.MarkEmailUnread;
+                config.IconColor = Color.Primary;
+                config.Action = "DESCHIDE";
+                config.ActionColor = Color.Primary;
+                config.ActionVariant = Variant.Filled;
+                config.VisibleStateDuration = 8000;
+                config.ShowCloseIcon = true;
+                config.OnClick = _ =>
+                {
+                    Navigation.NavigateTo($"/conversations/{conversationId}");
+                    return Task.CompletedTask;
+                };
+            });
+        });
+    }
+
+    public void Dispose()
+    {
+        AuthStateProvider.AuthenticationStateChanged -= OnAuthStateChanged;
+        ChatService.OnNewMessageNotification -= HandleNewMessageNotification;
+    }
+}

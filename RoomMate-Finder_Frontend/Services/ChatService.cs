@@ -85,11 +85,13 @@ public class ChatService : IChatService
 
         _hubConnection.On<Guid, Guid>("UserTyping", (conversationId, userId) =>
         {
+            Console.WriteLine($"[ChatService] Received UserTyping: conv={conversationId}, user={userId}");
             OnUserTyping?.Invoke(conversationId, userId);
         });
 
         _hubConnection.On<Guid, Guid>("UserStoppedTyping", (conversationId, userId) =>
         {
+            Console.WriteLine($"[ChatService] Received UserStoppedTyping: conv={conversationId}, user={userId}");
             OnUserStoppedTyping?.Invoke(conversationId, userId);
         });
 
