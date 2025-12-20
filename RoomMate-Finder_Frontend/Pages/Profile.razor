@@ -32,12 +32,6 @@ else
     <MudContainer MaxWidth="MaxWidth.Large" Class="py-4">
         <!-- Header with Back Button -->
         <MudStack Row AlignItems="AlignItems.Center" Class="mb-6">
-            <MudButton Variant="Variant.Text" 
-                       StartIcon="@Icons.Material.Filled.ArrowBack" 
-                       OnClick="@(() => Navigation.NavigateTo("/profiles"))"
-                       Color="Color.Primary">
-                Înapoi la Profile
-            </MudButton>
             <MudSpacer />
             @if (!_isEditing && _isCurrentUserProfile)
             {

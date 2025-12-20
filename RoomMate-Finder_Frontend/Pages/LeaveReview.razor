@@ -4,6 +4,7 @@
 @inject IReviewService ReviewService
 @inject IProfileService ProfileService
 @inject ISnackbar Snackbar
+@inject IConfiguration Configuration
 
 <AuthorizeView>
     <Authorized>
@@ -30,10 +31,26 @@
                     <MudItem xs="12" sm="6" md="4" @key="reviewableMatch.Match.UserId">
                         <MudCard Elevation="3" Style="height: 100%; display: flex; flex-direction: column;">
                             <MudCardHeader Style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px;">
-                                <CardHeaderContent>
-                                    <MudText Typo="Typo.h5" Style="font-weight: 600; margin-bottom: 4px;">@reviewableMatch.Match.FullName</MudText>
-                                    <MudText Typo="Typo.body2" Style="opacity: 0.9;">Lasă o recenzie</MudText>
-                                </CardHeaderContent>
+                                <div style="display:flex; align-items:center; width:100%;">
+                                    <div style="display:flex; flex-direction:column; justify-content:center;">
+                                        <MudText Typo="Typo.h5" Style="font-weight: 600; margin-bottom: 4px;">@reviewableMatch.Match.FullName</MudText>
+                                        <MudText Typo="Typo.body2" Style="opacity: 0.9;">Lasă o recenzie</MudText>
+                                    </div>
+                                    <div style="margin-left:auto; display:flex; align-items:center; justify-content:center;">
+                                        @if (!string.IsNullOrEmpty(reviewableMatch.Match.ProfilePicturePath))
+                                        {
+                                            <MudAvatar Size="Size.Large" Style="border: 2px solid white;">
+                                                <MudImage Src="@GetProfilePictureUrl(reviewableMatch.Match.ProfilePicturePath)" Alt="@reviewableMatch.Match.FullName" />
+                                            </MudAvatar>
+                                        }
+                                        else
+                                        {
+                                            <MudAvatar Size="Size.Large" Color="Color.Secondary" Style="border: 2px solid white;">
+                                                @reviewableMatch.Match.FullName.FirstOrDefault()
+                                            </MudAvatar>
+                                        }
+                                    </div>
+                                </div>
                             </MudCardHeader>
                             <MudCardContent Style="flex-grow: 1; padding: 24px;">
                                 <MudStack Spacing="3">
@@ -91,9 +108,12 @@
     }
 
     private List<ReviewableMatch> reviewableMatches = new();
+    private string _apiBaseUrl = "";
 
     protected override async Task OnInitializedAsync()
     {
+        _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "http://localhost:5111";
+        
         var me = await ProfileService.GetCurrentAsync();
         if (me is null)
         {
@@ -103,6 +123,12 @@
 
         var matches = await ReviewService.GetMatchesForReview(me.Id);
         reviewableMatches = matches.Select(m => new ReviewableMatch(m)).ToList();
+    }
+
+    private string GetProfilePictureUrl(string? path)
+    {
+        if (string.IsNullOrEmpty(path)) return "";
+        return path.StartsWith("http") ? path : $"{_apiBaseUrl}{path}";
     }
 
     private async Task SubmitReview(ReviewableMatch reviewableMatch)

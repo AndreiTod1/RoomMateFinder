@@ -1,0 +1,129 @@
+@page "/contact"
+@using RoomMate_Finder_Frontend.Services
+@inject IProfileService ProfileService
+@inject ISnackbar Snackbar
+@inject HttpClient Http
+
+<PageTitle>Contact</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="py-6">
+    <MudText Typo="Typo.h4" Class="mb-1 fw-bold">Contact</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+        Alege un administrator din lista pentru a ne contacta prin email.
+    </MudText>
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-4 d-flex justify-center" Elevation="0">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        </MudPaper>
+    }
+    else if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <MudPaper Class="pa-4" Elevation="0">
+            <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Dense="true" Class="mb-2">
+                @_errorMessage
+            </MudAlert>
+            <MudButton Color="Color.Primary" Variant="Variant.Outlined" OnClick="ReloadAdmins" StartIcon="@Icons.Material.Filled.Refresh">
+                Reincarca
+            </MudButton>
+        </MudPaper>
+    }
+    else if (_admins.Count == 0)
+    {
+        <MudPaper Class="pa-4 d-flex flex-column align-center" Elevation="0">
+            <MudIcon Icon="@Icons.Material.Filled.SupportAgent" Size="Size.Large" Color="Color.Secondary" Class="mb-2" />
+            <MudText Typo="Typo.body1" Color="Color.Secondary">
+                Momentan nu exista administratori disponibili.
+            </MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-4" Elevation="0">
+            <MudStack Row="false" Spacing="2">
+                @foreach (var admin in _admins)
+                {
+                    <MudPaper Class="pa-3 d-flex align-center mb-2" Outlined="true">
+                        <MudAvatar Size="Size.Medium" Color="Color.Warning" Variant="Variant.Outlined" Class="mr-3">
+                            @if (!string.IsNullOrEmpty(admin.ProfilePicturePath))
+                            {
+                                <MudImage Src="@GetFullImageUrl(admin.ProfilePicturePath)" ObjectFit="ObjectFit.Cover" />
+                            }
+                            else
+                            {
+                                @(admin.FullName.Length > 0 ? admin.FullName[0].ToString().ToUpper() : "?")
+                            }
+                        </MudAvatar>
+
+                        <div style="flex-grow:1;">
+                            <div class="d-flex align-center gap-2 flex-wrap">
+                                <MudText Typo="Typo.subtitle2" Class="fw-bold">@admin.FullName</MudText>
+                                <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text" Style="font-size: 0.7rem; height: 20px;">
+                                    ADMIN
+                                </MudChip>
+                            </div>
+
+                            <MudLink Href="@($"mailto:{admin.Email}")" Typo="Typo.body2" Class="d-block">
+                                @admin.Email
+                            </MudLink>
+
+                            @if (!string.IsNullOrWhiteSpace(admin.University))
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@admin.University</MudText>
+                            }
+                        </div>
+
+                        <MudButton Href="@($"mailto:{admin.Email}")" Color="Color.Primary" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Email">
+                            Trimite email
+                        </MudButton>
+                    </MudPaper>
+                }
+            </MudStack>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    private List<ProfileDto> _admins = new();
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAdminsAsync();
+    }
+
+    private async Task LoadAdminsAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        try
+        {
+            var admins = await ProfileService.GetAdminsAsync();
+            _admins = admins.Where(a => a.Role == "Admin").ToList();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"A aparut o eroare la reincarcarea administratorilor: {ex.Message}";
+            Snackbar.Add(_errorMessage, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task ReloadAdmins()
+    {
+        await LoadAdminsAsync();
+    }
+
+    private string GetFullImageUrl(string? relativePath)
+    {
+        if (string.IsNullOrEmpty(relativePath)) return string.Empty;
+        if (relativePath.StartsWith("http")) return relativePath;
+        var baseUrl = Http.BaseAddress?.ToString().TrimEnd('/') ?? "http://localhost:5111";
+        return $"{baseUrl}{relativePath}";
+    }
+}
