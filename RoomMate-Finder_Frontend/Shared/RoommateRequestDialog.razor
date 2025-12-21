@@ -1,0 +1,33 @@
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.body1" Class="mb-4">
+            Trimite o cerere de colegiat către <strong>@OtherUserName</strong>. 
+            Cererea va fi procesată de un administrator.
+        </MudText>
+        <MudTextField @bind-Value="_message" 
+                      Label="Mesaj (opțional)" 
+                      Variant="Variant.Outlined"
+                      Lines="3"
+                      Placeholder="Adaugă un mesaj pentru cererea ta..."
+                      Class="mt-2" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Color="Color.Default">Anulează</MudButton>
+        <MudButton OnClick="Submit" Color="Color.Primary" Variant="Variant.Filled">
+            <MudIcon Icon="@Icons.Material.Filled.Send" Class="mr-2" />
+            Trimite cererea
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    
+    [Parameter] public string OtherUserName { get; set; } = "";
+    
+    private string? _message;
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(_message));
+    private void Cancel() => MudDialog.Cancel();
+}
+

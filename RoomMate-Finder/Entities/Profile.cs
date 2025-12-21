@@ -23,4 +23,12 @@ public class Profile
 
     public ICollection<Match> MatchesInitiated { get; set; } = new List<Match>();
     public ICollection<Match> MatchesReceived { get; set; } = new List<Match>();
+
+    // Roommate requests
+    public ICollection<RoommateRequest> SentRoommateRequests { get; set; } = new List<RoommateRequest>();
+    public ICollection<RoommateRequest> ReceivedRoommateRequests { get; set; } = new List<RoommateRequest>();
+
+    // Roommate relationships
+    public ICollection<RoommateRelationship> RoommateRelationshipsAsUser1 { get; set; } = new List<RoommateRelationship>();
+    public ICollection<RoommateRelationship> RoommateRelationshipsAsUser2 { get; set; } = new List<RoommateRelationship>();
 }

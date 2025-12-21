@@ -291,6 +291,82 @@ namespace RoomMate_Finder.Migrations
                     b.ToTable("room_listing_images", "public");
                 });
 
+            modelBuilder.Entity("RoomMate_Finder.Entities.RoommateRelationship", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApprovedByAdminId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("OriginalRequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("User1Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("User2Id")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovedByAdminId");
+
+                    b.HasIndex("OriginalRequestId");
+
+                    b.HasIndex("User2Id");
+
+                    b.HasIndex("User1Id", "User2Id")
+                        .IsUnique();
+
+                    b.ToTable("roommate_relationships", "public");
+                });
+
+            modelBuilder.Entity("RoomMate_Finder.Entities.RoommateRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Message")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ProcessedByAdminId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RequesterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TargetUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProcessedByAdminId");
+
+                    b.HasIndex("TargetUserId");
+
+                    b.HasIndex("RequesterId", "TargetUserId");
+
+                    b.ToTable("roommate_requests", "public");
+                });
+
             modelBuilder.Entity("RoomMate_Finder.Entities.UserAction", b =>
                 {
                     b.Property<Guid>("Id")
@@ -417,6 +493,66 @@ namespace RoomMate_Finder.Migrations
                     b.Navigation("RoomListing");
                 });
 
+            modelBuilder.Entity("RoomMate_Finder.Entities.RoommateRelationship", b =>
+                {
+                    b.HasOne("RoomMate_Finder.Entities.Profile", "ApprovedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("ApprovedByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RoomMate_Finder.Entities.RoommateRequest", "OriginalRequest")
+                        .WithMany()
+                        .HasForeignKey("OriginalRequestId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("RoomMate_Finder.Entities.Profile", "User1")
+                        .WithMany("RoommateRelationshipsAsUser1")
+                        .HasForeignKey("User1Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RoomMate_Finder.Entities.Profile", "User2")
+                        .WithMany("RoommateRelationshipsAsUser2")
+                        .HasForeignKey("User2Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ApprovedByAdmin");
+
+                    b.Navigation("OriginalRequest");
+
+                    b.Navigation("User1");
+
+                    b.Navigation("User2");
+                });
+
+            modelBuilder.Entity("RoomMate_Finder.Entities.RoommateRequest", b =>
+                {
+                    b.HasOne("RoomMate_Finder.Entities.Profile", "ProcessedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("ProcessedByAdminId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("RoomMate_Finder.Entities.Profile", "Requester")
+                        .WithMany("SentRoommateRequests")
+                        .HasForeignKey("RequesterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RoomMate_Finder.Entities.Profile", "TargetUser")
+                        .WithMany("ReceivedRoommateRequests")
+                        .HasForeignKey("TargetUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProcessedByAdmin");
+
+                    b.Navigation("Requester");
+
+                    b.Navigation("TargetUser");
+                });
+
             modelBuilder.Entity("RoomMate_Finder.Entities.UserAction", b =>
                 {
                     b.HasOne("RoomMate_Finder.Entities.Profile", "TargetUser")
@@ -444,9 +580,17 @@ namespace RoomMate_Finder.Migrations
 
                     b.Navigation("ReceivedActions");
 
+                    b.Navigation("ReceivedRoommateRequests");
+
                     b.Navigation("RoomListings");
 
+                    b.Navigation("RoommateRelationshipsAsUser1");
+
+                    b.Navigation("RoommateRelationshipsAsUser2");
+
                     b.Navigation("SentActions");
+
+                    b.Navigation("SentRoommateRequests");
                 });
 
             modelBuilder.Entity("RoomMate_Finder.Entities.RoomListing", b =>

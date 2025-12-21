@@ -18,6 +18,8 @@ public class AppDbContext : DbContext
     public DbSet<RoomListing> RoomListings { get; set; } = null!;
     public DbSet<RoomListingImage> RoomListingImages { get; set; } = null!;
     public DbSet<Review> Reviews { get; set; } = null!;
+    public DbSet<RoommateRequest> RoommateRequests { get; set; } = null!;
+    public DbSet<RoommateRelationship> RoommateRelationships { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -146,6 +148,60 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
                 
             entity.HasIndex(i => i.RoomListingId);
+        });
+
+        modelBuilder.Entity<RoommateRequest>(entity =>
+        {
+            entity.ToTable("roommate_requests", "public");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Status).HasConversion<int>();
+            
+            entity.HasOne(e => e.Requester)
+                .WithMany(p => p.SentRoommateRequests)
+                .HasForeignKey(e => e.RequesterId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            entity.HasOne(e => e.TargetUser)
+                .WithMany(p => p.ReceivedRoommateRequests)
+                .HasForeignKey(e => e.TargetUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            entity.HasOne(e => e.ProcessedByAdmin)
+                .WithMany()
+                .HasForeignKey(e => e.ProcessedByAdminId)
+                .OnDelete(DeleteBehavior.SetNull);
+                
+            // Prevent duplicate pending requests from same user to same target
+            entity.HasIndex(e => new { e.RequesterId, e.TargetUserId });
+        });
+
+        modelBuilder.Entity<RoommateRelationship>(entity =>
+        {
+            entity.ToTable("roommate_relationships", "public");
+            entity.HasKey(e => e.Id);
+            
+            entity.HasOne(e => e.User1)
+                .WithMany(p => p.RoommateRelationshipsAsUser1)
+                .HasForeignKey(e => e.User1Id)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            entity.HasOne(e => e.User2)
+                .WithMany(p => p.RoommateRelationshipsAsUser2)
+                .HasForeignKey(e => e.User2Id)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            entity.HasOne(e => e.ApprovedByAdmin)
+                .WithMany()
+                .HasForeignKey(e => e.ApprovedByAdminId)
+                .OnDelete(DeleteBehavior.Restrict);
+                
+            entity.HasOne(e => e.OriginalRequest)
+                .WithMany()
+                .HasForeignKey(e => e.OriginalRequestId)
+                .OnDelete(DeleteBehavior.SetNull);
+                
+            // Prevent duplicate relationships
+            entity.HasIndex(e => new { e.User1Id, e.User2Id }).IsUnique();
         });
     }
 }

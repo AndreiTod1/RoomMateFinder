@@ -13,6 +13,7 @@ using RoomMate_Finder.Features.Conversations;
 using RoomMate_Finder.Features.RoomListings;
 using RoomMate_Finder.Features.Reviews;
 using RoomMate_Finder.Features.Admins;
+using RoomMate_Finder.Features.Roommates;
 using RoomMate_Finder.Infrastructure.Persistence;
 using RoomMate_Finder.Validators;
 using RoomMate_Finder.Hubs;
@@ -304,6 +305,7 @@ static void ConfigureEndpoints(WebApplication app)
     app.MapConversationsEndpoints();
     app.MapReviewsEndpoints();
     app.MapAdminsEndpoints();
+    app.MapRoommatesEndpoints();
     
     // SignalR Hub endpoint
     app.MapHub<ChatHub>("/hubs/chat");
