@@ -5,6 +5,7 @@ public interface IRoommateService
     // User endpoints
     Task<SendRoommateRequestResponse?> SendRoommateRequestAsync(Guid targetUserId, string? message);
     Task<MyRoommateRequestsResponse?> GetMyRequestsAsync();
+    Task<UserRoommateDto?> GetUserRoommateAsync(Guid userId);
     
     // Admin endpoints
     Task<List<PendingRoommateRequestDto>> GetPendingRequestsAsync();
@@ -71,4 +72,15 @@ public record RoommateRelationshipDto(
 );
 
 public record DeleteRelationshipResponse(string Message);
+
+public record UserRoommateDto(
+    Guid RelationshipId,
+    Guid RoommateId,
+    string RoommateName,
+    string RoommateEmail,
+    string? ProfilePicturePath,
+    int Age,
+    string? University,
+    DateTime Since
+);
 
