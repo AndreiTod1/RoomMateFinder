@@ -1,0 +1,272 @@
+@page "/admin/roommates"
+@using Microsoft.AspNetCore.Authorization
+@using RoomMate_Finder_Frontend.Services
+@attribute [Authorize(Roles = "Admin")]
+@inject IRoommateService RoommateService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Admin - Roommates</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-6">
+    
+    <MudText Typo="Typo.h5" Class="mb-2 fw-bold">Gestionare Roommates</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">Aprobă cereri și gestionează relațiile de colegiat</MudText>
+
+    <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+        <MudTabPanel Text="Cereri în așteptare" BadgeData="@_pendingRequests.Count" BadgeColor="Color.Warning">
+            @if (_isLoadingRequests)
+            {
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+            }
+            else if (_pendingRequests.Count == 0)
+            {
+                <div class="pa-8 d-flex flex-column align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.Inbox" Size="Size.Large" Color="Color.Secondary" Class="mb-4" />
+                    <MudText Typo="Typo.body1" Color="Color.Secondary">Nu există cereri în așteptare</MudText>
+                </div>
+            }
+            else
+            {
+                <MudPaper Elevation="0" Outlined="true" Class="rounded-lg">
+                    @foreach (var request in _pendingRequests)
+                    {
+                        <div class="d-flex align-center pa-4" style="border-bottom: 1px solid #eee;">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-center gap-2 mb-2">
+                                    <MudAvatar Color="Color.Primary" Size="Size.Small">
+                                        @request.RequesterName[0]
+                                    </MudAvatar>
+                                    <MudText Typo="Typo.subtitle2" Class="fw-bold">@request.RequesterName</MudText>
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudAvatar Color="Color.Secondary" Size="Size.Small">
+                                        @request.TargetUserName[0]
+                                    </MudAvatar>
+                                    <MudText Typo="Typo.subtitle2" Class="fw-bold">@request.TargetUserName</MudText>
+                                </div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @request.RequesterEmail → @request.TargetUserEmail
+                                </MudText>
+                                @if (!string.IsNullOrEmpty(request.Message))
+                                {
+                                    <MudText Typo="Typo.body2" Class="mt-2" Style="font-style: italic;">
+                                        "@request.Message"
+                                    </MudText>
+                                }
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">
+                                    Trimis: @request.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
+                                </MudText>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.Check"
+                                           OnClick="@(() => ApproveRequest(request))"
+                                           Disabled="_isProcessing">
+                                    Aprobă
+                                </MudButton>
+                                <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.Close"
+                                           OnClick="@(() => RejectRequest(request))"
+                                           Disabled="_isProcessing">
+                                    Respinge
+                                </MudButton>
+                            </div>
+                        </div>
+                    }
+                </MudPaper>
+            }
+        </MudTabPanel>
+
+        <MudTabPanel Text="Relații active" BadgeData="@_relationships.Count(r => r.IsActive)" BadgeColor="Color.Success">
+            @if (_isLoadingRelationships)
+            {
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+            }
+            else if (!_relationships.Any())
+            {
+                <div class="pa-8 d-flex flex-column align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Large" Color="Color.Secondary" Class="mb-4" />
+                    <MudText Typo="Typo.body1" Color="Color.Secondary">Nu există relații de colegiat</MudText>
+                </div>
+            }
+            else
+            {
+                <MudPaper Elevation="0" Outlined="true" Class="rounded-lg">
+                    @foreach (var rel in _relationships.OrderByDescending(r => r.CreatedAt))
+                    {
+                        <div class="d-flex align-center pa-4" style="border-bottom: 1px solid #eee;">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-center gap-2 mb-2">
+                                    <MudAvatar Color="Color.Primary" Size="Size.Small">
+                                        @rel.User1Name[0]
+                                    </MudAvatar>
+                                    <MudText Typo="Typo.subtitle2" Class="fw-bold">@rel.User1Name</MudText>
+                                    <MudIcon Icon="@Icons.Material.Filled.SyncAlt" Size="Size.Small" Color="Color.Success" />
+                                    <MudAvatar Color="Color.Primary" Size="Size.Small">
+                                        @rel.User2Name[0]
+                                    </MudAvatar>
+                                    <MudText Typo="Typo.subtitle2" Class="fw-bold">@rel.User2Name</MudText>
+                                    @if (!rel.IsActive)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Text">Inactiv</MudChip>
+                                    }
+                                </div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @rel.User1Email • @rel.User2Email
+                                </MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">
+                                    Aprobat de @rel.ApprovedByAdminName la @rel.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
+                                </MudText>
+                            </div>
+                            @if (rel.IsActive)
+                            {
+                                <MudTooltip Text="Dezactivează relația">
+                                    <MudIconButton Icon="@Icons.Material.Filled.LinkOff" Color="Color.Error" Size="Size.Small"
+                                                   OnClick="@(() => DeleteRelationship(rel))"
+                                                   Disabled="_isProcessing" />
+                                </MudTooltip>
+                            }
+                        </div>
+                    }
+                </MudPaper>
+            }
+        </MudTabPanel>
+    </MudTabs>
+</MudContainer>
+
+@code {
+    private List<PendingRoommateRequestDto> _pendingRequests = new();
+    private List<RoommateRelationshipDto> _relationships = new();
+    private bool _isLoadingRequests = true;
+    private bool _isLoadingRelationships = true;
+    private bool _isProcessing;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        await Task.WhenAll(LoadPendingRequests(), LoadRelationships());
+    }
+
+    private async Task LoadPendingRequests()
+    {
+        try
+        {
+            _isLoadingRequests = true;
+            _pendingRequests = await RoommateService.GetPendingRequestsAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Eroare la încărcarea cererilor: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoadingRequests = false;
+        }
+    }
+
+    private async Task LoadRelationships()
+    {
+        try
+        {
+            _isLoadingRelationships = true;
+            _relationships = await RoommateService.GetRelationshipsAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Eroare la încărcarea relațiilor: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoadingRelationships = false;
+        }
+    }
+
+    private async Task ApproveRequest(PendingRoommateRequestDto request)
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmare",
+            $"Ești sigur că vrei să aprobi cererea de colegiat între {request.RequesterName} și {request.TargetUserName}?",
+            yesText: "Da, aprobă",
+            cancelText: "Anulează");
+
+        if (confirm == true)
+        {
+            try
+            {
+                _isProcessing = true;
+                var result = await RoommateService.ApproveRequestAsync(request.Id);
+                Snackbar.Add(result?.Message ?? "Cerere aprobată cu succes!", Severity.Success);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Eroare: {ex.Message}", Severity.Error);
+            }
+            finally
+            {
+                _isProcessing = false;
+            }
+        }
+    }
+
+    private async Task RejectRequest(PendingRoommateRequestDto request)
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmare",
+            $"Ești sigur că vrei să respingi cererea de colegiat între {request.RequesterName} și {request.TargetUserName}?",
+            yesText: "Da, respinge",
+            cancelText: "Anulează");
+
+        if (confirm == true)
+        {
+            try
+            {
+                _isProcessing = true;
+                var result = await RoommateService.RejectRequestAsync(request.Id);
+                Snackbar.Add(result?.Message ?? "Cerere respinsă!", Severity.Info);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Eroare: {ex.Message}", Severity.Error);
+            }
+            finally
+            {
+                _isProcessing = false;
+            }
+        }
+    }
+
+    private async Task DeleteRelationship(RoommateRelationshipDto relationship)
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmare",
+            $"Ești sigur că vrei să dezactivezi relația de colegiat dintre {relationship.User1Name} și {relationship.User2Name}?",
+            yesText: "Da, dezactivează",
+            cancelText: "Anulează");
+
+        if (confirm == true)
+        {
+            try
+            {
+                _isProcessing = true;
+                var result = await RoommateService.DeleteRelationshipAsync(relationship.Id);
+                Snackbar.Add(result?.Message ?? "Relație dezactivată!", Severity.Success);
+                await LoadRelationships();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Eroare: {ex.Message}", Severity.Error);
+            }
+            finally
+            {
+                _isProcessing = false;
+            }
+        }
+    }
+}
+

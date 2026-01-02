@@ -13,6 +13,8 @@
 @inject IConfiguration Configuration
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
+@inject IRoommateService RoommateService
+@inject IDialogService DialogService
 
 <PageTitle>Chat - RoomMate Finder</PageTitle>
 
@@ -137,6 +139,15 @@
                     }
                 </div>
             </div>
+            
+            <!-- Roommate Request Button -->
+            <MudTooltip Text="@GetRoommateButtonTooltip()">
+                <MudIconButton Icon="@Icons.Material.Filled.PersonAdd" 
+                               Color="@GetRoommateButtonColor()" 
+                               Size="Size.Medium"
+                               OnClick="OpenRoommateRequestDialog"
+                               Disabled="@(_isRoommate || _hasPendingRequest || _isSendingRequest)" />
+            </MudTooltip>
         </div>
 
         <!-- Messages Area -->
@@ -228,9 +239,15 @@
     private string? _otherUserProfilePicture;
     private string? _otherUserRole;
     private Guid _currentUserId;
+    private Guid _otherUserId;
     private string _apiBaseUrl = "";
     private bool _otherUserIsTyping;
     private System.Timers.Timer? _typingTimer;
+    
+    // Roommate request state
+    private bool _isRoommate;
+    private bool _hasPendingRequest;
+    private bool _isSendingRequest;
 
     protected override async Task OnInitializedAsync()
     {
@@ -238,7 +255,8 @@
         await GetCurrentUserId();
         await NotificationService.MarkConversationAsReadAsync(ConversationId);
         await LoadMessages();
-        await LoadConversationDetails(); 
+        await LoadConversationDetails();
+        await LoadRoommateStatus();
         await ConnectToSignalR();
     }
 
@@ -264,6 +282,7 @@
                 _otherUserName = currentConv.OtherUserName;
                 _otherUserProfilePicture = currentConv.OtherUserProfilePicture;
                 _otherUserRole = currentConv.OtherUserRole;
+                _otherUserId = currentConv.OtherUserId;
                 StateHasChanged();
             }
         }
@@ -273,6 +292,83 @@
         }
     }
 
+    private async Task LoadRoommateStatus()
+    {
+        try
+        {
+            var myRequests = await RoommateService.GetMyRequestsAsync();
+            if (myRequests != null)
+            {
+                // Check if already roommates
+                _isRoommate = myRequests.ActiveRoommates.Any(r => r.RoommateId == _otherUserId);
+                
+                // Check if there's a pending request (sent or received)
+                _hasPendingRequest = myRequests.SentRequests.Any(r => r.OtherUserId == _otherUserId && r.Status == "Pending")
+                                  || myRequests.ReceivedRequests.Any(r => r.OtherUserId == _otherUserId && r.Status == "Pending");
+                
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading roommate status: {ex.Message}");
+        }
+    }
+
+    private string GetRoommateButtonTooltip()
+    {
+        if (_isRoommate) return "Sunteți deja colegi de cameră";
+        if (_hasPendingRequest) return "Cerere în așteptare";
+        return "Trimite cerere de colegiat";
+    }
+
+    private Color GetRoommateButtonColor()
+    {
+        if (_isRoommate) return Color.Success;
+        if (_hasPendingRequest) return Color.Warning;
+        return Color.Primary;
+    }
+
+    private async Task OpenRoommateRequestDialog()
+    {
+        if (_isRoommate || _hasPendingRequest) return;
+
+        var parameters = new DialogParameters<RoommateRequestDialog>
+        {
+            { x => x.OtherUserName, _otherUserName }
+        };
+
+        var dialog = await DialogService.ShowAsync<RoommateRequestDialog>("Trimite cerere de colegiat", parameters);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            var message = result.Data as string;
+            await SendRoommateRequest(message);
+        }
+    }
+
+    private async Task SendRoommateRequest(string? message)
+    {
+        try
+        {
+            _isSendingRequest = true;
+            StateHasChanged();
+            
+            var response = await RoommateService.SendRoommateRequestAsync(_otherUserId, message);
+            Snackbar.Add(response?.Message ?? "Cerere trimisă cu succes!", Severity.Success);
+            _hasPendingRequest = true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Eroare: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSendingRequest = false;
+            StateHasChanged();
+        }
+    }
     private async Task ConnectToSignalR()
     {
         try
