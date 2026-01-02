@@ -29,6 +29,11 @@ public class RoommateService : IRoommateService
         return await _http.GetFromJsonAsync<MyRoommateRequestsResponse>("api/roommates/my-requests");
     }
 
+    public async Task<UserRoommateDto?> GetUserRoommateAsync(Guid userId)
+    {
+        return await _http.GetFromJsonAsync<UserRoommateDto?>($"api/roommates/user/{userId}");
+    }
+
     // Admin endpoints
     public async Task<List<PendingRoommateRequestDto>> GetPendingRequestsAsync()
     {

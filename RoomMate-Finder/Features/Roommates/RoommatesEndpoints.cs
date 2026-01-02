@@ -5,6 +5,7 @@ using RoomMate_Finder.Features.Roommates.RejectRequest;
 using RoomMate_Finder.Features.Roommates.GetRelationships;
 using RoomMate_Finder.Features.Roommates.DeleteRelationship;
 using RoomMate_Finder.Features.Roommates.GetMyRequests;
+using RoomMate_Finder.Features.Roommates.GetUserRoommate;
 
 namespace RoomMate_Finder.Features.Roommates;
 
@@ -15,6 +16,7 @@ public static class RoommatesEndpoints
         // User endpoints
         app.MapSendRoommateRequestEndpoint();
         app.MapGetMyRequestsEndpoint();
+        app.MapGetUserRoommateEndpoint();
         
         // Admin endpoints
         app.MapGetPendingRequestsEndpoint();
