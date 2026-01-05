@@ -36,9 +36,9 @@ public class ApproveRequestHandler : IRequestHandler<ApproveRequestRequest, Appr
             throw new InvalidOperationException("Request not found");
         }
 
-        if (roommateRequest.Status != RoommateRequestStatus.Pending)
+        if (roommateRequest.Status != RoommateRequestStatus.MutuallyConfirmed)
         {
-            throw new InvalidOperationException("This request has already been processed");
+            throw new InvalidOperationException("This request has not been mutually confirmed yet or has already been processed");
         }
 
         var existingRelationship = await _context.RoommateRelationships
@@ -53,9 +53,24 @@ public class ApproveRequestHandler : IRequestHandler<ApproveRequestRequest, Appr
             throw new InvalidOperationException("An active relationship already exists between these users");
         }
 
+        // Find and approve the inverse request as well
+        var inverseRequest = await _context.RoommateRequests
+            .FirstOrDefaultAsync(r => 
+                r.RequesterId == roommateRequest.TargetUserId && 
+                r.TargetUserId == roommateRequest.RequesterId && 
+                r.Status == RoommateRequestStatus.MutuallyConfirmed, 
+                cancellationToken);
+
         roommateRequest.Status = RoommateRequestStatus.Approved;
         roommateRequest.ProcessedAt = DateTime.UtcNow;
         roommateRequest.ProcessedByAdminId = adminId;
+
+        if (inverseRequest != null)
+        {
+            inverseRequest.Status = RoommateRequestStatus.Approved;
+            inverseRequest.ProcessedAt = DateTime.UtcNow;
+            inverseRequest.ProcessedByAdminId = adminId;
+        }
 
         var relationship = new RoommateRelationship
         {

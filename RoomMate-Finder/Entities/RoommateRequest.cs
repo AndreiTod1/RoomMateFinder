@@ -15,7 +15,8 @@ public class RoommateRequest
 }
 public enum RoommateRequestStatus
 {
-    Pending = 0,
-    Approved = 1,
-    Rejected = 2
+    Pending = 0,           // Waiting for the other user to confirm
+    MutuallyConfirmed = 1, // Both users confirmed, waiting for admin approval
+    Approved = 2,          // Admin approved
+    Rejected = 3           // Admin rejected or user cancelled
 }

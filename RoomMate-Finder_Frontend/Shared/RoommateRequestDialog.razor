@@ -1,9 +1,22 @@
 <MudDialog>
     <DialogContent>
-        <MudText Typo="Typo.body1" Class="mb-4">
-            Trimite o cerere de colegiat către <strong>@OtherUserName</strong>. 
-            Cererea va fi procesată de un administrator.
-        </MudText>
+        @if (IsConfirmation)
+        {
+            <MudAlert Severity="Severity.Info" Class="mb-4">
+                <MudIcon Icon="@Icons.Material.Filled.Celebration" Class="mr-2" />
+                <strong>@OtherUserName</strong> ți-a trimis deja o cerere de colegiat!
+            </MudAlert>
+            <MudText Typo="Typo.body1" Class="mb-4">
+                Confirmă cererea pentru a trimite solicitarea către un administrator pentru aprobare finală.
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body1" Class="mb-4">
+                Trimite o cerere de colegiat către <strong>@OtherUserName</strong>. 
+                După ce și celălalt utilizator va confirma, cererea va fi trimisă unui administrator pentru aprobare.
+            </MudText>
+        }
         <MudTextField @bind-Value="_message" 
                       Label="Mesaj (opțional)" 
                       Variant="Variant.Outlined"
@@ -14,8 +27,8 @@
     <DialogActions>
         <MudButton OnClick="Cancel" Color="Color.Default">Anulează</MudButton>
         <MudButton OnClick="Submit" Color="Color.Primary" Variant="Variant.Filled">
-            <MudIcon Icon="@Icons.Material.Filled.Send" Class="mr-2" />
-            Trimite cererea
+            <MudIcon Icon="@(IsConfirmation ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Send)" Class="mr-2" />
+            @(IsConfirmation ? "Confirmă cererea" : "Trimite cererea")
         </MudButton>
     </DialogActions>
 </MudDialog>
@@ -24,6 +37,7 @@
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
     
     [Parameter] public string OtherUserName { get; set; } = "";
+    [Parameter] public bool IsConfirmation { get; set; }
     
     private string? _message;
 

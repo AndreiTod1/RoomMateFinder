@@ -28,7 +28,7 @@ public record MyRequestDto(
     string OtherUserName,
     string OtherUserEmail,
     string? Message,
-    string Status,
+    string Status,  // Pending, MutuallyConfirmed, Approved, Rejected
     DateTime CreatedAt,
     DateTime? ProcessedAt
 );

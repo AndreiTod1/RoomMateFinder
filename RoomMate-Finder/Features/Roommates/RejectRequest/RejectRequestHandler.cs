@@ -34,15 +34,30 @@ public class RejectRequestHandler : IRequestHandler<RejectRequestRequest, Reject
             throw new InvalidOperationException("Request not found");
         }
 
-        if (roommateRequest.Status != RoommateRequestStatus.Pending)
+        if (roommateRequest.Status != RoommateRequestStatus.Pending && roommateRequest.Status != RoommateRequestStatus.MutuallyConfirmed)
         {
             throw new InvalidOperationException("This request has already been processed");
         }
+
+        // Find and reject the inverse request as well
+        var inverseRequest = await _context.RoommateRequests
+            .FirstOrDefaultAsync(r => 
+                r.RequesterId == roommateRequest.TargetUserId && 
+                r.TargetUserId == roommateRequest.RequesterId && 
+                (r.Status == RoommateRequestStatus.Pending || r.Status == RoommateRequestStatus.MutuallyConfirmed), 
+                cancellationToken);
 
         // Update request status
         roommateRequest.Status = RoommateRequestStatus.Rejected;
         roommateRequest.ProcessedAt = DateTime.UtcNow;
         roommateRequest.ProcessedByAdminId = adminId;
+
+        if (inverseRequest != null)
+        {
+            inverseRequest.Status = RoommateRequestStatus.Rejected;
+            inverseRequest.ProcessedAt = DateTime.UtcNow;
+            inverseRequest.ProcessedByAdminId = adminId;
+        }
 
         await _context.SaveChangesAsync(cancellationToken);
 
