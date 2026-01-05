@@ -142,11 +142,11 @@
             
             <!-- Roommate Request Button -->
             <MudTooltip Text="@GetRoommateButtonTooltip()">
-                <MudIconButton Icon="@Icons.Material.Filled.PersonAdd" 
+                <MudIconButton Icon="@GetRoommateButtonIcon()" 
                                Color="@GetRoommateButtonColor()" 
                                Size="Size.Medium"
                                OnClick="OpenRoommateRequestDialog"
-                               Disabled="@(_isRoommate || _hasPendingRequest || _isSendingRequest)" />
+                               Disabled="@IsRoommateButtonDisabled()" />
             </MudTooltip>
         </div>
 
@@ -246,7 +246,9 @@
     
     // Roommate request state
     private bool _isRoommate;
-    private bool _hasPendingRequest;
+    private bool _hasSentPendingRequest;      // Current user sent a pending request
+    private bool _hasReceivedPendingRequest;  // Other user sent a pending request to current user
+    private bool _hasMutuallyConfirmedRequest; // Both users confirmed, waiting for admin
     private bool _isSendingRequest;
 
     protected override async Task OnInitializedAsync()
@@ -302,9 +304,15 @@
                 // Check if already roommates
                 _isRoommate = myRequests.ActiveRoommates.Any(r => r.RoommateId == _otherUserId);
                 
-                // Check if there's a pending request (sent or received)
-                _hasPendingRequest = myRequests.SentRequests.Any(r => r.OtherUserId == _otherUserId && r.Status == "Pending")
-                                  || myRequests.ReceivedRequests.Any(r => r.OtherUserId == _otherUserId && r.Status == "Pending");
+                // Check if current user sent a pending request to other user
+                _hasSentPendingRequest = myRequests.SentRequests.Any(r => r.OtherUserId == _otherUserId && r.Status == "Pending");
+                
+                // Check if other user sent a pending request to current user (current user needs to confirm)
+                _hasReceivedPendingRequest = myRequests.ReceivedRequests.Any(r => r.OtherUserId == _otherUserId && r.Status == "Pending");
+                
+                // Check if both have confirmed and waiting for admin approval
+                _hasMutuallyConfirmedRequest = myRequests.SentRequests.Any(r => r.OtherUserId == _otherUserId && r.Status == "MutuallyConfirmed")
+                                            || myRequests.ReceivedRequests.Any(r => r.OtherUserId == _otherUserId && r.Status == "MutuallyConfirmed");
                 
                 StateHasChanged();
             }
@@ -318,27 +326,49 @@
     private string GetRoommateButtonTooltip()
     {
         if (_isRoommate) return "Sunteți deja colegi de cameră";
-        if (_hasPendingRequest) return "Cerere în așteptare";
+        if (_hasMutuallyConfirmedRequest) return "Cerere în așteptarea aprobării de admin";
+        if (_hasSentPendingRequest) return "Ai trimis o cerere. Așteaptă ca celălalt utilizator să confirme.";
+        if (_hasReceivedPendingRequest) return $"{_otherUserName} ți-a trimis o cerere! Apasă pentru a confirma.";
         return "Trimite cerere de colegiat";
     }
 
     private Color GetRoommateButtonColor()
     {
         if (_isRoommate) return Color.Success;
-        if (_hasPendingRequest) return Color.Warning;
+        if (_hasMutuallyConfirmedRequest) return Color.Info;
+        if (_hasSentPendingRequest) return Color.Warning;
+        if (_hasReceivedPendingRequest) return Color.Secondary;
         return Color.Primary;
+    }
+
+    private string GetRoommateButtonIcon()
+    {
+        if (_isRoommate) return Icons.Material.Filled.CheckCircle;
+        if (_hasMutuallyConfirmedRequest) return Icons.Material.Filled.HourglassTop;
+        if (_hasReceivedPendingRequest) return Icons.Material.Filled.PersonAddAlt1;
+        return Icons.Material.Filled.PersonAdd;
+    }
+
+    private bool IsRoommateButtonDisabled()
+    {
+        return _isRoommate || _hasMutuallyConfirmedRequest || _hasSentPendingRequest || _isSendingRequest;
     }
 
     private async Task OpenRoommateRequestDialog()
     {
-        if (_isRoommate || _hasPendingRequest) return;
+        if (_isRoommate || _hasMutuallyConfirmedRequest || _hasSentPendingRequest) return;
 
+        var dialogTitle = _hasReceivedPendingRequest 
+            ? "Confirmă cererea de colegiat" 
+            : "Trimite cerere de colegiat";
+            
         var parameters = new DialogParameters<RoommateRequestDialog>
         {
-            { x => x.OtherUserName, _otherUserName }
+            { x => x.OtherUserName, _otherUserName },
+            { x => x.IsConfirmation, _hasReceivedPendingRequest }
         };
 
-        var dialog = await DialogService.ShowAsync<RoommateRequestDialog>("Trimite cerere de colegiat", parameters);
+        var dialog = await DialogService.ShowAsync<RoommateRequestDialog>(dialogTitle, parameters);
         var result = await dialog.Result;
 
         if (result != null && !result.Canceled)
@@ -357,7 +387,9 @@
             
             var response = await RoommateService.SendRoommateRequestAsync(_otherUserId, message);
             Snackbar.Add(response?.Message ?? "Cerere trimisă cu succes!", Severity.Success);
-            _hasPendingRequest = true;
+            
+            // Reload roommate status to update UI correctly
+            await LoadRoommateStatus();
         }
         catch (Exception ex)
         {

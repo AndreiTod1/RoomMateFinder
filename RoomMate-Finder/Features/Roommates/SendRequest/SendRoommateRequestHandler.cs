@@ -41,12 +41,12 @@ public class SendRoommateRequestHandler : IRequestHandler<SendRoommateRequestReq
             throw new InvalidOperationException("Cannot send a roommate request to yourself");
         }
 
-        // Check for existing pending request
+        // Check for existing pending or mutually confirmed request from current user
         var existingRequest = await _context.RoommateRequests
             .FirstOrDefaultAsync(r => 
                 r.RequesterId == requesterId && 
                 r.TargetUserId == request.TargetUserId && 
-                r.Status == RoommateRequestStatus.Pending, 
+                (r.Status == RoommateRequestStatus.Pending || r.Status == RoommateRequestStatus.MutuallyConfirmed), 
                 cancellationToken);
         
         if (existingRequest != null)
@@ -67,6 +67,14 @@ public class SendRoommateRequestHandler : IRequestHandler<SendRoommateRequestReq
             throw new InvalidOperationException("You already have an active roommate relationship with this user");
         }
 
+        // Check if the other user has already sent a request to current user (inverse request)
+        var inverseRequest = await _context.RoommateRequests
+            .FirstOrDefaultAsync(r => 
+                r.RequesterId == request.TargetUserId && 
+                r.TargetUserId == requesterId && 
+                r.Status == RoommateRequestStatus.Pending, 
+                cancellationToken);
+
         var roommateRequest = new RoommateRequest
         {
             Id = Guid.NewGuid(),
@@ -77,10 +85,24 @@ public class SendRoommateRequestHandler : IRequestHandler<SendRoommateRequestReq
             CreatedAt = DateTime.UtcNow
         };
 
+        string responseMessage;
+
+        if (inverseRequest != null)
+        {
+            // Both users have now sent requests - update both to MutuallyConfirmed
+            inverseRequest.Status = RoommateRequestStatus.MutuallyConfirmed;
+            roommateRequest.Status = RoommateRequestStatus.MutuallyConfirmed;
+            responseMessage = "Both users have confirmed! Your request is now waiting for admin approval.";
+        }
+        else
+        {
+            responseMessage = "Roommate request sent successfully. Waiting for the other user to confirm.";
+        }
+
         _context.RoommateRequests.Add(roommateRequest);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return new SendRoommateRequestResponse(roommateRequest.Id, "Roommate request sent successfully. Waiting for admin approval.");
+        return new SendRoommateRequestResponse(roommateRequest.Id, responseMessage);
     }
 }
 
