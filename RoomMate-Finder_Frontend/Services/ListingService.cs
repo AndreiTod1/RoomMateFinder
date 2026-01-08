@@ -108,4 +108,26 @@ public class ListingService : IListingService
             throw new InvalidOperationException($"Failed to delete listing: {error}");
         }
     }
+
+    public async Task<(bool Success, string Message)> ApproveAsync(Guid id)
+    {
+        var resp = await _http.PostAsync($"/api/listings/{id}/approve", null);
+        if (!resp.IsSuccessStatusCode)
+        {
+            var error = await resp.Content.ReadAsStringAsync();
+            return (false, $"Failed to approve listing: {error}");
+        }
+        return (true, "Listing approved successfully.");
+    }
+
+    public async Task<(bool Success, string Message)> RejectAsync(Guid id, string reason)
+    {
+        var resp = await _http.PostAsJsonAsync($"/api/listings/{id}/reject", new { Reason = reason });
+        if (!resp.IsSuccessStatusCode)
+        {
+            var error = await resp.Content.ReadAsStringAsync();
+            return (false, $"Failed to reject listing: {error}");
+        }
+        return (true, "Listing rejected.");
+    }
 }

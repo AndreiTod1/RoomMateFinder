@@ -2,6 +2,13 @@ using System.ComponentModel.DataAnnotations;
 
 namespace RoomMate_Finder.Entities;
 
+public enum ListingApprovalStatus
+{
+    Pending = 0,
+    Approved = 1,
+    Rejected = 2
+}
+
 public class RoomListing
 {
     public Guid Id { get; set; }
@@ -38,6 +45,14 @@ public class RoomListing
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     public bool IsActive { get; set; } = true;
+    
+    // Approval fields
+    public ListingApprovalStatus ApprovalStatus { get; set; } = ListingApprovalStatus.Pending;
+    public Guid? ApprovedByAdminId { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+    
+    [MaxLength(500)]
+    public string? RejectionReason { get; set; }
     
     // Keep for backward compatibility, will be removed in future migration
     public ICollection<RoomListingImage> Images { get; set; } = new List<RoomListingImage>();

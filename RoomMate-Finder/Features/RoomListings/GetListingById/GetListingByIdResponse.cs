@@ -1,3 +1,5 @@
+using RoomMate_Finder.Entities;
+
 namespace RoomMate_Finder.Features.RoomListings.GetListingById;
 
 public class GetListingByIdResponse
@@ -16,5 +18,7 @@ public class GetListingByIdResponse
     public DateTime? UpdatedAt { get; set; }
     public bool IsActive { get; set; }
     public List<string> ImagePaths { get; set; } = new();
+    public ListingApprovalStatus ApprovalStatus { get; set; }
+    public string? RejectionReason { get; set; }
 }
 

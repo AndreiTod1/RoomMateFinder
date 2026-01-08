@@ -208,6 +208,15 @@ namespace RoomMate_Finder.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<int>("ApprovalStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ApprovedByAdminId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Area")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -242,6 +251,10 @@ namespace RoomMate_Finder.Migrations
 
                     b.Property<decimal>("Price")
                         .HasColumnType("numeric");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("Title")
                         .IsRequired()

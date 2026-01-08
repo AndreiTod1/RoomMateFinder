@@ -1,3 +1,5 @@
+using RoomMate_Finder.Entities;
+
 namespace RoomMate_Finder.Features.RoomListings.CreateListing;
 
 public class CreateListingResponse
@@ -14,5 +16,6 @@ public class CreateListingResponse
     public DateTime CreatedAt { get; set; }
     public bool IsActive { get; set; }
     public List<string> ImagePaths { get; set; } = new();
+    public ListingApprovalStatus ApprovalStatus { get; set; }
 }
 

@@ -1,0 +1,316 @@
+@page "/admin/pending-listings"
+@using Microsoft.AspNetCore.Authorization
+@using RoomMate_Finder_Frontend.Services
+@attribute [Authorize(Roles = "Admin")]
+@inject IListingService ListingService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject IConfiguration Configuration
+
+<PageTitle>Admin - Pending Listings</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-6">
+    <!-- Header -->
+    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
+        <MudStack>
+            <MudText Typo="Typo.h5" Class="fw-bold">
+                <MudIcon Icon="@Icons.Material.Filled.PendingActions" Class="me-2" />
+                Pending Listings
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Review and approve or reject submitted room listings.
+            </MudText>
+        </MudStack>
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadListings">
+            Refresh
+        </MudButton>
+    </MudStack>
+
+    @if (_isLoading)
+    {
+        <MudPaper Elevation="0" Outlined="true" Class="rounded-lg">
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+            <MudStack AlignItems="AlignItems.Center" Class="pa-8">
+                <MudText Typo="Typo.body1" Color="Color.Secondary">Loading pending listings...</MudText>
+            </MudStack>
+        </MudPaper>
+    }
+    else if (!_listings.Any())
+    {
+        <MudPaper Elevation="0" Outlined="true" Class="rounded-lg">
+            <div class="pa-8 d-flex flex-column align-center">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Large" Color="Color.Success" Class="mb-4" />
+                <MudText Typo="Typo.h6">All Caught Up!</MudText>
+                <MudText Typo="Typo.body1" Color="Color.Secondary">There are no pending listings to review.</MudText>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="/admin/listings" Class="mt-4">
+                    View All Listings
+                </MudButton>
+            </div>
+        </MudPaper>
+    }
+    else
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+            <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="me-1" Style="vertical-align: middle;" />
+            @_listings.Count listing(s) awaiting review
+        </MudText>
+
+        <MudGrid Spacing="4">
+            @foreach (var listing in _listings)
+            {
+                <MudItem xs="12">
+                    <MudCard Elevation="2" Class="pa-0" Style="border-radius: 12px; border-left: 4px solid #f9a825;">
+                        <MudCardContent Class="pa-4">
+                            <MudGrid Spacing="3">
+                                <!-- Image -->
+                                <MudItem xs="12" sm="3">
+                                    @if (!string.IsNullOrEmpty(listing.ThumbnailPath))
+                                    {
+                                        <MudImage Src="@GetImageUrl(listing.ThumbnailPath)" 
+                                                  Alt="@listing.Title"
+                                                  ObjectFit="ObjectFit.Cover"
+                                                  Class="rounded"
+                                                  Style="width: 100%; height: 150px; object-fit: cover;" />
+                                    }
+                                    else
+                                    {
+                                        <div class="d-flex align-center justify-center rounded" style="height: 150px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                            <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Large" Style="color: rgba(255,255,255,0.8);" />
+                                        </div>
+                                    }
+                                </MudItem>
+
+                                <!-- Details -->
+                                <MudItem xs="12" sm="6">
+                                    <MudStack Spacing="2">
+                                        <MudText Typo="Typo.h6" Class="fw-bold">@listing.Title</MudText>
+                                        
+                                        <MudStack Row Spacing="2">
+                                            <MudChip T="string" Color="Color.Primary" Size="Size.Small" Icon="@Icons.Material.Filled.Euro">
+                                                €@listing.Price/month
+                                            </MudChip>
+                                            <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Outlined">
+                                                <MudIcon Icon="@Icons.Material.Filled.HourglassEmpty" Size="Size.Small" Class="me-1" />
+                                                PENDING
+                                            </MudChip>
+                                        </MudStack>
+
+                                        <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+                                            <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Secondary" />
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">@listing.City, @listing.Area</MudText>
+                                        </MudStack>
+
+                                        <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+                                            <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">Submitted by: @listing.OwnerFullName</MudText>
+                                        </MudStack>
+
+                                        <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+                                            <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Color="Color.Secondary" />
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">Available from: @listing.AvailableFrom.ToShortDateString()</MudText>
+                                        </MudStack>
+
+                                        @if (listing.Amenities.Any())
+                                        {
+                                            <MudStack Row Spacing="1" Wrap="Wrap.Wrap">
+                                                @foreach (var amenity in listing.Amenities.Take(5))
+                                                {
+                                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@amenity</MudChip>
+                                                }
+                                                @if (listing.Amenities.Count > 5)
+                                                {
+                                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text">+@(listing.Amenities.Count - 5) more</MudChip>
+                                                }
+                                            </MudStack>
+                                        }
+                                    </MudStack>
+                                </MudItem>
+
+                                <!-- Actions -->
+                                <MudItem xs="12" sm="3">
+                                    <MudStack Spacing="2" Class="h-100" Justify="Justify.Center">
+                                        <MudButton Variant="Variant.Filled" Color="Color.Success" FullWidth="true" 
+                                                   StartIcon="@Icons.Material.Filled.CheckCircle" 
+                                                   OnClick="@(() => ApproveListing(listing))"
+                                                   Disabled="@_processingIds.Contains(listing.Id)">
+                                            @if (_processingIds.Contains(listing.Id))
+                                            {
+                                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
+                                            }
+                                            Approve
+                                        </MudButton>
+                                        <MudButton Variant="Variant.Outlined" Color="Color.Error" FullWidth="true" 
+                                                   StartIcon="@Icons.Material.Filled.Cancel" 
+                                                   OnClick="@(() => OpenRejectDialog(listing))"
+                                                   Disabled="@_processingIds.Contains(listing.Id)">
+                                            Reject
+                                        </MudButton>
+                                        <MudButton Variant="Variant.Text" Color="Color.Info" FullWidth="true" 
+                                                   StartIcon="@Icons.Material.Filled.Visibility" 
+                                                   OnClick="@(() => ViewListing(listing.Id))">
+                                            View Details
+                                        </MudButton>
+                                    </MudStack>
+                                </MudItem>
+                            </MudGrid>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudContainer>
+
+<!-- Reject Dialog -->
+<MudDialog @bind-Visible="_showRejectDialog" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" Class="me-2" />
+            Reject Listing
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.body1" Class="mb-4">
+            Are you sure you want to reject "<strong>@_selectedListing?.Title</strong>"?
+        </MudText>
+        <MudTextField T="string" @bind-Value="_rejectionReason" Label="Rejection Reason" 
+                      Variant="Variant.Outlined" Lines="3" Required="true"
+                      HelperText="Provide a reason so the user knows why their listing was rejected." />
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseRejectDialog">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="RejectListing" 
+                   Disabled="@(string.IsNullOrWhiteSpace(_rejectionReason) || _isRejecting)">
+            @if (_isRejecting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
+            }
+            Reject Listing
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private List<ListingSummaryDto> _listings = new();
+    private bool _isLoading = true;
+    private HashSet<Guid> _processingIds = new();
+    private string _apiBaseUrl = "";
+
+    // Reject dialog
+    private bool _showRejectDialog = false;
+    private ListingSummaryDto? _selectedListing;
+    private string _rejectionReason = "";
+    private bool _isRejecting = false;
+    private DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "http://localhost:5111";
+        await LoadListings();
+    }
+
+    private async Task LoadListings()
+    {
+        _isLoading = true;
+        try
+        {
+            var request = new ListingsSearchRequest(
+                ApprovalStatus: ListingApprovalStatus.Pending,
+                IncludePending: true,
+                IncludeInactive: true,
+                PageSize: 100
+            );
+            var response = await ListingService.SearchAsync(request);
+            _listings = response.Listings;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading listings: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task ApproveListing(ListingSummaryDto listing)
+    {
+        _processingIds.Add(listing.Id);
+        try
+        {
+            var result = await ListingService.ApproveAsync(listing.Id);
+            if (result.Success)
+            {
+                Snackbar.Add($"Listing '{listing.Title}' approved successfully!", Severity.Success);
+                _listings.Remove(listing);
+            }
+            else
+            {
+                Snackbar.Add(result.Message, Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error approving listing: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _processingIds.Remove(listing.Id);
+        }
+    }
+
+    private void OpenRejectDialog(ListingSummaryDto listing)
+    {
+        _selectedListing = listing;
+        _rejectionReason = "";
+        _showRejectDialog = true;
+    }
+
+    private void CloseRejectDialog()
+    {
+        _showRejectDialog = false;
+        _selectedListing = null;
+        _rejectionReason = "";
+    }
+
+    private async Task RejectListing()
+    {
+        if (_selectedListing == null || string.IsNullOrWhiteSpace(_rejectionReason)) return;
+
+        _isRejecting = true;
+        try
+        {
+            var result = await ListingService.RejectAsync(_selectedListing.Id, _rejectionReason);
+            if (result.Success)
+            {
+                Snackbar.Add($"Listing '{_selectedListing.Title}' has been rejected.", Severity.Warning);
+                _listings.Remove(_selectedListing);
+                CloseRejectDialog();
+            }
+            else
+            {
+                Snackbar.Add(result.Message, Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error rejecting listing: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isRejecting = false;
+        }
+    }
+
+    private string GetImageUrl(string path)
+    {
+        return path.StartsWith("http") ? path : $"{_apiBaseUrl}{path}";
+    }
+
+    private void ViewListing(Guid id)
+    {
+        Navigation.NavigateTo($"/room/{id}");
+    }
+}
+

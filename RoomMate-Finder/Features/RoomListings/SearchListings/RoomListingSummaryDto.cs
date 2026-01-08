@@ -1,3 +1,5 @@
+using RoomMate_Finder.Entities;
+
 namespace RoomMate_Finder.Features.RoomListings.SearchListings;
 
 public class RoomListingSummaryDto
@@ -13,5 +15,7 @@ public class RoomListingSummaryDto
     public List<string> Amenities { get; set; } = new();
     public bool IsActive { get; set; }
     public string? ThumbnailPath { get; set; }
+    public ListingApprovalStatus ApprovalStatus { get; set; }
+    public string? RejectionReason { get; set; }
 }
 

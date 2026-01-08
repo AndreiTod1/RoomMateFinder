@@ -43,7 +43,9 @@ public class GetListingByIdHandler : IRequestHandler<GetListingByIdRequest, GetL
             IsActive = listing.IsActive,
             ImagePaths = listing.ImagePaths
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .ToList()
+                .ToList(),
+            ApprovalStatus = listing.ApprovalStatus,
+            RejectionReason = listing.RejectionReason
         };
     }
 }

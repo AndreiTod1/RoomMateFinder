@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using RoomMate_Finder.Entities;
 using RoomMate_Finder.Infrastructure.Persistence;
 
 namespace RoomMate_Finder.Features.RoomListings.SearchListings;
@@ -23,6 +24,17 @@ public class SearchListingsHandler : IRequestHandler<SearchListingsRequest, Sear
         if (!request.IncludeInactive)
         {
             query = query.Where(l => l.IsActive);
+        }
+
+        // Filter by ApprovalStatus - by default only show approved listings
+        if (request.ApprovalStatus.HasValue)
+        {
+            query = query.Where(l => l.ApprovalStatus == request.ApprovalStatus.Value);
+        }
+        else if (!request.IncludePending)
+        {
+            // Default: only show approved listings for normal users
+            query = query.Where(l => l.ApprovalStatus == ListingApprovalStatus.Approved);
         }
 
         if (!string.IsNullOrWhiteSpace(request.City))
@@ -95,7 +107,9 @@ public class SearchListingsHandler : IRequestHandler<SearchListingsRequest, Sear
                     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                     .ToList(),
                 IsActive = l.IsActive,
-                ThumbnailPath = l.ImagePaths.Split(',', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
+                ThumbnailPath = l.ImagePaths.Split(',', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(),
+                ApprovalStatus = l.ApprovalStatus,
+                RejectionReason = l.RejectionReason
             })
             .ToListAsync(cancellationToken);
 
