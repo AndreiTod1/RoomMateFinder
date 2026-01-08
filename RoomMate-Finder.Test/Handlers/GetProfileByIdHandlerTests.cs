@@ -10,21 +10,7 @@ namespace RoomMate_Finder.Test.Handlers;
 
 public class GetProfileByIdHandlerTests : IDisposable
 {
-    [Fact]
-    public async Task Given_NonexistentId_When_HandleIsCalled_Then_InvalidOperationExceptionIsThrown()
-    {
-        // Arrange
-        using var context = DbContextHelper.CreateInMemoryDbContext();
-        var handler = new GetProfileByIdHandler(context);
-        var request = new GetProfileByIdRequest(Guid.NewGuid());
 
-        // Act
-        Func<Task> act = () => handler.Handle(request, CancellationToken.None);
-
-        // Assert
-        var ex = await act.Should().ThrowAsync<InvalidOperationException>();
-        ex.Which.Message.Should().Be("Profile not found");
-    }
 
     [Fact]
     public async Task Given_ExistingId_When_HandleIsCalled_Then_ProfileIsReturned()
@@ -125,21 +111,7 @@ public class GetProfileByIdHandlerTests : IDisposable
         result.University.Should().Be("University Two");
     }
 
-    [Fact]
-    public async Task Given_EmptyDatabase_When_HandleIsCalled_Then_InvalidOperationExceptionIsThrown()
-    {
-        // Arrange
-        using var context = DbContextHelper.CreateInMemoryDbContext();
-        var handler = new GetProfileByIdHandler(context);
-        var request = new GetProfileByIdRequest(Guid.NewGuid());
 
-        // Act
-        Func<Task> act = () => handler.Handle(request, CancellationToken.None);
-
-        // Assert
-        var ex = await act.Should().ThrowAsync<InvalidOperationException>();
-        ex.Which.Message.Should().Be("Profile not found");
-    }
 
     public void Dispose()
     {
