@@ -125,7 +125,11 @@ public class CreateListingHandler : IRequestHandler<CreateListingWithImagesComma
                 .Where(a => !string.IsNullOrWhiteSpace(a))),
             ImagePaths = string.Join(",", imagePaths),
             CreatedAt = DateTime.UtcNow,
-            IsActive = true
+            IsActive = true,
+            // Admin-created listings are auto-approved, user-created listings need approval
+            ApprovalStatus = command.IsAdmin ? ListingApprovalStatus.Approved : ListingApprovalStatus.Pending,
+            ApprovedByAdminId = command.IsAdmin ? request.OwnerId : null,
+            ApprovedAt = command.IsAdmin ? DateTime.UtcNow : null
         };
 
         Console.WriteLine($"[CreateListingHandler] Saving listing with ImagePaths: {listing.ImagePaths}");
@@ -148,7 +152,8 @@ public class CreateListingHandler : IRequestHandler<CreateListingWithImagesComma
                 .ToList(),
             CreatedAt = listing.CreatedAt,
             IsActive = listing.IsActive,
-            ImagePaths = imagePaths
+            ImagePaths = imagePaths,
+            ApprovalStatus = listing.ApprovalStatus
         };
     }
 }

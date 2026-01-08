@@ -20,6 +20,9 @@ public static class CreateListingEndpoint
                     return Results.Unauthorized();
                 }
 
+                // Check if user is admin
+                var isAdmin = user.IsInRole("Admin");
+
                 var amenities = form.Amenities
                     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                     .ToList();
@@ -38,9 +41,9 @@ public static class CreateListingEndpoint
 
                 // Get images directly from HttpContext like profile picture does
                 var images = httpContext.Request.Form.Files.GetFiles("Images").ToList();
-                Console.WriteLine($"[CreateListingEndpoint] Found {images.Count} files in form");
+                Console.WriteLine($"[CreateListingEndpoint] Found {images.Count} files in form, IsAdmin: {isAdmin}");
 
-                var command = new CreateListingWithImagesCommand(request, images);
+                var command = new CreateListingWithImagesCommand(request, images, isAdmin);
 
                 try
                 {

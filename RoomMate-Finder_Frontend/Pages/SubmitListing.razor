@@ -1,0 +1,287 @@
+@page "/submit-listing"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using RoomMate_Finder_Frontend.Services
+@using System.Security.Claims
+@attribute [Authorize]
+@inject IListingService ListingService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Submit Room Listing - RoomMate Finder</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="py-6">
+    <MudCard Elevation="3" Class="pa-6" Style="border-radius: 16px;">
+        <MudCardContent>
+            <MudStack AlignItems="AlignItems.Center" Class="mb-6">
+                <MudIcon Icon="@Icons.Material.Filled.AddHome" Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.h4" Class="fw-bold">Submit a New Room</MudText>
+                <MudText Typo="Typo.body1" Color="Color.Secondary">Fill in the details to submit your room for approval.</MudText>
+            </MudStack>
+
+            <!-- Info Alert -->
+            <MudAlert Severity="Severity.Info" Class="mb-4" Icon="@Icons.Material.Filled.Info">
+                <MudText Typo="Typo.body2">
+                    Your listing will be reviewed by an administrator before it becomes visible to other users.
+                    You will be able to see the status of your submission in "My Listings".
+                </MudText>
+            </MudAlert>
+
+            <MudForm @bind-IsValid="_isValid">
+                <MudGrid Spacing="3">
+                    <MudItem xs="12">
+                        <MudTextField T="string" @bind-Value="_model.Title" Label="Title" Variant="Variant.Outlined" 
+                                      Required="true" RequiredError="Title is required"
+                                      HelperText="Give your listing a catchy title" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudTextField T="string" @bind-Value="_model.Description" Label="Description" Variant="Variant.Outlined" 
+                                      Lines="5" Required="true" RequiredError="Description is required"
+                                      HelperText="Describe your room, the environment, and any important details" />
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudTextField T="string" @bind-Value="_model.City" Label="City" Variant="Variant.Outlined" 
+                                      Required="true" RequiredError="City is required" />
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudTextField T="string" @bind-Value="_model.Area" Label="Area / Neighborhood" Variant="Variant.Outlined" 
+                                      Required="true" RequiredError="Area is required" />
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField T="decimal" @bind-Value="_model.Price" Label="Price (€/month)" Variant="Variant.Outlined" 
+                                         Min="0" Required="true" RequiredError="Price is required" />
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudDatePicker @bind-Date="_availableFromDate" Label="Available From" Variant="Variant.Outlined" 
+                                       Required="true" RequiredError="Date is required" MinDate="DateTime.Today" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudTextField T="string" @bind-Value="_amenitiesText" Label="Amenities (comma separated)" 
+                                      Variant="Variant.Outlined" HelperText="e.g. WiFi, Balcony, Washing Machine, Parking" />
+                    </MudItem>
+
+                    <!-- Image Upload Section -->
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">
+                            <MudIcon Icon="@Icons.Material.Filled.PhotoCamera" Size="Size.Small" Class="me-1" />
+                            Room Images (max 8)
+                        </MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2">
+                            Upload clear photos of your room to attract potential roommates
+                        </MudText>
+                        <MudFileUpload T="IReadOnlyList<IBrowserFile>" 
+                                       FilesChanged="OnImagesSelected" 
+                                       Accept=".jpg,.jpeg,.png,.webp"
+                                       MaximumFileCount="8">
+                            <ActivatorContent>
+                                <MudButton Variant="Variant.Outlined" 
+                                           Color="Color.Primary" 
+                                           StartIcon="@Icons.Material.Filled.CloudUpload">
+                                    Select Images
+                                </MudButton>
+                            </ActivatorContent>
+                        </MudFileUpload>
+                        
+                        @if (!string.IsNullOrEmpty(_imageError))
+                        {
+                            <MudAlert Severity="Severity.Error" Class="mt-2">@_imageError</MudAlert>
+                        }
+                        
+                        @if (_selectedImages.Count > 0)
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">
+                                @_selectedImages.Count image(s) selected
+                            </MudText>
+                            
+                            <MudGrid Class="mt-3" Spacing="2">
+                                @foreach (var preview in _imagePreviews)
+                                {
+                                    <MudItem xs="6" sm="4" md="3">
+                                        <MudCard Style="position: relative;">
+                                            <MudCardMedia Image="@preview.DataUrl" Height="120" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Close" 
+                                                           Color="Color.Error" 
+                                                           Size="Size.Small"
+                                                           Style="position: absolute; top: 4px; right: 4px; background: rgba(255,255,255,0.8);"
+                                                           OnClick="@(() => RemoveImage(preview.Index))" />
+                                        </MudCard>
+                                    </MudItem>
+                                }
+                            </MudGrid>
+                        }
+                    </MudItem>
+                </MudGrid>
+            </MudForm>
+        </MudCardContent>
+        <MudCardActions Class="pa-4 pt-0">
+            <MudSpacer />
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" Href="/listings">Cancel</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Send" 
+                       Disabled="@(!_isValid || _isSubmitting)" OnClick="SubmitListingg">
+                @if (_isSubmitting)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
+                }
+                Submit for Approval
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private bool _isValid;
+    private bool _isSubmitting;
+    private SubmitListingModel _model = new();
+    private DateTime? _availableFromDate = DateTime.Today.AddDays(7);
+    private string _amenitiesText = "";
+    private List<IBrowserFile> _selectedImages = new();
+    private List<ImagePreview> _imagePreviews = new();
+    private string? _imageError;
+    private Guid _currentUserId;
+
+    private class SubmitListingModel
+    {
+        public string Title { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string City { get; set; } = "";
+        public string Area { get; set; } = "";
+        public decimal Price { get; set; }
+    }
+
+    private class ImagePreview
+    {
+        public int Index { get; set; }
+        public string DataUrl { get; set; } = "";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
+        if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var userId))
+        {
+            _currentUserId = userId;
+        }
+        else
+        {
+            Snackbar.Add("Unable to identify user. Please log in again.", Severity.Error);
+            Navigation.NavigateTo("/login");
+        }
+    }
+
+    private async Task OnImagesSelected(IReadOnlyList<IBrowserFile> files)
+    {
+        _imageError = null;
+        
+        if (_selectedImages.Count + files.Count > 8)
+        {
+            _imageError = "Maximum 8 images allowed. Please remove some images first.";
+            return;
+        }
+
+        foreach (var file in files)
+        {
+            // Validate file type
+            var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/webp" };
+            if (!allowedTypes.Contains(file.ContentType.ToLower()))
+            {
+                _imageError = $"Invalid file type: {file.Name}. Only JPG, PNG, and WebP are allowed.";
+                continue;
+            }
+
+            // Validate file size (5MB)
+            if (file.Size > 5 * 1024 * 1024)
+            {
+                _imageError = $"File too large: {file.Name}. Maximum size is 5MB.";
+                continue;
+            }
+
+            _selectedImages.Add(file);
+            
+            // Generate preview
+            try
+            {
+                using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                var base64 = Convert.ToBase64String(ms.ToArray());
+                var dataUrl = $"data:{file.ContentType};base64,{base64}";
+                
+                _imagePreviews.Add(new ImagePreview
+                {
+                    Index = _selectedImages.Count - 1,
+                    DataUrl = dataUrl
+                });
+            }
+            catch
+            {
+                // If preview fails, still keep the image in the list
+            }
+        }
+        
+        StateHasChanged();
+    }
+
+    private void RemoveImage(int index)
+    {
+        if (index >= 0 && index < _selectedImages.Count)
+        {
+            _selectedImages.RemoveAt(index);
+            _imagePreviews.RemoveAt(index);
+            
+            // Re-index remaining previews
+            for (int i = 0; i < _imagePreviews.Count; i++)
+            {
+                _imagePreviews[i].Index = i;
+            }
+        }
+    }
+
+    private async Task SubmitListingg()
+    {
+        if (!_isValid || _isSubmitting) return;
+        
+        _isSubmitting = true;
+        try
+        {
+            var amenities = _amenitiesText
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+
+            var request = new CreateListingRequest(
+                Title: _model.Title,
+                Description: _model.Description,
+                City: _model.City,
+                Area: _model.Area,
+                Price: _model.Price,
+                AvailableFrom: _availableFromDate ?? DateTime.Today.AddDays(7),
+                Amenities: amenities,
+                OwnerId: _currentUserId,
+                Images: _selectedImages
+            );
+
+            var result = await ListingService.CreateAsync(request);
+            
+            Snackbar.Add("Your listing has been submitted for approval!", Severity.Success);
+            Navigation.NavigateTo("/my-listings");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error submitting listing: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}
+

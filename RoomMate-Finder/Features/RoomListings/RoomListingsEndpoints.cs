@@ -1,3 +1,4 @@
+using RoomMate_Finder.Features.RoomListings.ApproveRejectListing;
 using RoomMate_Finder.Features.RoomListings.CreateListing;
 using RoomMate_Finder.Features.RoomListings.DeleteListing;
 using RoomMate_Finder.Features.RoomListings.GetListingById;
@@ -15,6 +16,7 @@ public static class RoomListingsEndpoints
         app.MapGetListingByIdEndpoint();
         app.MapUpdateListingEndpoint();
         app.MapDeleteListingEndpoint();
+        app.MapApproveRejectListingEndpoints();
 
         return app;
     }

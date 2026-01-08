@@ -5,6 +5,13 @@ using Microsoft.AspNetCore.Components.Forms;
 
 namespace RoomMate_Finder_Frontend.Services;
 
+public enum ListingApprovalStatus
+{
+    Pending = 0,
+    Approved = 1,
+    Rejected = 2
+}
+
 public interface IListingService
 {
     Task<ListingsResponse> SearchAsync(ListingsSearchRequest request);
@@ -12,6 +19,8 @@ public interface IListingService
     Task<ListingDto> CreateAsync(CreateListingRequest request);
     Task<ListingDto> UpdateAsync(Guid id, UpdateListingRequest request);
     Task DeleteAsync(Guid id);
+    Task<(bool Success, string Message)> ApproveAsync(Guid id);
+    Task<(bool Success, string Message)> RejectAsync(Guid id, string reason);
 }
 
 public record ListingsSearchRequest(
@@ -21,6 +30,8 @@ public record ListingsSearchRequest(
     decimal? MaxPrice = null,
     Guid? OwnerId = null,
     bool IncludeInactive = false,
+    ListingApprovalStatus? ApprovalStatus = null,
+    bool IncludePending = false,
     int Page = 1,
     int PageSize = 12
 );
@@ -43,7 +54,9 @@ public record ListingSummaryDto(
     DateTime AvailableFrom,
     List<string> Amenities,
     bool IsActive,
-    string? ThumbnailPath = null
+    string? ThumbnailPath = null,
+    ListingApprovalStatus ApprovalStatus = ListingApprovalStatus.Pending,
+    string? RejectionReason = null
 );
 
 public record ListingDto(
@@ -59,7 +72,9 @@ public record ListingDto(
     DateTime CreatedAt,
     bool IsActive,
     List<string>? ImagePaths = null,
-    string? OwnerFullName = null
+    string? OwnerFullName = null,
+    ListingApprovalStatus ApprovalStatus = ListingApprovalStatus.Pending,
+    string? RejectionReason = null
 );
 
 public record CreateListingRequest(
