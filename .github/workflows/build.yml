@@ -14,10 +14,10 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: 17
-          distribution: "zulu" # Alternative distribution options are available.
+          distribution: "zulu"
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
       - name: Cache SonarQube Cloud packages
         uses: actions/cache@v4
         with:
@@ -42,7 +42,18 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: powershell
         run: |
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"Iuli4n0_RoomMate-Finder" /o:"iuli4n0" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
+          # Start SonarScanner
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"Iuli4n0_RoomMate-Finder" /o:"iuli4n0" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml"
+
+          # Build the solution
           dotnet build --no-incremental
-          dotnet test RoomMate-Finder.Test/RoomMate-Finder.Test.csproj --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./TestResults -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+          # Run tests with coverage
+          dotnet test RoomMate-Finder.Test/RoomMate-Finder.Test.csproj --no-build --verbosity normal --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+          # Debug: List coverage files found
+          Write-Host "Looking for coverage files..."
+          Get-ChildItem -Path . -Recurse -Filter "coverage.opencover.xml" | ForEach-Object { Write-Host $_.FullName }
+
+          # End SonarScanner
           ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
