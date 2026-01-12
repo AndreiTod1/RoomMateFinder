@@ -35,8 +35,7 @@ public class GetProfileByIdHandler : IRequestHandler<GetProfileByIdRequest, GetP
 
         if (profile is null)
         {
-            // Return null so the endpoint can translate to 404 Not Found
-            return null;
+            throw new InvalidOperationException("Profile not found");
         }
 
         return profile;
