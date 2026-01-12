@@ -87,7 +87,7 @@ public class ProfileService : IProfileService
         }
         catch (UnauthorizedAccessException)
         {
-            throw;
+            throw; // Re-throw authentication errors
         }
         catch (System.Net.Http.HttpRequestException)
         {
@@ -121,7 +121,7 @@ public class ProfileService : IProfileService
         }
         catch (UnauthorizedAccessException)
         {
-            throw;
+            throw; // Re-throw authentication errors
         }
         catch (System.Net.Http.HttpRequestException)
         {
@@ -178,6 +178,7 @@ public class ProfileService : IProfileService
             }
             catch
             {
+                // Response was success but empty body - return null
                 return null;
             }
         }

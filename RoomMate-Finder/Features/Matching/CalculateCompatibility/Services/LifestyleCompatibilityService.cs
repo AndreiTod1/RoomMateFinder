@@ -42,9 +42,17 @@ public class LifestyleCompatibilityService : ILifestyleCompatibilityService
 
     public string GetDescription(string lifestyle1, string lifestyle2, double score)
     {
-        return string.Equals(lifestyle1, lifestyle2, StringComparison.OrdinalIgnoreCase)
-            ? "Same lifestyle - excellent compatibility"
-            : score > 60 ? "Compatible lifestyles" : "Different lifestyles - may need compromise";
+        if (string.Equals(lifestyle1, lifestyle2, StringComparison.OrdinalIgnoreCase))
+        {
+            return "Same lifestyle - excellent compatibility";
+        }
+        
+        if (score > 60)
+        {
+            return "Compatible lifestyles";
+        }
+        
+        return "Different lifestyles - may need compromise";
     }
 
     private bool IsCompatible(string life1, string life2)

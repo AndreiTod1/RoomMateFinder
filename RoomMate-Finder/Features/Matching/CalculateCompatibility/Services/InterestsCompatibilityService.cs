@@ -32,14 +32,14 @@ public class InterestsCompatibilityService : IInterestsCompatibilityService
         };
     }
 
-    private HashSet<string> ParseInterests(string interests)
+    private static HashSet<string> ParseInterests(string interests)
     {
         return interests.Split(',', StringSplitOptions.RemoveEmptyEntries)
             .Select(i => i.Trim().ToLower())
             .ToHashSet();
     }
 
-    private double CalculateSimilarity(HashSet<string> interests1, HashSet<string> interests2)
+    private static double CalculateSimilarity(HashSet<string> interests1, HashSet<string> interests2)
     {
         var commonInterests = interests1.Intersect(interests2).Count();
         

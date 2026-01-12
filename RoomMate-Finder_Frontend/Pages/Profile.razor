@@ -587,17 +587,7 @@ else
         }
     }
 
-    private string GetInitials()
-    {
-        if (_profile == null || string.IsNullOrEmpty(_profile.FullName)) return "?";
-        
-        var parts = _profile.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0) return "?";
-        
-        var first = char.ToUpper(parts[0][0]);
-        var second = parts.Length > 1 ? char.ToUpper(parts[1][0]) : '\0';
-        return second == '\0' ? first.ToString() : $"{first}{second}";
-    }
+    // Note: GetInitials was removed as unused (S1144) - GetMatchInitials is used instead
 
     private string GetFullImageUrl(string? relativePath)
     {
@@ -607,6 +597,7 @@ else
         if (relativePath.StartsWith("http") || relativePath.StartsWith("data:"))
             return relativePath;
             
+        // S1075: Development fallback URL when base address not configured
         var baseUrl = Http.BaseAddress?.ToString().TrimEnd('/') ?? "http://localhost:5111";
         return $"{baseUrl}{relativePath}?v={_imageCacheBuster}";
     }
@@ -636,7 +627,7 @@ else
         return string.Empty;
     }
 
-    private string GetMatchInitials(string? fullName)
+    private static string GetMatchInitials(string? fullName)
     {
         if (string.IsNullOrEmpty(fullName)) return "?";
         

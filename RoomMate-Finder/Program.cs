@@ -32,7 +32,7 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 ConfigurePort(builder);
 
 // Configure services
-ConfigureServices(builder.Services, builder.Configuration, builder.Environment);
+ConfigureServices(builder.Services, builder.Environment);
 
 var app = builder.Build();
 
@@ -44,7 +44,7 @@ ConfigureMiddleware(app);
 // Configure endpoints
 ConfigureEndpoints(app);
 
-app.Run();
+await app.RunAsync();
 
 // ===== helper =====
 
@@ -80,7 +80,7 @@ static void ConfigurePort(WebApplicationBuilder builder)
     Console.WriteLine($"✓ Server configured to run on {url}");
 }
 
-static void ConfigureServices(IServiceCollection services, IConfiguration configuration, IWebHostEnvironment env)
+static void ConfigureServices(IServiceCollection services, IWebHostEnvironment env)
 {
     // JWT Configuration - from .env
     ConfigureJwtAuthentication(services);
@@ -179,25 +179,13 @@ static void ConfigureCors(IServiceCollection services, IWebHostEnvironment? env 
     {
         // Add typical development origins used by Blazor WebAssembly and dotnet run
         var devOrigins = new[] { "http://localhost:5042", "https://localhost:7100", "http://localhost:5173", "http://localhost:3000" };
-        foreach (var o in devOrigins)
-        {
-            if (!allowedOrigins.Contains(o, StringComparer.OrdinalIgnoreCase))
-            {
-                allowedOrigins.Add(o);
-            }
-        }
+        allowedOrigins.AddRange(devOrigins.Where(o => !allowedOrigins.Contains(o, StringComparer.OrdinalIgnoreCase)));
     }
 
     // Also add common local dev origins as a safe default for local development
     // (this avoids issues if ASPNETCORE_ENVIRONMENT isn't set to Development for the backend process).
     var alwaysDevOrigins = new[] { "http://localhost:5042", "https://localhost:7100", "http://localhost:5173", "http://localhost:3000" };
-    foreach (var o in alwaysDevOrigins)
-    {
-        if (!allowedOrigins.Contains(o, StringComparer.OrdinalIgnoreCase))
-        {
-            allowedOrigins.Add(o);
-        }
-    }
+    allowedOrigins.AddRange(alwaysDevOrigins.Where(o => !allowedOrigins.Contains(o, StringComparer.OrdinalIgnoreCase)));
      
     services.AddCors(options =>
     {
@@ -231,7 +219,7 @@ static void ConfigureDatabase(IServiceCollection services)
     });
     
     // Log connection string (fără parola)
-    var maskedConnectionString = $"Host={host};Port={port};Database={database};Username={username};Password=*****";
+    var maskedConnectionString = $"Host={host};Port={port};Database={database};Username={username};Credentials=*****";
     Console.WriteLine($"✓ Database configured from .env: {maskedConnectionString}");
 }
 
@@ -270,8 +258,8 @@ static async Task InitializeDatabaseAsync(WebApplication app)
     }
     catch (Exception ex)
     {
-        Console.Error.WriteLine($"✗ Database migration/seeding error: {ex.Message}");
-        Console.Error.WriteLine(ex.StackTrace);
+        await Console.Error.WriteLineAsync($"✗ Database migration/seeding error: {ex.Message}");
+        await Console.Error.WriteLineAsync(ex.StackTrace);
         throw;
     }
 }

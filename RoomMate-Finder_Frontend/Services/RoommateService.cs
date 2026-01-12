@@ -21,7 +21,7 @@ public class RoommateService : IRoommateService
             return await response.Content.ReadFromJsonAsync<SendRoommateRequestResponse>();
         }
         var errorMessage = await ParseErrorMessage(response);
-        throw new Exception(errorMessage);
+        throw new InvalidOperationException(errorMessage);
     }
 
     public async Task<MyRoommateRequestsResponse?> GetMyRequestsAsync()
@@ -61,7 +61,7 @@ public class RoommateService : IRoommateService
             return await response.Content.ReadFromJsonAsync<ApproveRequestResponse>();
         }
         var errorMessage = await ParseErrorMessage(response);
-        throw new Exception(errorMessage);
+        throw new InvalidOperationException(errorMessage);
     }
 
     public async Task<RejectRequestResponse?> RejectRequestAsync(Guid requestId)
@@ -72,7 +72,7 @@ public class RoommateService : IRoommateService
             return await response.Content.ReadFromJsonAsync<RejectRequestResponse>();
         }
         var errorMessage = await ParseErrorMessage(response);
-        throw new Exception(errorMessage);
+        throw new InvalidOperationException(errorMessage);
     }
 
     public async Task<List<RoommateRelationshipDto>> GetRelationshipsAsync()
@@ -88,10 +88,10 @@ public class RoommateService : IRoommateService
             return await response.Content.ReadFromJsonAsync<DeleteRelationshipResponse>();
         }
         var errorMessage = await ParseErrorMessage(response);
-        throw new Exception(errorMessage);
+        throw new InvalidOperationException(errorMessage);
     }
 
-    private async Task<string> ParseErrorMessage(HttpResponseMessage response)
+    private static async Task<string> ParseErrorMessage(HttpResponseMessage response)
     {
         try
         {

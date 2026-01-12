@@ -241,7 +241,7 @@
         return $"{Http.BaseAddress?.ToString().TrimEnd('/') ?? "http://localhost:5111"}{path}";
     }
 
-    private string GetInitials(string? name)
+    private static string GetInitials(string? name)
     {
         if (string.IsNullOrWhiteSpace(name)) return "?";
         var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);

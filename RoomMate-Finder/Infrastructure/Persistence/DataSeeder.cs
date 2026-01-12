@@ -73,6 +73,8 @@ public static class DataSeeder
         await context.SaveChangesAsync();
 
         // 4. Create Room Listings
+        // Using Random for seeding test data - not security sensitive
+#pragma warning disable S2245 // Using pseudorandom number generator for test data seeding
         var random = new Random();
         var owners = new[] { admin, users[0], users[1] };
 

@@ -123,6 +123,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // S1075: Development fallback URL when ApiBaseUrl not configured
         _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "http://localhost:5111";
         NotificationService.OnNotificationsChanged += HandleNotificationsChanged;
         await LoadConversations();
@@ -168,7 +169,7 @@
         return path.StartsWith("http") ? path : $"{_apiBaseUrl}{path}";
     }
     
-    private string GetInitials(string name)
+    private static string GetInitials(string name)
     {
         if (string.IsNullOrEmpty(name)) return "?";
         var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -177,7 +178,7 @@
         return name.Length >= 2 ? name.Substring(0, 2).ToUpper() : name.ToUpper();
     }
     
-    private string GetRelativeTime(DateTime dateTime)
+    private static string GetRelativeTime(DateTime dateTime)
     {
         var timeSpan = DateTime.UtcNow - dateTime;
         

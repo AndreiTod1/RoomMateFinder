@@ -27,8 +27,17 @@ public class AgeCompatibilityService : IAgeCompatibilityService
     public string GetDescription(int age1, int age2)
     {
         var diff = Math.Abs(age1 - age2);
-        return diff == 0 ? "Same age - perfect match!" : 
-               diff <= 2 ? $"{diff} year(s) difference - very compatible" :
-               $"{diff} year(s) difference - some age gap";
+        
+        if (diff == 0)
+        {
+            return "Same age - perfect match!";
+        }
+        
+        if (diff <= 2)
+        {
+            return $"{diff} year(s) difference - very compatible";
+        }
+        
+        return $"{diff} year(s) difference - some age gap";
     }
 }

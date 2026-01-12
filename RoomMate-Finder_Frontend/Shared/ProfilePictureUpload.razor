@@ -74,7 +74,7 @@
         <label for="@_inputId" style="width: 100%; max-width: 280px;">
             <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.PhotoCamera"
                        Color="Color.Primary" FullWidth="true" Size="Size.Small" HtmlTag="span">
-                @(string.IsNullOrEmpty(PreviewUrl) ? "Alege Poză" : (_hasNewImage ? "Alege altă poză" : "Schimbă poza"))
+                @(string.IsNullOrEmpty(PreviewUrl) ? "Alege Poză" : GetButtonText())
             </MudButton>
         </label>
 
@@ -111,7 +111,7 @@
     private bool _isDragging;
     private double _lastMouseX;
     private double _lastMouseY;
-    private IBrowserFile? _originalFile;
+    // _originalFile removed - was unused (S4487)
     private DotNetObjectReference<ProfilePictureUpload>? _dotNetRef;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -123,13 +123,20 @@
                 _dotNetRef ??= DotNetObjectReference.Create(this);
                 await JS.InvokeVoidAsync("preventScrollOnElement", _containerId, _dotNetRef);
             }
-            catch { }
+            catch
+            {
+                // JSInterop may fail on page navigation - safe to ignore
+            }
         }
     }
 
     public async ValueTask DisposeAsync()
     {
-        try { await JS.InvokeVoidAsync("allowScrollOnElement", _containerId); } catch { }
+        try { await JS.InvokeVoidAsync("allowScrollOnElement", _containerId); }
+        catch
+        {
+            // JSInterop may fail during disposal - safe to ignore
+        }
         _dotNetRef?.Dispose();
     }
 
@@ -145,12 +152,13 @@
     {
         if (e.File != null)
         {
-            _originalFile = e.File;
             _hasNewImage = true;
             ResetCrop();
             if (OnFileSelected.HasDelegate) await OnFileSelected.InvokeAsync(e.File);
         }
     }
+
+    private string GetButtonText() => _hasNewImage ? "Alege altă poză" : "Schimbă poza";
 
     public bool HasNewImage => _hasNewImage;
 
@@ -174,7 +182,10 @@
                 return Convert.FromBase64String(base64Data);
             }
         }
-        catch { }
+        catch
+        {
+            // Cropping may fail - return null to allow fallback
+        }
         return null;
     }
 

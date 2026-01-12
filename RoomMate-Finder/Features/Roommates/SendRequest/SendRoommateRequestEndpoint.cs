@@ -14,7 +14,7 @@ public static class SendRoommateRequestEndpoint
                 var result = await sender.Send(new SendRoommateRequestRequest(dto.TargetUserId, dto.Message));
                 return Results.Ok(result);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
                 return Results.Unauthorized();
             }

@@ -187,11 +187,11 @@ public class ConversationService : IConversationService
     }
 
     // Response DTOs
-    private record GetConversationsResponse(List<ConversationDto> Conversations);
-    private record GetMessagesResponse(List<MessageDto> Messages);
-    private record StartConversationRequest(Guid OtherUserId);
-    private record StartConversationResponse(Guid ConversationId);
-    private record SendMessageRequest(Guid ConversationId, string Content);
-    private record SendMessageResponse(Guid MessageId);
+    private sealed record GetConversationsResponse(List<ConversationDto> Conversations);
+    private sealed record GetMessagesResponse(List<MessageDto> Messages);
+    private sealed record StartConversationRequest(Guid OtherUserId);
+    private sealed record StartConversationResponse(Guid ConversationId);
+    private sealed record SendMessageRequest(Guid ConversationId, string Content);
+    private sealed record SendMessageResponse(Guid MessageId);
 }
 
