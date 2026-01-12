@@ -44,4 +44,5 @@ jobs:
         run: |
           ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"Iuli4n0_RoomMate-Finder" /o:"iuli4n0" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
           dotnet build
+          dotnet test RoomMate-Finder.Tests --no-build --verbosity normal --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
           ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
