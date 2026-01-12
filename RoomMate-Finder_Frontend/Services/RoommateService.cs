@@ -31,7 +31,20 @@ public class RoommateService : IRoommateService
 
     public async Task<UserRoommateDto?> GetUserRoommateAsync(Guid userId)
     {
-        return await _http.GetFromJsonAsync<UserRoommateDto?>($"api/roommates/user/{userId}");
+        try
+        {
+            var response = await _http.GetAsync($"api/roommates/user/{userId}");
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<UserRoommateDto?>();
+            }
+            return null;
+        }
+        catch
+        {
+            // Network errors or other exceptions - return null to allow page to continue loading
+            return null;
+        }
     }
 
     // Admin endpoints
