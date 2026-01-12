@@ -8,6 +8,13 @@
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
+    <!-- Suppress warnings for auto-generated Migration files -->
+    <ItemGroup>
+        <Compile Update="Migrations\*.cs">
+            <NoWarn>S1192;S1186</NoWarn>
+        </Compile>
+    </ItemGroup>
+
     <ItemGroup>
         <PackageReference Include="DotNetEnv" Version="3.1.1" />
         <PackageReference Include="FluentValidation" Version="12.1.0" />

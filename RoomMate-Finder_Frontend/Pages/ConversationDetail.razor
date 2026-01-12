@@ -253,6 +253,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Fallback URL for local development
         _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "http://localhost:5111";
         await GetCurrentUserId();
         await NotificationService.MarkConversationAsReadAsync(ConversationId);
@@ -417,7 +418,10 @@
                 await ChatService.MarkAsReadAsync(ConversationId);
             }
         }
-        catch { }
+        catch
+        {
+            // SignalR connection errors are handled silently - chat will work via REST fallback
+        }
     }
 
     private void HandleUserTyping(Guid conversationId, Guid userId)
@@ -571,11 +575,21 @@
         {
             await JSRuntime.InvokeVoidAsync("eval", "document.getElementById('messages-end')?.scrollIntoView({ behavior: 'smooth' })");
         }
-        catch { }
+        catch
+        {
+            // Scroll errors can be ignored - UI will still function
+        }
     }
 
     private string GetProfilePictureUrl(string? p) => string.IsNullOrEmpty(p) ? "" : (p.StartsWith("http") ? p : $"{_apiBaseUrl}{p}");
-    private string GetInitials(string n) => string.IsNullOrEmpty(n) ? "?" : (n.Contains(' ') ? $"{n.Split(' ')[0][0]}{n.Split(' ')[1][0]}" : n.Substring(0, Math.Min(2, n.Length))).ToUpper();
+    
+    private static string GetInitials(string n)
+    {
+        if (string.IsNullOrEmpty(n)) return "?";
+        if (!n.Contains(' ')) return n.Substring(0, Math.Min(2, n.Length)).ToUpper();
+        var parts = n.Split(' ');
+        return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+    }
     private void GoBack() => Navigation.NavigateTo("/conversations");
     
     public async ValueTask DisposeAsync() 

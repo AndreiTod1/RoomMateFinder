@@ -121,7 +121,7 @@
 
     private void GoBack() => Navigation.NavigateTo("/admin/listings");
 
-    private class EditModel
+    private sealed class EditModel
     {
         public string Title { get; set; } = "";
         public string Description { get; set; } = "";

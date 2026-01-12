@@ -5,6 +5,8 @@ namespace RoomMate_Finder.Infrastructure.Persistence;
 
 public class AppDbContext : DbContext
 {
+    private const string SchemaName = "public";
+    
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
@@ -23,7 +25,7 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Profile>().ToTable("profiles", "public");
+        modelBuilder.Entity<Profile>().ToTable("profiles", SchemaName);
         
         // Configure Profile -> RoomListings relationship explicitly
         modelBuilder.Entity<Profile>()
@@ -34,7 +36,7 @@ public class AppDbContext : DbContext
         
         modelBuilder.Entity<UserAction>(entity =>
         {
-            entity.ToTable("user_actions", "public");
+            entity.ToTable("user_actions", SchemaName);
             entity.HasKey(e => e.Id);
             entity.Property(e => e.ActionType).HasConversion<int>();
             
@@ -56,7 +58,7 @@ public class AppDbContext : DbContext
         
         modelBuilder.Entity<Match>(entity =>
         {
-            entity.ToTable("matches", "public");
+            entity.ToTable("matches", SchemaName);
             entity.HasKey(e => e.Id);
             
             // Configure relationships - use inverse navigation properties on Profile
@@ -77,7 +79,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Conversation>(entity =>
         {
-            entity.ToTable("conversations", "public");
+            entity.ToTable("conversations", SchemaName);
             
             entity.HasOne(c => c.User1)
                 .WithMany()
@@ -95,7 +97,7 @@ public class AppDbContext : DbContext
         
         modelBuilder.Entity<Message>(entity =>
         {
-            entity.ToTable("messages", "public");
+            entity.ToTable("messages", SchemaName);
             
             entity.HasOne(m => m.Conversation)
                 .WithMany()
@@ -113,7 +115,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Review>(entity =>
         {
-            entity.ToTable("reviews", "public");
+            entity.ToTable("reviews", SchemaName);
 
             entity.HasOne(r => r.Reviewer)
                 .WithMany()
@@ -130,7 +132,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<RoomListing>(entity =>
         {
-            entity.ToTable("room_listings", "public");
+            entity.ToTable("room_listings", SchemaName);
             
             // Create indexes for performance
             entity.HasIndex(rl => rl.City);
@@ -140,7 +142,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<RoomListingImage>(entity =>
         {
-            entity.ToTable("room_listing_images", "public");
+            entity.ToTable("room_listing_images", SchemaName);
             
             entity.HasOne(i => i.RoomListing)
                 .WithMany(rl => rl.Images)
@@ -152,7 +154,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<RoommateRequest>(entity =>
         {
-            entity.ToTable("roommate_requests", "public");
+            entity.ToTable("roommate_requests", SchemaName);
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Status).HasConversion<int>();
             
@@ -177,7 +179,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<RoommateRelationship>(entity =>
         {
-            entity.ToTable("roommate_relationships", "public");
+            entity.ToTable("roommate_relationships", SchemaName);
             entity.HasKey(e => e.Id);
             
             entity.HasOne(e => e.User1)
