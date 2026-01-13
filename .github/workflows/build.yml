@@ -71,10 +71,19 @@ jobs:
           dotnet build --no-incremental
 
           Write-Host "=== [3/4] Running tests with coverage ==="
+          
+          Write-Host "--- Running Backend Tests ---"
           dotnet test RoomMate-Finder.Test/RoomMate-Finder.Test.csproj `
             --verbosity normal `
             --collect:"XPlat Code Coverage" `
-            --results-directory:"./TestResults" `
+            --results-directory:"./TestResults/Backend" `
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+          Write-Host "--- Running Frontend Tests ---"
+          dotnet test RoomMate-Finder_Frontend.Test/RoomMate-Finder_Frontend.Test.csproj `
+            --verbosity normal `
+            --collect:"XPlat Code Coverage" `
+            --results-directory:"./TestResults/Frontend" `
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
 
           Write-Host "=== [Debug] Coverage files found ==="
