@@ -44,10 +44,10 @@ public class ChatHub : Hub
         {
             lock (_lock)
             {
-                if (_userConnections.ContainsKey(userId))
+                if (_userConnections.TryGetValue(userId, out var connections))
                 {
-                    _userConnections[userId].Remove(Context.ConnectionId);
-                    if (_userConnections[userId].Count == 0)
+                    connections.Remove(Context.ConnectionId);
+                    if (connections.Count == 0)
                         _userConnections.Remove(userId);
                 }
             }
@@ -130,9 +130,9 @@ public class ChatHub : Hub
         // Also notify the receiver directly if they're online (for unread badge update)
         lock (_lock)
         {
-            if (_userConnections.ContainsKey(receiverId))
+            if (_userConnections.TryGetValue(receiverId, out var receiverConnections))
             {
-                foreach (var connectionId in _userConnections[receiverId])
+                foreach (var connectionId in receiverConnections)
                 {
                     Clients.Client(connectionId).SendAsync("NewMessageNotification", conversationId, sender.FullName);
                 }

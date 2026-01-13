@@ -40,7 +40,7 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
         }
     }
 
-    public Task MarkUserAsAuthenticated(string token)
+    public virtual Task MarkUserAsAuthenticated(string token)
     {
         var claims = ParseClaimsFromJwt(token);
         var identity = new ClaimsIdentity(claims, "jwt");
@@ -49,14 +49,14 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
         return Task.CompletedTask;
     }
 
-    public Task MarkUserAsLoggedOut()
+    public virtual Task MarkUserAsLoggedOut()
     {
         var anonymous = new ClaimsPrincipal(new ClaimsIdentity());
         NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(anonymous)));
         return Task.CompletedTask;
     }
 
-    private static IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
+    private static List<Claim> ParseClaimsFromJwt(string jwt)
     {
         var claims = new List<Claim>();
         var parts = jwt.Split('.');

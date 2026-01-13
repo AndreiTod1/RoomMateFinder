@@ -48,9 +48,7 @@ public class ChatService : IChatService
 
     public ChatService(IConfiguration configuration)
     {
-        #pragma warning disable S1075 // URIs should not be hardcoded - Development fallback is intentional
-        var baseUrl = configuration["ApiBaseUrl"] ?? "http://localhost:5111";
-        #pragma warning restore S1075
+        var baseUrl = configuration["ApiBaseUrl"] ?? "";
         _hubUrl = $"{baseUrl}/hubs/chat";
     }
 

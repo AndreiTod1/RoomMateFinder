@@ -12,7 +12,7 @@ using Xunit;
 
 namespace RoomMate_Finder.Test.Handlers;
 
-public class LoginHandlerTests : IDisposable
+public class LoginHandlerTests
 {
     private static JwtService CreateTestJwtService()
     {
@@ -153,8 +153,4 @@ public class LoginHandlerTests : IDisposable
         result.Token.Should().NotBeNullOrWhiteSpace();
     }
 
-    public void Dispose()
-    {
-        // Clean up resources if needed
-    }
 }

@@ -522,5 +522,6 @@ public class RoomListingCrudHandlersTests : IDisposable
         {
             try { Directory.Delete(_tempPath, true); } catch { /* Cleanup best effort */ }
         }
+        GC.SuppressFinalize(this);
     }
 }

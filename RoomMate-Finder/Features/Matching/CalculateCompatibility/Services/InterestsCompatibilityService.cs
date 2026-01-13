@@ -16,7 +16,7 @@ public class InterestsCompatibilityService : IInterestsCompatibilityService
         var interestsList1 = ParseInterests(interests1);
         var interestsList2 = ParseInterests(interests2);
 
-        if (!interestsList1.Any() || !interestsList2.Any())
+        if (interestsList1.Count == 0 || interestsList2.Count == 0)
             return 50.0;
 
         return CalculateSimilarity(interestsList1, interestsList2);

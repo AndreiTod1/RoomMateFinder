@@ -123,9 +123,7 @@
     {
         if (string.IsNullOrEmpty(relativePath)) return string.Empty;
         if (relativePath.StartsWith("http")) return relativePath;
-        #pragma warning disable S1075
-        var baseUrl = Http.BaseAddress?.ToString().TrimEnd('/') ?? "http://localhost:5111";
-        #pragma warning restore S1075
+        var baseUrl = Http.BaseAddress?.ToString().TrimEnd('/') ?? "";
         return $"{baseUrl}{relativePath}";
     }
 }

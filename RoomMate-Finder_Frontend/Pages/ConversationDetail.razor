@@ -253,9 +253,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        #pragma warning disable S1075 // Development fallback URL is intentional
-        _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "http://localhost:5111";
-        #pragma warning restore S1075
+        _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "";
         await GetCurrentUserId();
         await NotificationService.MarkConversationAsReadAsync(ConversationId);
         await LoadMessages();

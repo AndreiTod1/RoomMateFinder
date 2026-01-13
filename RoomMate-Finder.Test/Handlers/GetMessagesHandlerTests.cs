@@ -9,7 +9,7 @@ using Xunit;
 
 namespace RoomMate_Finder.Test.Handlers;
 
-public class GetMessagesHandlerTests : IDisposable
+public class GetMessagesHandlerTests
 {
     [Fact]
     public async Task Given_NonexistentConversation_When_HandleIsCalled_Then_KeyNotFoundExceptionIsThrown()
@@ -286,8 +286,4 @@ public class GetMessagesHandlerTests : IDisposable
         result.Messages[0].SenderName.Should().Be("Other User");
     }
 
-    public void Dispose()
-    {
-        // Clean up resources if needed
-    }
 }

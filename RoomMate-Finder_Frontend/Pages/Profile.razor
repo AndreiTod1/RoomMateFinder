@@ -597,9 +597,7 @@ else
         if (relativePath.StartsWith("http") || relativePath.StartsWith("data:"))
             return relativePath;
             
-        #pragma warning disable S1075
-        var baseUrl = Http.BaseAddress?.ToString().TrimEnd('/') ?? "http://localhost:5111";
-        #pragma warning restore S1075
+        var baseUrl = Http.BaseAddress?.ToString().TrimEnd('/') ?? "";
         return $"{baseUrl}{relativePath}?v={_imageCacheBuster}";
     }
 

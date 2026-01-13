@@ -9,7 +9,7 @@ public static class DeleteListingEndpoint
 {
     public static IEndpointRouteBuilder MapDeleteListingEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapDelete("/room-listings/{id:guid}", async (Guid id, ClaimsPrincipal user, AppDbContext db) =>
+        app.MapDelete("/room-listings/{id:guid}", async (Guid id, ClaimsPrincipal user, IMediator mediator) =>
             {
                 var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? user.FindFirst("sub")?.Value;
                 if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
@@ -17,25 +17,20 @@ public static class DeleteListingEndpoint
                     return Results.Unauthorized();
                 }
 
-                var listing = await db.RoomListings.FirstOrDefaultAsync(l => l.Id == id);
-                if (listing == null)
+                var command = new DeleteListingCommand(id, userId);
+                var result = await mediator.Send(command);
+
+                if (!result.Success)
                 {
-                    return Results.NotFound(new { message = "Listing not found" });
+                    if (result.Message.Contains("not found"))
+                        return Results.NotFound(new { message = result.Message });
+                    if (result.Message.Contains("authorized"))
+                        return Results.Forbid();
+                    
+                    return Results.BadRequest(new { message = result.Message });
                 }
 
-                // Check if user is owner OR admin
-                var userProfile = await db.Profiles.FirstOrDefaultAsync(p => p.Id == userId);
-                var isAdmin = userProfile?.Role == "Admin";
-                
-                if (listing.OwnerId != userId && !isAdmin)
-                {
-                    return Results.Forbid();
-                }
-
-                db.RoomListings.Remove(listing);
-                await db.SaveChangesAsync();
-
-                return Results.Ok(new { message = "Listing deleted successfully" });
+                return Results.Ok(new { message = result.Message });
             })
             .RequireAuthorization()
             .WithTags("RoomListings")

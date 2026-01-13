@@ -8,7 +8,7 @@ using Xunit;
 
 namespace RoomMate_Finder.Test.Handlers;
 
-public class GetProfileByIdHandlerTests : IDisposable
+public class GetProfileByIdHandlerTests
 {
     [Fact]
     public async Task Given_NonexistentId_When_HandleIsCalled_Then_InvalidOperationExceptionIsThrown()
@@ -141,8 +141,4 @@ public class GetProfileByIdHandlerTests : IDisposable
         ex.Which.Message.Should().Be("Profile not found");
     }
 
-    public void Dispose()
-    {
-        // Clean up resources if needed
-    }
 }
