@@ -1,4 +1,4 @@
-﻿@page "/admin/users"
+@page "/admin/users"
 @using Microsoft.AspNetCore.Authorization
 @using RoomMate_Finder_Frontend.Services
 @attribute [Authorize(Roles = "Admin")]
@@ -137,8 +137,9 @@
     {
         if (string.IsNullOrEmpty(relativePath)) return string.Empty;
         if (relativePath.StartsWith("http")) return relativePath;
-        // Fallback URL for local development
+        #pragma warning disable S1075
         var baseUrl = Http.BaseAddress?.ToString().TrimEnd('/') ?? "http://localhost:5111";
+        #pragma warning restore S1075
         return $"{baseUrl}{relativePath}";
     }
 

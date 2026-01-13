@@ -5,7 +5,6 @@ using Moq;
 using MudBlazor.Services;
 using RoomMate_Finder_Frontend.Pages;
 using RoomMate_Finder_Frontend.Services;
-using Xunit;
 
 namespace RoomMate_Finder_Frontend.Test.Pages;
 
@@ -43,20 +42,16 @@ public class LoginTests : BunitContext
 
         var cut = Render<Login>();
         
-        // Find inputs
-        var inputs = cut.FindAll("input");
-        var emailInput = inputs.FirstOrDefault(i => i.ParentElement?.InnerHtml.Contains("Email") == true) ?? inputs[0]; 
-        // MudBlazor structure is complex, might need to find by class or ID if standard selectors fail
-        // Using Type parameter of MudTextField is more robust if we can target the component directly
-        
         // Simpler way with bUnit: FindComponent<MudTextField<string>>
         var textFields = cut.FindComponents<MudBlazor.MudTextField<string>>();
         var emailComponent = textFields[0]; 
         var passwordComponent = textFields[1];
 
         // Act - Simulate typing
+        #pragma warning disable BL0005 // Component parameter should not be set outside of its component
         emailComponent.Instance.Value = "test@test.com";
         passwordComponent.Instance.Value = "password123";
+        #pragma warning restore BL0005
 
         // Find submit button
         var button = cut.Find("button");

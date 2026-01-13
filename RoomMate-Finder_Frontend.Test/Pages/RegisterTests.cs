@@ -6,14 +6,11 @@ using MudBlazor;
 using MudBlazor.Services;
 using RoomMate_Finder_Frontend.Pages;
 using RoomMate_Finder_Frontend.Services;
-using Xunit;
 
 namespace RoomMate_Finder_Frontend.Test.Pages;
 
 public class RegisterTests : BunitContext, IAsyncLifetime
 {
-    private readonly Mock<IAuthService> _mockAuthService;
-    
     public Task InitializeAsync() => Task.CompletedTask;
     public new Task DisposeAsync()
     {
@@ -25,8 +22,8 @@ public class RegisterTests : BunitContext, IAsyncLifetime
     {
         Services.AddMudServices();
         JSInterop.Mode = JSRuntimeMode.Loose;
-        _mockAuthService = new Mock<IAuthService>();
-        Services.AddSingleton(_mockAuthService.Object);
+        var mockAuthService = new Mock<IAuthService>();
+        Services.AddSingleton(mockAuthService.Object);
         Services.AddSingleton(new HttpClient()); // Required for injection
     }
 
@@ -54,7 +51,7 @@ public class RegisterTests : BunitContext, IAsyncLifetime
         
         // cut.Find("h4").TextContent.Should().Contain("Creează un cont");
         // Should have fields: Email, Password, Confirm Password, Name, etc.
-        cut.FindComponents<MudBlazor.MudTextField<string>>().Count.Should().BeGreaterThan(3);
+        cut.FindComponents<MudTextField<string>>().Count.Should().BeGreaterThan(3);
     }
 
     // Removed failing test requiring HttpClient mocking

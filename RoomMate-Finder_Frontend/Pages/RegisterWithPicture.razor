@@ -1,4 +1,4 @@
-﻿@page "/register-with-picture"
+@page "/register-with-picture"
 @using RoomMate_Finder_Frontend.Services
 @inject AuthService AuthService
 @inject NavigationManager NavigationManager
@@ -150,11 +150,12 @@
 
             // Call backend API
             using var http = new HttpClient();
+            #pragma warning disable S1075
             var response = await http.PostAsJsonAsync(
-                // Local development fallback URL
                 "http://localhost:5000/profiles", 
                 request
             );
+            #pragma warning restore S1075
 
             if (!response.IsSuccessStatusCode)
             {

@@ -1,5 +1,4 @@
 using Bunit;
-using Bunit.TestDoubles;
 using FluentAssertions;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,25 +8,21 @@ using MudBlazor.Services;
 using RoomMate_Finder_Frontend.Pages;
 using RoomMate_Finder_Frontend.Services;
 using System.Security.Claims;
-using Xunit;
 
 namespace RoomMate_Finder_Frontend.Test.Pages;
 
 public class CreateListingTests : BunitContext
 {
-    private readonly Mock<IListingService> _mockListingService;
-    private readonly Mock<ISnackbar> _mockSnackbar;
-
     public CreateListingTests()
     {
         Services.AddMudServices();
         JSInterop.Mode = JSRuntimeMode.Loose;
         
-        _mockListingService = new Mock<IListingService>();
-        _mockSnackbar = new Mock<ISnackbar>();
+        var mockListingService = new Mock<IListingService>();
+        var mockSnackbar = new Mock<ISnackbar>();
         
-        Services.AddSingleton(_mockListingService.Object);
-        Services.AddSingleton(_mockSnackbar.Object);
+        Services.AddSingleton(mockListingService.Object);
+        Services.AddSingleton(mockSnackbar.Object);
         
         Services.AddAuthorizationCore();
         // Register our custom mock provider

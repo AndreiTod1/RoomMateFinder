@@ -1,10 +1,7 @@
 using Bunit;
 using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
-using Moq;
 using MudBlazor.Services;
 using RoomMate_Finder_Frontend.Pages;
-using Xunit;
 
 namespace RoomMate_Finder_Frontend.Test.Pages;
 

@@ -1,4 +1,4 @@
-﻿@page "/conversations/{ConversationId:guid}"
+@page "/conversations/{ConversationId:guid}"
 @using Microsoft.AspNetCore.Authorization
 @using RoomMate_Finder_Frontend.Services
 @using System.Security.Claims
@@ -253,8 +253,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Fallback URL for local development
+        #pragma warning disable S1075 // Development fallback URL is intentional
         _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "http://localhost:5111";
+        #pragma warning restore S1075
         await GetCurrentUserId();
         await NotificationService.MarkConversationAsReadAsync(ConversationId);
         await LoadMessages();
@@ -581,7 +582,14 @@
         }
     }
 
-    private string GetProfilePictureUrl(string? p) => string.IsNullOrEmpty(p) ? "" : (p.StartsWith("http") ? p : $"{_apiBaseUrl}{p}");
+    private string GetProfilePictureUrl(string? path)
+    {
+        if (string.IsNullOrEmpty(path))
+            return "";
+        if (path.StartsWith("http"))
+            return path;
+        return $"{_apiBaseUrl}{path}";
+    }
     
     private static string GetInitials(string n)
     {

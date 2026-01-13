@@ -169,8 +169,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Fallback URL for local development
+        #pragma warning disable S1075
         _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "http://localhost:5111";
+        #pragma warning restore S1075
         await LoadListings();
     }
 

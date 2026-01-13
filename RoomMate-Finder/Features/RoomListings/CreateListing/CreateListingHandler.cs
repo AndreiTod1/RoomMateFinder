@@ -9,6 +9,9 @@ public class CreateListingHandler : IRequestHandler<CreateListingWithImagesComma
 {
     private readonly AppDbContext _dbContext;
     private readonly IWebHostEnvironment _environment;
+    private static readonly string[] AllowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    private const int MaxImageCount = 8;
+    private const int MaxImageSizeBytes = 5 * 1024 * 1024; // 5MB
 
     public CreateListingHandler(AppDbContext dbContext, IWebHostEnvironment environment)
     {
@@ -20,97 +23,129 @@ public class CreateListingHandler : IRequestHandler<CreateListingWithImagesComma
     {
         var request = command.Listing;
         
-        var owner = await _dbContext.Profiles
-            .FirstOrDefaultAsync(p => p.Id == request.OwnerId, cancellationToken);
+        await ValidateOwnerExistsAsync(request.OwnerId, cancellationToken);
+        ValidateImageCount(command.Images);
 
-        if (owner == null)
+        var listingId = Guid.NewGuid();
+        var imagePaths = await SaveImagesAsync(listingId, command.Images, cancellationToken);
+
+        var listing = CreateListing(listingId, request, imagePaths, command.IsAdmin);
+
+        _dbContext.RoomListings.Add(listing);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return CreateResponse(listing, imagePaths);
+    }
+
+    private async Task ValidateOwnerExistsAsync(Guid ownerId, CancellationToken cancellationToken)
+    {
+        var ownerExists = await _dbContext.Profiles.AnyAsync(p => p.Id == ownerId, cancellationToken);
+        if (!ownerExists)
         {
             throw new InvalidOperationException("Owner profile not found.");
         }
+    }
 
-        // Validate image count
-        if (command.Images != null && command.Images.Count > 8)
+    private static void ValidateImageCount(IReadOnlyList<IFormFile>? images)
+    {
+        if (images != null && images.Count > MaxImageCount)
         {
-            throw new InvalidOperationException("Maximum 8 images allowed per listing.");
+            throw new InvalidOperationException($"Maximum {MaxImageCount} images allowed per listing.");
         }
+    }
 
-        var listingId = Guid.NewGuid();
+    private async Task<List<string>> SaveImagesAsync(Guid listingId, IReadOnlyList<IFormFile>? images, CancellationToken cancellationToken)
+    {
         var imagePaths = new List<string>();
         
-        Console.WriteLine($"[CreateListingHandler] Received command with {command.Images?.Count ?? 0} images");
+        if (images == null || images.Count == 0)
+            return imagePaths;
 
-        // Save images - copying logic from profile picture
-        if (command.Images != null && command.Images.Count > 0)
+        var uploadsFolder = GetUploadsFolder();
+        EnsureDirectoryExists(uploadsFolder);
+
+        var displayOrder = 0;
+        foreach (var image in images)
         {
-            // Get wwwroot path like profile picture does
-            var uploadsFolder = Path.Combine(_environment.WebRootPath ?? _environment.ContentRootPath, "wwwroot", "room-images");
-            
-            // If WebRootPath is set, use it directly
-            if (!string.IsNullOrEmpty(_environment.WebRootPath))
+            if (image.Length > 0)
             {
-                uploadsFolder = Path.Combine(_environment.WebRootPath, "room-images");
-            }
-            
-            Console.WriteLine($"[CreateListingHandler] Upload folder: {uploadsFolder}");
-            
-            if (!Directory.Exists(uploadsFolder))
-            {
-                Directory.CreateDirectory(uploadsFolder);
-                Console.WriteLine($"[CreateListingHandler] Created directory: {uploadsFolder}");
-            }
-
-            var displayOrder = 0;
-            foreach (var image in command.Images)
-            {
-                if (image.Length > 0)
-                {
-                    Console.WriteLine($"[CreateListingHandler] Processing image: {image.FileName}, Size: {image.Length}, ContentType: {image.ContentType}");
-                    
-                    // Validate file type
-                    var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/webp" };
-                    if (!allowedTypes.Contains(image.ContentType.ToLower()))
-                    {
-                        throw new InvalidOperationException($"Invalid image type: {image.ContentType}. Allowed types: jpg, png, webp");
-                    }
-
-                    // Validate file size (5MB max)
-                    if (image.Length > 5 * 1024 * 1024)
-                    {
-                        throw new InvalidOperationException("Image file size must be less than 5MB.");
-                    }
-
-                    var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
-                    if (string.IsNullOrEmpty(extension))
-                    {
-                        extension = image.ContentType switch
-                        {
-                            "image/jpeg" => ".jpg",
-                            "image/jpg" => ".jpg",
-                            "image/png" => ".png",
-                            "image/webp" => ".webp",
-                            _ => ".jpg"
-                        };
-                    }
-
-                    var fileName = $"{listingId}_{displayOrder}_{Guid.NewGuid():N}{extension}";
-                    var filePath = Path.Combine(uploadsFolder, fileName);
-
-                    // Save file like profile picture does
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await image.CopyToAsync(stream, cancellationToken);
-                    }
-                    
-                    Console.WriteLine($"[CreateListingHandler] Saved image to: {filePath}");
-
-                    var relativePath = $"/room-images/{fileName}";
-                    imagePaths.Add(relativePath);
-                    displayOrder++;
-                }
+                var relativePath = await SaveSingleImageAsync(listingId, image, uploadsFolder, displayOrder, cancellationToken);
+                imagePaths.Add(relativePath);
+                displayOrder++;
             }
         }
 
-        var listing = new RoomListing
+        return imagePaths;
+    }
+
+    private async Task<string> SaveSingleImageAsync(Guid listingId, IFormFile image, string uploadsFolder, int displayOrder, CancellationToken cancellationToken)
+    {
+        ValidateImageType(image);
+        ValidateImageSize(image);
+
+        var extension = GetFileExtension(image);
+        var fileName = $"{listingId}_{displayOrder}_{Guid.NewGuid():N}{extension}";
+        var filePath = Path.Combine(uploadsFolder, fileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await image.CopyToAsync(stream, cancellationToken);
+        }
+
+        return $"/room-images/{fileName}";
+    }
+
+    private static void ValidateImageType(IFormFile image)
+    {
+        if (!AllowedImageTypes.Contains(image.ContentType.ToLower()))
+        {
+            throw new InvalidOperationException($"Invalid image type: {image.ContentType}. Allowed types: jpg, png, webp");
+        }
+    }
+
+    private static void ValidateImageSize(IFormFile image)
+    {
+        if (image.Length > MaxImageSizeBytes)
+        {
+            throw new InvalidOperationException("Image file size must be less than 5MB.");
+        }
+    }
+
+    private static string GetFileExtension(IFormFile image)
+    {
+        var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+        if (!string.IsNullOrEmpty(extension))
+            return extension;
+
+        return image.ContentType switch
+        {
+            "image/jpeg" or "image/jpg" => ".jpg",
+            "image/png" => ".png",
+            "image/webp" => ".webp",
+            _ => ".jpg"
+        };
+    }
+
+    private string GetUploadsFolder()
+    {
+        if (!string.IsNullOrEmpty(_environment.WebRootPath))
+        {
+            return Path.Combine(_environment.WebRootPath, "room-images");
+        }
+        return Path.Combine(_environment.ContentRootPath, "wwwroot", "room-images");
+    }
+
+    private static void EnsureDirectoryExists(string path)
+    {
+        if (!Directory.Exists(path))
+        {
+            Directory.CreateDirectory(path);
+        }
+    }
+
+    private static RoomListing CreateListing(Guid listingId, CreateListingRequest request, List<string> imagePaths, bool isAdmin)
+    {
+        return new RoomListing
         {
             Id = listingId,
             OwnerId = request.OwnerId,
@@ -120,23 +155,18 @@ public class CreateListingHandler : IRequestHandler<CreateListingWithImagesComma
             Area = request.Area,
             Price = request.Price,
             AvailableFrom = DateTime.SpecifyKind(request.AvailableFrom, DateTimeKind.Utc),
-            Amenities = string.Join(",", request.Amenities
-                .Select(a => a.Trim())
-                .Where(a => !string.IsNullOrWhiteSpace(a))),
+            Amenities = string.Join(",", request.Amenities.Select(a => a.Trim()).Where(a => !string.IsNullOrWhiteSpace(a))),
             ImagePaths = string.Join(",", imagePaths),
             CreatedAt = DateTime.UtcNow,
             IsActive = true,
-            // Admin-created listings are auto-approved, user-created listings need approval
-            ApprovalStatus = command.IsAdmin ? ListingApprovalStatus.Approved : ListingApprovalStatus.Pending,
-            ApprovedByAdminId = command.IsAdmin ? request.OwnerId : null,
-            ApprovedAt = command.IsAdmin ? DateTime.UtcNow : null
+            ApprovalStatus = isAdmin ? ListingApprovalStatus.Approved : ListingApprovalStatus.Pending,
+            ApprovedByAdminId = isAdmin ? request.OwnerId : null,
+            ApprovedAt = isAdmin ? DateTime.UtcNow : null
         };
+    }
 
-        Console.WriteLine($"[CreateListingHandler] Saving listing with ImagePaths: {listing.ImagePaths}");
-
-        _dbContext.RoomListings.Add(listing);
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
+    private static CreateListingResponse CreateResponse(RoomListing listing, List<string> imagePaths)
+    {
         return new CreateListingResponse
         {
             Id = listing.Id,
@@ -147,9 +177,7 @@ public class CreateListingHandler : IRequestHandler<CreateListingWithImagesComma
             Area = listing.Area,
             Price = listing.Price,
             AvailableFrom = listing.AvailableFrom,
-            Amenities = listing.Amenities
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .ToList(),
+            Amenities = listing.Amenities.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
             CreatedAt = listing.CreatedAt,
             IsActive = listing.IsActive,
             ImagePaths = imagePaths,
