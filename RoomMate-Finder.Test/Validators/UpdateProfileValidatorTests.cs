@@ -9,6 +9,7 @@ namespace RoomMate_Finder.Test.Validators;
 public class UpdateProfileValidatorTests : IDisposable
 {
     private UpdateProfileValidator _validator;
+    private bool _disposed;
 
     public UpdateProfileValidatorTests()
     {
@@ -226,6 +227,23 @@ public class UpdateProfileValidatorTests : IDisposable
 
     public void Dispose()
     {
-        _validator = null!;
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                // Dispose managed resources
+                _validator = null!;
+            }
+
+            // Dispose unmanaged resources (if any)
+            
+            _disposed = true;
+        }
     }
 }

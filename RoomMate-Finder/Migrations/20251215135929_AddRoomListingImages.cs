@@ -8,12 +8,16 @@ namespace RoomMate_Finder.Migrations
     /// <inheritdoc />
     public partial class AddRoomListingImages : Migration
     {
+        private const string TableName = "room_listing_images";
+        private const string SchemaName = "public";
+        private const string PrincipalTableName = "room_listings";
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "room_listing_images",
-                schema: "public",
+                name: TableName,
+                schema: SchemaName,
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -28,16 +32,16 @@ namespace RoomMate_Finder.Migrations
                     table.ForeignKey(
                         name: "FK_room_listing_images_room_listings_RoomListingId",
                         column: x => x.RoomListingId,
-                        principalSchema: "public",
-                        principalTable: "room_listings",
+                        principalSchema: SchemaName,
+                        principalTable: PrincipalTableName,
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
                 name: "IX_room_listing_images_RoomListingId",
-                schema: "public",
-                table: "room_listing_images",
+                schema: SchemaName,
+                table: TableName,
                 column: "RoomListingId");
         }
 
@@ -45,8 +49,8 @@ namespace RoomMate_Finder.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "room_listing_images",
-                schema: "public");
+                name: TableName,
+                schema: SchemaName);
         }
     }
 }

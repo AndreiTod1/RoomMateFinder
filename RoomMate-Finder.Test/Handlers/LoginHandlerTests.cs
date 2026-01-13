@@ -14,6 +14,8 @@ namespace RoomMate_Finder.Test.Handlers;
 
 public class LoginHandlerTests : IDisposable
 {
+    private bool _disposed;
+
     private static JwtService CreateTestJwtService()
     {
         // Cheie suficient de lungă pentru HS256 (>= 256 bits / 32 bytes)
@@ -155,6 +157,23 @@ public class LoginHandlerTests : IDisposable
 
     public void Dispose()
     {
-        // Clean up resources if needed
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                // Dispose managed resources if any
+                // Currently no managed resources to dispose in this test class
+            }
+
+            // Dispose unmanaged resources (if any)
+            
+            _disposed = true;
+        }
     }
 }

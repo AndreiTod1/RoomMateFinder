@@ -7,68 +7,78 @@ namespace RoomMate_Finder.Migrations
     /// <inheritdoc />
     public partial class FixRoomListingRelationship : Migration
     {
+        private const string SchemaName = "public";
+        private const string RoomListingsTable = "room_listings";
+        private const string ReviewsTable = "reviews";
+        private const string TextType = "text";
+        private const string VarChar100Type = "character varying(100)";
+        private const string VarChar2000Type = "character varying(2000)";
+        private const string VarChar50Type = "character varying(50)";
+        private const string VarChar500Type = "character varying(500)";
+        private const string VarChar1000Type = "character varying(1000)";
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterColumn<string>(
                 name: "Title",
-                schema: "public",
-                table: "room_listings",
-                type: "character varying(100)",
+                schema: SchemaName,
+                table: RoomListingsTable,
+                type: VarChar100Type,
                 maxLength: 100,
                 nullable: false,
                 oldClrType: typeof(string),
-                oldType: "text");
+                oldType: TextType);
 
             migrationBuilder.AlterColumn<string>(
                 name: "Description",
-                schema: "public",
-                table: "room_listings",
-                type: "character varying(2000)",
+                schema: SchemaName,
+                table: RoomListingsTable,
+                type: VarChar2000Type,
                 maxLength: 2000,
                 nullable: false,
                 oldClrType: typeof(string),
-                oldType: "text");
+                oldType: TextType);
 
             migrationBuilder.AlterColumn<string>(
                 name: "City",
-                schema: "public",
-                table: "room_listings",
-                type: "character varying(50)",
+                schema: SchemaName,
+                table: RoomListingsTable,
+                type: VarChar50Type,
                 maxLength: 50,
                 nullable: false,
                 oldClrType: typeof(string),
-                oldType: "text");
+                oldType: TextType);
 
             migrationBuilder.AlterColumn<string>(
                 name: "Area",
-                schema: "public",
-                table: "room_listings",
-                type: "character varying(100)",
+                schema: SchemaName,
+                table: RoomListingsTable,
+                type: VarChar100Type,
                 maxLength: 100,
                 nullable: false,
                 oldClrType: typeof(string),
-                oldType: "text");
+                oldType: TextType);
 
             migrationBuilder.AlterColumn<string>(
                 name: "Amenities",
-                schema: "public",
-                table: "room_listings",
-                type: "character varying(500)",
+                schema: SchemaName,
+                table: RoomListingsTable,
+                type: VarChar500Type,
                 maxLength: 500,
                 nullable: false,
                 oldClrType: typeof(string),
-                oldType: "text");
+                oldType: TextType);
 
             migrationBuilder.AlterColumn<string>(
                 name: "Comment",
-                schema: "public",
-                table: "reviews",
-                type: "character varying(1000)",
+                schema: SchemaName,
+                table: ReviewsTable,
+                type: VarChar1000Type,
                 maxLength: 1000,
                 nullable: false,
                 oldClrType: typeof(string),
-                oldType: "text");
+                oldType: TextType);
         }
 
         /// <inheritdoc />
@@ -76,62 +86,62 @@ namespace RoomMate_Finder.Migrations
         {
             migrationBuilder.AlterColumn<string>(
                 name: "Title",
-                schema: "public",
-                table: "room_listings",
-                type: "text",
+                schema: SchemaName,
+                table: RoomListingsTable,
+                type: TextType,
                 nullable: false,
                 oldClrType: typeof(string),
-                oldType: "character varying(100)",
+                oldType: VarChar100Type,
                 oldMaxLength: 100);
 
             migrationBuilder.AlterColumn<string>(
                 name: "Description",
-                schema: "public",
-                table: "room_listings",
-                type: "text",
+                schema: SchemaName,
+                table: RoomListingsTable,
+                type: TextType,
                 nullable: false,
                 oldClrType: typeof(string),
-                oldType: "character varying(2000)",
+                oldType: VarChar2000Type,
                 oldMaxLength: 2000);
 
             migrationBuilder.AlterColumn<string>(
                 name: "City",
-                schema: "public",
-                table: "room_listings",
-                type: "text",
+                schema: SchemaName,
+                table: RoomListingsTable,
+                type: TextType,
                 nullable: false,
                 oldClrType: typeof(string),
-                oldType: "character varying(50)",
+                oldType: VarChar50Type,
                 oldMaxLength: 50);
 
             migrationBuilder.AlterColumn<string>(
                 name: "Area",
-                schema: "public",
-                table: "room_listings",
-                type: "text",
+                schema: SchemaName,
+                table: RoomListingsTable,
+                type: TextType,
                 nullable: false,
                 oldClrType: typeof(string),
-                oldType: "character varying(100)",
+                oldType: VarChar100Type,
                 oldMaxLength: 100);
 
             migrationBuilder.AlterColumn<string>(
                 name: "Amenities",
-                schema: "public",
-                table: "room_listings",
-                type: "text",
+                schema: SchemaName,
+                table: RoomListingsTable,
+                type: TextType,
                 nullable: false,
                 oldClrType: typeof(string),
-                oldType: "character varying(500)",
+                oldType: VarChar500Type,
                 oldMaxLength: 500);
 
             migrationBuilder.AlterColumn<string>(
                 name: "Comment",
-                schema: "public",
-                table: "reviews",
-                type: "text",
+                schema: SchemaName,
+                table: ReviewsTable,
+                type: TextType,
                 nullable: false,
                 oldClrType: typeof(string),
-                oldType: "character varying(1000)",
+                oldType: VarChar1000Type,
                 oldMaxLength: 1000);
         }
     }

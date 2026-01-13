@@ -10,6 +10,8 @@ namespace RoomMate_Finder.Test.Handlers;
 
 public class GetProfilesHandlerTests : IDisposable
 {
+    private bool _disposed;
+
     [Fact]
     public async Task Given_EmptyDatabase_When_HandleIsCalled_Then_EmptyListIsReturned()
     {
@@ -145,7 +147,7 @@ public class GetProfilesHandlerTests : IDisposable
         result.Should().NotBeNull();
         result.Should().HaveCount(1);
         
-        var returnedProfile = result.First();
+        var returnedProfile = result[0];
         returnedProfile.Id.Should().Be(profile.Id);
         returnedProfile.Email.Should().Be(profile.Email);
         returnedProfile.FullName.Should().Be(profile.FullName);
@@ -154,6 +156,23 @@ public class GetProfilesHandlerTests : IDisposable
 
     public void Dispose()
     {
-        // Clean up resources if needed
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                // Dispose managed resources if any
+                // Currently no managed resources to dispose in this test class
+            }
+
+            // Dispose unmanaged resources (if any)
+            
+            _disposed = true;
+        }
     }
 }

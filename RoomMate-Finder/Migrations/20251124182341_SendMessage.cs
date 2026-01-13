@@ -8,20 +8,29 @@ namespace RoomMate_Finder.Migrations
     /// <inheritdoc />
     public partial class SendMessage : Migration
     {
+        private const string SchemaName = "public";
+        private const string MessagesTable = "messages";
+        private const string ConversationsTable = "conversations";
+        private const string ProfilesTable = "profiles";
+        private const string UuidType = "uuid";
+        private const string TextType = "text";
+        private const string TimestampType = "timestamp with time zone";
+        private const string BooleanType = "boolean";
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "messages",
-                schema: "public",
+                name: MessagesTable,
+                schema: SchemaName,
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ConversationId = table.Column<Guid>(type: "uuid", nullable: false),
-                    SenderId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Content = table.Column<string>(type: "text", nullable: false),
-                    SentAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    IsRead = table.Column<bool>(type: "boolean", nullable: false)
+                    Id = table.Column<Guid>(type: UuidType, nullable: false),
+                    ConversationId = table.Column<Guid>(type: UuidType, nullable: false),
+                    SenderId = table.Column<Guid>(type: UuidType, nullable: false),
+                    Content = table.Column<string>(type: TextType, nullable: false),
+                    SentAt = table.Column<DateTime>(type: TimestampType, nullable: false),
+                    IsRead = table.Column<bool>(type: BooleanType, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -29,35 +38,35 @@ namespace RoomMate_Finder.Migrations
                     table.ForeignKey(
                         name: "FK_messages_conversations_ConversationId",
                         column: x => x.ConversationId,
-                        principalSchema: "public",
-                        principalTable: "conversations",
+                        principalSchema: SchemaName,
+                        principalTable: ConversationsTable,
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_messages_profiles_SenderId",
                         column: x => x.SenderId,
-                        principalSchema: "public",
-                        principalTable: "profiles",
+                        principalSchema: SchemaName,
+                        principalTable: ProfilesTable,
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
                 name: "IX_messages_ConversationId",
-                schema: "public",
-                table: "messages",
+                schema: SchemaName,
+                table: MessagesTable,
                 column: "ConversationId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_messages_SenderId",
-                schema: "public",
-                table: "messages",
+                schema: SchemaName,
+                table: MessagesTable,
                 column: "SenderId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_messages_SentAt",
-                schema: "public",
-                table: "messages",
+                schema: SchemaName,
+                table: MessagesTable,
                 column: "SentAt");
         }
 
@@ -65,8 +74,8 @@ namespace RoomMate_Finder.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "messages",
-                schema: "public");
+                name: MessagesTable,
+                schema: SchemaName);
         }
     }
 }

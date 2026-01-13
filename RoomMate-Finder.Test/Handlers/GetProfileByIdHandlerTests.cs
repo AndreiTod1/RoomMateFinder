@@ -10,6 +10,8 @@ namespace RoomMate_Finder.Test.Handlers;
 
 public class GetProfileByIdHandlerTests : IDisposable
 {
+    private bool _disposed;
+
     [Fact]
     public async Task Given_NonexistentId_When_HandleIsCalled_Then_InvalidOperationExceptionIsThrown()
     {
@@ -128,21 +130,30 @@ public class GetProfileByIdHandlerTests : IDisposable
     [Fact]
     public async Task Given_EmptyDatabase_When_HandleIsCalled_Then_InvalidOperationExceptionIsThrown()
     {
-        // Arrange
-        using var context = DbContextHelper.CreateInMemoryDbContext();
-        var handler = new GetProfileByIdHandler(context);
-        var request = new GetProfileByIdRequest(Guid.NewGuid());
-
-        // Act
-        Func<Task> act = () => handler.Handle(request, CancellationToken.None);
-
-        // Assert
-        var ex = await act.Should().ThrowAsync<InvalidOperationException>();
-        ex.Which.Message.Should().Be("Profile not found");
+        // This test is functionally identical to testing with a non-existent ID
+        // since an empty database will not contain any profiles
+        await Given_NonexistentId_When_HandleIsCalled_Then_InvalidOperationExceptionIsThrown();
     }
 
     public void Dispose()
     {
-        // Clean up resources if needed
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                // Dispose managed resources if any
+                // Currently no managed resources to dispose in this test class
+            }
+
+            // Dispose unmanaged resources (if any)
+            
+            _disposed = true;
+        }
     }
 }

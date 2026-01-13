@@ -16,6 +16,7 @@ public class CreateProfileHandlerTests : IDisposable
 {
     private readonly Mock<IWebHostEnvironment> _mockEnvironment;
     private readonly string _tempPath;
+    private bool _disposed;
 
     public CreateProfileHandlerTests()
     {
@@ -153,9 +154,46 @@ public class CreateProfileHandlerTests : IDisposable
 
     public void Dispose()
     {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                // Dispose managed resources
+                CleanupTempDirectory();
+            }
+
+            // Dispose unmanaged resources (if any)
+            
+            _disposed = true;
+        }
+    }
+
+    private void CleanupTempDirectory()
+    {
         if (Directory.Exists(_tempPath))
         {
-            try { Directory.Delete(_tempPath, true); } catch { }
+            try
+            {
+                Directory.Delete(_tempPath, true);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Directory may be in use, ignore cleanup failure in tests
+            }
+            catch (DirectoryNotFoundException)
+            {
+                // Directory already deleted, nothing to do
+            }
+            catch (IOException)
+            {
+                // File system operation failed, ignore cleanup failure in tests
+            }
         }
     }
 }
