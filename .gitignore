@@ -6,8 +6,9 @@
 # dotenv files
 .env
 
-# Profile pictures (user uploads)
+# User uploads - profile pictures and room images
 RoomMate-Finder/wwwroot/profile-pictures/
+RoomMate-Finder/wwwroot/room-images/
 
 # User-specific files
 *.rsuser

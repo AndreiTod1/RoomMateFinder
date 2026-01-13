@@ -88,8 +88,11 @@ static void ConfigureServices(IServiceCollection services, IWebHostEnvironment e
     // CORS Configuration - from .env, with development fallbacks
     ConfigureCors(services, env);
     
-    // Database Configuration - from.env
-    ConfigureDatabase(services);
+    // Database Configuration - from.env (skip in Testing environment for WebApplicationFactory)
+    if (env.EnvironmentName != "Testing")
+    {
+        ConfigureDatabase(services);
+    }
     
     // MediatR & Validation
     services.AddMediatR(cfg => 
@@ -238,6 +241,13 @@ static string GetRequiredEnvironmentVariable(string key)
 
 static async Task InitializeDatabaseAsync(WebApplication app)
 {
+    // Skip database initialization in Testing environment (uses in-memory database)
+    if (app.Environment.EnvironmentName == "Testing")
+    {
+        Console.WriteLine("✓ Testing environment detected - skipping database migrations");
+        return;
+    }
+
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
@@ -312,3 +322,7 @@ static void ConfigureCompatibilityServices(IServiceCollection services)
     services.AddScoped<ICompatibilityCalculatorService, CompatibilityCalculatorService>();
     services.AddScoped<ICompatibilityDescriptionService, CompatibilityDescriptionService>();
 }
+
+
+// Needed for WebApplicationFactory in integration tests
+public partial class Program { }

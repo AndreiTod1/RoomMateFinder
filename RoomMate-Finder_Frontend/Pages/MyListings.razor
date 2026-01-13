@@ -214,7 +214,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "";
+        _apiBaseUrl = Configuration["ApiBaseUrl"] ?? string.Empty;
         
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;

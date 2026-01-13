@@ -1,7 +1,9 @@
 using Bunit;
 using FluentAssertions;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using MudBlazor;
 using MudBlazor.Services;
 using RoomMate_Finder_Frontend.Pages;
 using RoomMate_Finder_Frontend.Services;
@@ -32,8 +34,8 @@ public class LoginTests : BunitContext
         cut.FindAll("input").Count.Should().BeGreaterThan(0); // Should have email and password fields
     }
 
-    [Fact(Skip = "Requires complex JS mocking for MudForm validation")]
-    public void Login_ClickingSubmit_CallsAuthService()
+    [Fact]
+    public async Task Login_ClickingSubmit_CallsAuthService()
     {
         // Arrange
         // Setup successful login mock
@@ -42,23 +44,20 @@ public class LoginTests : BunitContext
 
         var cut = Render<Login>();
         
-        // Simpler way with bUnit: FindComponent<MudTextField<string>>
-        var textFields = cut.FindComponents<MudBlazor.MudTextField<string>>();
-        var emailComponent = textFields[0]; 
-        var passwordComponent = textFields[1];
+        // Act - Simulate typing via DOM events to trigger binding
+        var inputs = cut.FindAll("input");
+        inputs[0].Change("test@test.com");
+        inputs[1].Change("password123");
 
-        // Act - Simulate typing
-        #pragma warning disable BL0005 // Component parameter should not be set outside of its component
-        emailComponent.Instance.Value = "test@test.com";
-        passwordComponent.Instance.Value = "password123";
-        #pragma warning restore BL0005
-
-        // Find submit button
-        var button = cut.Find("button");
-        button.Click();
+        // Find submit button via Component
+        var btn = cut.FindComponent<MudButton>();
+        // Must invoke on dispatcher
+        await cut.InvokeAsync(() => btn.Instance.OnClick.InvokeAsync(new MouseEventArgs()));
 
         // Assert
-        // Allow time for async submit
+        // Allow time for validation and async submit
+        // Validation is async in MudBlazor, so we need to wait
+        // Also checking for success
         cut.WaitForState(() => _mockAuthService.Invocations.Count > 0, TimeSpan.FromSeconds(2));
         
         _mockAuthService.Verify(x => x.LoginAsync("test@test.com", "password123"), Times.Once);

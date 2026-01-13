@@ -151,7 +151,7 @@
 
             // Call backend API
             using var http = new HttpClient();
-            var apiBaseUrl = Configuration["ApiBaseUrl"] ?? "";
+            var apiBaseUrl = Configuration["ApiBaseUrl"] ?? string.Empty;
             var response = await http.PostAsJsonAsync(
                 $"{apiBaseUrl}/profiles", 
                 request

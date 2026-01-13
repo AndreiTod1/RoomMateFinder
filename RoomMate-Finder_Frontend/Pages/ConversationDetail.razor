@@ -253,7 +253,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "";
+        _apiBaseUrl = Configuration["ApiBaseUrl"] ?? string.Empty;
         await GetCurrentUserId();
         await NotificationService.MarkConversationAsReadAsync(ConversationId);
         await LoadMessages();

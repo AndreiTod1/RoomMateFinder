@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
+using RoomMate_Finder_Frontend.Services.Internals;
 
 namespace RoomMate_Finder_Frontend.Services;
 
@@ -35,8 +36,9 @@ public record ChatMessageDto(
 
 public class ChatService : IChatService
 {
-    private HubConnection? _hubConnection;
+    private IHubConnection? _hubConnection;
     private readonly string _hubUrl;
+    private readonly IHubConnectionFactory _hubConnectionFactory;
     
     public event Action<ChatMessageDto>? OnMessageReceived;
     public event Action<Guid, string>? OnNewMessageNotification;
@@ -46,8 +48,9 @@ public class ChatService : IChatService
     
     public bool IsConnected => _hubConnection?.State == HubConnectionState.Connected;
 
-    public ChatService(IConfiguration configuration)
+    public ChatService(IConfiguration configuration, IHubConnectionFactory hubConnectionFactory)
     {
+        _hubConnectionFactory = hubConnectionFactory;
         var baseUrl = configuration["ApiBaseUrl"] ?? "";
         _hubUrl = $"{baseUrl}/hubs/chat";
     }
@@ -59,13 +62,7 @@ public class ChatService : IChatService
             await DisconnectAsync();
         }
 
-        _hubConnection = new HubConnectionBuilder()
-            .WithUrl(_hubUrl, options =>
-            {
-                options.AccessTokenProvider = () => Task.FromResult<string?>(accessToken);
-            })
-            .WithAutomaticReconnect()
-            .Build();
+        _hubConnection = _hubConnectionFactory.CreateConnection(_hubUrl, accessToken);
 
         // Register event handlers
         _hubConnection.On<ChatMessageDto>("ReceiveMessage", message =>
@@ -116,7 +113,7 @@ public class ChatService : IChatService
             Console.WriteLine("[ChatService] Disconnected from SignalR hub");
         }
     }
-
+    
     public async Task JoinConversationAsync(Guid conversationId)
     {
         if (_hubConnection?.State == HubConnectionState.Connected)

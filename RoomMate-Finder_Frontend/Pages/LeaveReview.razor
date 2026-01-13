@@ -112,7 +112,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "";
+        _apiBaseUrl = Configuration["ApiBaseUrl"] ?? string.Empty;
         
         var me = await ProfileService.GetCurrentAsync();
         if (me is null)
