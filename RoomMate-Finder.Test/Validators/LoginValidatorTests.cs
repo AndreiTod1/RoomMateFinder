@@ -9,6 +9,7 @@ namespace RoomMate_Finder.Test.Validators;
 public class LoginValidatorTests : IDisposable
 {
     private LoginValidator _validator;
+    private bool _disposed;
 
     public LoginValidatorTests()
     {
@@ -88,6 +89,23 @@ public class LoginValidatorTests : IDisposable
 
     public void Dispose()
     {
-        _validator = null!;
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                // Dispose managed resources
+                _validator = null!;
+            }
+
+            // Dispose unmanaged resources (if any)
+            
+            _disposed = true;
+        }
     }
 }

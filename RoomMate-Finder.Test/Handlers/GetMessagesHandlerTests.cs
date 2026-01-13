@@ -11,6 +11,8 @@ namespace RoomMate_Finder.Test.Handlers;
 
 public class GetMessagesHandlerTests : IDisposable
 {
+    private bool _disposed;
+
     [Fact]
     public async Task Given_NonexistentConversation_When_HandleIsCalled_Then_KeyNotFoundExceptionIsThrown()
     {
@@ -288,6 +290,23 @@ public class GetMessagesHandlerTests : IDisposable
 
     public void Dispose()
     {
-        // Clean up resources if needed
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                // Dispose managed resources if any
+                // Currently no managed resources to dispose in this test class
+            }
+
+            // Dispose unmanaged resources (if any)
+            
+            _disposed = true;
+        }
     }
 }
