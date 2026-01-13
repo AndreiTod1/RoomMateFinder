@@ -8,18 +8,24 @@ namespace RoomMate_Finder.Migrations
     /// <inheritdoc />
     public partial class AddConversations : Migration
     {
+        private const string SchemaName = "public";
+        private const string ConversationsTable = "conversations";
+        private const string ProfilesTable = "profiles";
+        private const string UuidType = "uuid";
+        private const string TimestampType = "timestamp with time zone";
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "conversations",
-                schema: "public",
+                name: ConversationsTable,
+                schema: SchemaName,
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    User1Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    User2Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    Id = table.Column<Guid>(type: UuidType, nullable: false),
+                    User1Id = table.Column<Guid>(type: UuidType, nullable: false),
+                    User2Id = table.Column<Guid>(type: UuidType, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: TimestampType, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -27,30 +33,30 @@ namespace RoomMate_Finder.Migrations
                     table.ForeignKey(
                         name: "FK_conversations_profiles_User1Id",
                         column: x => x.User1Id,
-                        principalSchema: "public",
-                        principalTable: "profiles",
+                        principalSchema: SchemaName,
+                        principalTable: ProfilesTable,
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_conversations_profiles_User2Id",
                         column: x => x.User2Id,
-                        principalSchema: "public",
-                        principalTable: "profiles",
+                        principalSchema: SchemaName,
+                        principalTable: ProfilesTable,
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
                 name: "IX_conversations_User1Id_User2Id",
-                schema: "public",
-                table: "conversations",
+                schema: SchemaName,
+                table: ConversationsTable,
                 columns: new[] { "User1Id", "User2Id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_conversations_User2Id",
-                schema: "public",
-                table: "conversations",
+                schema: SchemaName,
+                table: ConversationsTable,
                 column: "User2Id");
         }
 
@@ -58,8 +64,8 @@ namespace RoomMate_Finder.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "conversations",
-                schema: "public");
+                name: ConversationsTable,
+                schema: SchemaName);
         }
     }
 }

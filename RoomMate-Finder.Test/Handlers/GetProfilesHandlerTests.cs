@@ -147,7 +147,7 @@ public class GetProfilesHandlerTests : IDisposable
         result.Should().NotBeNull();
         result.Should().HaveCount(1);
         
-        var returnedProfile = result.First();
+        var returnedProfile = result[0];
         returnedProfile.Id.Should().Be(profile.Id);
         returnedProfile.Email.Should().Be(profile.Email);
         returnedProfile.FullName.Should().Be(profile.FullName);

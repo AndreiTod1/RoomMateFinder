@@ -130,17 +130,9 @@ public class GetProfileByIdHandlerTests : IDisposable
     [Fact]
     public async Task Given_EmptyDatabase_When_HandleIsCalled_Then_InvalidOperationExceptionIsThrown()
     {
-        // Arrange
-        using var context = DbContextHelper.CreateInMemoryDbContext();
-        var handler = new GetProfileByIdHandler(context);
-        var request = new GetProfileByIdRequest(Guid.NewGuid());
-
-        // Act
-        Func<Task> act = () => handler.Handle(request, CancellationToken.None);
-
-        // Assert
-        var ex = await act.Should().ThrowAsync<InvalidOperationException>();
-        ex.Which.Message.Should().Be("Profile not found");
+        // This test is functionally identical to testing with a non-existent ID
+        // since an empty database will not contain any profiles
+        await Given_NonexistentId_When_HandleIsCalled_Then_InvalidOperationExceptionIsThrown();
     }
 
     public void Dispose()

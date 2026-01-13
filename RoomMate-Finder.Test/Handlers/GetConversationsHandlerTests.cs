@@ -11,6 +11,8 @@ namespace RoomMate_Finder.Test.Handlers;
 
 public class GetConversationsHandlerTests : IDisposable
 {
+    private bool _disposed;
+
     [Fact]
     public async Task Given_NoConversations_When_HandleIsCalled_Then_EmptyListIsReturned()
     {
@@ -92,7 +94,7 @@ public class GetConversationsHandlerTests : IDisposable
         result.Should().NotBeNull();
         result.Conversations.Should().HaveCount(1);
         
-        var conversationDto = result.Conversations.First();
+        var conversationDto = result.Conversations[0];
         conversationDto.Id.Should().Be(conversation.Id);
         conversationDto.OtherUserId.Should().Be(otherUserId);
         conversationDto.OtherUserName.Should().Be("Other User");
@@ -161,7 +163,7 @@ public class GetConversationsHandlerTests : IDisposable
         result.Should().NotBeNull();
         result.Conversations.Should().HaveCount(1);
         
-        var conversationDto = result.Conversations.First();
+        var conversationDto = result.Conversations[0];
         conversationDto.Id.Should().Be(conversation.Id);
         conversationDto.OtherUserId.Should().Be(otherUserId);
         conversationDto.OtherUserName.Should().Be("Other User");
@@ -330,6 +332,23 @@ public class GetConversationsHandlerTests : IDisposable
 
     public void Dispose()
     {
-        // Clean up resources if needed
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                // Dispose managed resources if any
+                // Currently no managed resources to dispose in this test class
+            }
+
+            // Dispose unmanaged resources (if any)
+            
+            _disposed = true;
+        }
     }
 }
