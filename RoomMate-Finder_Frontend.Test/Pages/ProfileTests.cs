@@ -10,6 +10,7 @@ using RoomMate_Finder_Frontend.Models;
 using Xunit;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 
 namespace RoomMate_Finder_Frontend.Test.Pages;
 
@@ -149,5 +150,94 @@ public class ProfileTests : IAsyncLifetime
         // Assert - Check for Form
         profileComp.WaitForState(() => profileComp.FindComponents<MudForm>().Count > 0);
         profileComp.FindComponents<MudTextField<string>>().Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public void Profile_EditMode_Cancel_RevertsToView()
+    {
+        // Arrange
+        var profileId = Guid.NewGuid();
+        var profile = new ProfileDto(profileId, "me@test.com", "My Profile", 25, "Male", "Uni", "Bio", "Life", "Int", DateTime.UtcNow, null, "User");
+
+        _mockProfileService.Setup(x => x.GetByIdAsync(profileId)).ReturnsAsync(profile);
+        _mockProfileService.Setup(x => x.GetCurrentAsync()).ReturnsAsync(profile); 
+        _mockProfileService.Setup(x => x.GetUserReviews(profileId)).ReturnsAsync(new List<Review>());
+
+        var cut = _ctx.Render<MudPopoverProvider>();
+        var profileComp = _ctx.Render<Profile>(parameters => parameters.Add(p => p.Id, profileId));
+        
+        profileComp.WaitForState(() => profileComp.FindAll("button").Count > 0);
+
+        // Enter Edit Mode
+        profileComp.FindComponents<MudButton>().First(b => b.Markup.Contains("Editează Profilul")).Find("button").Click();
+        profileComp.WaitForState(() => profileComp.FindComponents<MudForm>().Count > 0);
+
+        // Act - Click Cancel
+        profileComp.FindComponents<MudButton>().First(b => b.Markup.Contains("Anulează")).Find("button").Click();
+
+        // Assert - Back to View Mode
+        profileComp.WaitForState(() => profileComp.FindComponents<MudForm>().Count == 0);
+        profileComp.Find("h3").TextContent.Should().Contain("My Profile");
+    }
+
+    [Fact]
+    public async Task Profile_EditMode_Save_CallsUpdateService()
+    {
+        // Arrange
+        var profileId = Guid.NewGuid();
+        var profile = new ProfileDto(profileId, "me@test.com", "My Profile", 25, "Male", "Uni", "Bio", "Life", "Int", DateTime.UtcNow, null, "User");
+
+        _mockProfileService.Setup(x => x.GetByIdAsync(profileId)).ReturnsAsync(profile);
+        _mockProfileService.Setup(x => x.GetCurrentAsync()).ReturnsAsync(profile); 
+        _mockProfileService.Setup(x => x.GetUserReviews(profileId)).ReturnsAsync(new List<Review>());
+        _mockProfileService.Setup(x => x.UpdateAsync(It.IsAny<Guid>(), It.IsAny<UpdateProfileRequestDto>(), It.IsAny<IBrowserFile?>()))
+            .ReturnsAsync(profile with { FullName = "Updated Name" });
+
+        var cut = _ctx.Render<MudPopoverProvider>();
+        var profileComp = _ctx.Render<Profile>(parameters => parameters.Add(p => p.Id, profileId));
+        
+        profileComp.WaitForState(() => profileComp.FindAll("button").Count > 0);
+
+        // Enter Edit Mode
+        profileComp.FindComponents<MudButton>().First(b => b.Markup.Contains("Editează Profilul")).Find("button").Click();
+        profileComp.WaitForState(() => profileComp.FindComponents<MudForm>().Count > 0);
+
+        // Change Name
+        var nameField = profileComp.FindComponents<MudTextField<string>>().First(x => x.Instance.Label == "Nume Complet");
+        nameField.Find("input").Change("Updated Name");
+
+        // Act - Click Save
+        var saveBtn = profileComp.FindComponents<MudButton>().First(b => b.Markup.Contains("Salvează"));
+        await profileComp.InvokeAsync(() => saveBtn.Find("button").Click());
+
+        // Assert
+        _mockProfileService.Verify(x => x.UpdateAsync(profileId, It.Is<UpdateProfileRequestDto>(d => d.FullName == "Updated Name"), null), Times.Once);
+        
+        // Should return to view mode with new name
+        profileComp.WaitForState(() => profileComp.FindComponents<MudForm>().Count == 0);
+        profileComp.Markup.Should().Contain("Updated Name");
+    }
+
+    [Fact]
+    public void Profile_OtherUser_NoEditButton()
+    {
+        // Arrange
+        var profileId = Guid.NewGuid();
+        var currentUserId = Guid.NewGuid();
+        var profile = new ProfileDto(profileId, "other@test.com", "Other Profile", 25, "Male", "Uni", "Bio", "Life", "Int", DateTime.UtcNow, null, "User");
+        var currentUser = new ProfileDto(currentUserId, "me@test.com", "Me", 25, "Male", "Uni", "Bio", "Life", "Int", DateTime.UtcNow, null, "User");
+
+        _mockProfileService.Setup(x => x.GetByIdAsync(profileId)).ReturnsAsync(profile);
+        _mockProfileService.Setup(x => x.GetCurrentAsync()).ReturnsAsync(currentUser); 
+        _mockProfileService.Setup(x => x.GetUserReviews(profileId)).ReturnsAsync(new List<Review>());
+
+        // Act
+        var cut = _ctx.Render<MudPopoverProvider>();
+        var profileComp = _ctx.Render<Profile>(parameters => parameters.Add(p => p.Id, profileId));
+        
+        profileComp.WaitForState(() => profileComp.FindAll("h3").Count > 0);
+
+        // Assert
+        profileComp.Markup.Should().NotContain("Editează Profilul");
     }
 }

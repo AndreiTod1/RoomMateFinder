@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+﻿﻿using FluentValidation;
 
 namespace RoomMate_Finder.Features.RoomListings.CreateListing;
 
@@ -44,10 +44,15 @@ public class CreateListingValidator : AbstractValidator<CreateListingRequest>
 
         RuleFor(x => x.Amenities)
             .NotNull()
-            .WithMessage("Amenities list cannot be null")
-            .Must(amenities => amenities.Count <= 20)
-            .WithMessage("Cannot have more than 20 amenities")
-            .Must(amenities => amenities.All(a => !string.IsNullOrWhiteSpace(a) && a.Length <= 50))
-            .WithMessage("Each amenity must be non-empty and not exceed 50 characters");
+            .WithMessage("Amenities list cannot be null");
+
+        When(x => x.Amenities != null, () =>
+        {
+            RuleFor(x => x.Amenities)
+                .Must(amenities => amenities!.Count <= 20)
+                .WithMessage("Cannot have more than 20 amenities")
+                .Must(amenities => amenities!.All(a => !string.IsNullOrWhiteSpace(a) && a.Length <= 50))
+                .WithMessage("Each amenity must be non-empty and not exceed 50 characters");
+        });
     }
 }

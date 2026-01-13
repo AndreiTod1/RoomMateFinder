@@ -158,4 +158,40 @@ public class MatchingEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         matches.Should().NotBeNull();
         matches.Should().Contain(m => m.UserId == userB.Id);
     }
+    [Fact]
+    public async Task PassProfile_WhenCalled_ReturnsSuccess()
+    {
+        // Arrange
+        var (userA, userB) = await SeedTwoUsersAsync("pass_test");
+        var request = new RoomMate_Finder.Features.Matching.PassProfile.PassProfileRequest(userA.Id, userB.Id);
+
+        // Act
+        // Endpoint: POST /matching/pass
+        var response = await _client.PostAsJsonAsync("/matching/pass", request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<RoomMate_Finder.Features.Matching.PassProfile.PassProfileResponse>();
+        result.Should().NotBeNull();
+        result!.Success.Should().BeTrue();
+        result.Message.Should().Contain("passed");
+    }
+
+    [Fact]
+    public async Task CalculateCompatibility_ReturnsScore()
+    {
+        // Arrange
+        var (userA, userB) = await SeedTwoUsersAsync("compat_test");
+
+        // Act
+        // Endpoint: GET /matching/compatibility/{userId}/{targetUserId}
+        var response = await _client.GetAsync($"/matching/compatibility/{userA.Id}/{userB.Id}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<RoomMate_Finder.Features.Matching.CalculateCompatibility.CalculateCompatibilityResponse>();
+        result.Should().NotBeNull();
+        result!.CompatibilityScore.Should().BeGreaterThanOrEqualTo(0);
+        result.CompatibilityLevel.Should().NotBeNullOrEmpty();
+    }
 }

@@ -108,4 +108,71 @@ public class ReviewsEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     // Additional tests for GetUserReviews and Stats if endpoints are available/known
     // Assuming GetUserReviews is GET /profiles/{userId}/reviews
     // Assuming GetReviewStats is GET /profiles/{userId}/reviews/stats
+    [Fact]
+    public async Task GetUserReviews_ReturnsReviews()
+    {
+        // Arrange
+        var (reviewer, reviewee, token) = await SeedUsersAsync("get_reviews");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        
+        // Create a review first
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Reviews.Add(new Review
+            {
+                Id = Guid.NewGuid(),
+                ReviewerId = reviewer.Id,
+                ReviewedUserId = reviewee.Id,
+                Rating = 4,
+                Comment = "Good",
+                CreatedAt = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+
+        // Act
+        var response = await _client.GetAsync($"/profiles/{reviewee.Id}/reviews");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<GetUserReviewsResponse>();
+        result.Should().NotBeNull();
+        result!.Reviews.Should().ContainSingle();
+        result.Reviews.First().Rating.Should().Be(4);
+    }
+
+    [Fact]
+    public async Task GetReviewStats_ReturnsStats()
+    {
+        // Arrange
+        var (reviewer, reviewee, token) = await SeedUsersAsync("get_stats");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        
+        // Create review
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Reviews.Add(new Review
+            {
+                Id = Guid.NewGuid(),
+                ReviewerId = reviewer.Id,
+                ReviewedUserId = reviewee.Id,
+                Rating = 5,
+                Comment = "Excellent",
+                CreatedAt = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+
+        // Act
+        var response = await _client.GetAsync($"/profiles/{reviewee.Id}/reviews/stats");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<GetReviewStatsResponse>();
+        result.Should().NotBeNull();
+        result!.AverageRating.Should().Be(5);
+        result.TotalReviews.Should().Be(1);
+    }
 }

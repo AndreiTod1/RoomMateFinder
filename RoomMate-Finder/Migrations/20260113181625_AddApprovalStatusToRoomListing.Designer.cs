@@ -12,7 +12,7 @@ using RoomMate_Finder.Infrastructure.Persistence;
 namespace RoomMate_Finder.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260113150301_AddApprovalStatusToRoomListing")]
+    [Migration("20260113181625_AddApprovalStatusToRoomListing")]
     partial class AddApprovalStatusToRoomListing
     {
         /// <inheritdoc />

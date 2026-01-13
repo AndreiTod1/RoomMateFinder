@@ -1,55 +1,51 @@
 using Bunit;
 using FluentAssertions;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 using MudBlazor.Services;
 using RoomMate_Finder_Frontend.Shared;
-using Xunit;
 
 namespace RoomMate_Finder_Frontend.Test.Shared;
 
-public class RoommateRequestDialogTests : TestContext
+public class RoommateRequestDialogTests : BunitContext, IAsyncLifetime
 {
-    public RoommateRequestDialogTests()
+    public Task InitializeAsync()
     {
-        // Add MudBlazor services
         Services.AddMudServices();
+        JSInterop.Mode = JSRuntimeMode.Loose;
+        return Task.CompletedTask;
     }
 
-    [Fact(Skip = "MudDialog requires MudDialogProvider context which is complex to set up in bUnit")]
-    public void Given_RequestMode_When_Rendered_Then_ShowsCorrectTextAndIcon()
+    public new async Task DisposeAsync()
     {
-        // Arrange
-        var otherUser = "Alice";
-        var isConfirmation = false;
-        
-        var comp = Render<RoommateRequestDialog>(parameters => parameters
-            .Add(p => p.OtherUserName, otherUser)
-            .Add(p => p.IsConfirmation, isConfirmation)
-        );
-
-        // Assert
-        comp.Markup.Should().NotBeNullOrEmpty();
+        await base.DisposeAsync();
     }
 
-    [Fact(Skip = "MudDialog requires MudDialogProvider context which is complex to set up in bUnit")]
-    public void Given_ConfirmationMode_When_Rendered_Then_ShowsCorrectTextAndIcon()
+    [Fact]
+    public void RoommateRequestDialog_HasCorrectParameters()
     {
-        // Arrange
-        var otherUser = "Bob";
-        var isConfirmation = true;
+        // Assert that the component has expected parameter properties
+        var componentType = typeof(RoommateRequestDialog);
         
-        var comp = Render<RoommateRequestDialog>(parameters => parameters
-            .Add(p => p.OtherUserName, otherUser)
-            .Add(p => p.IsConfirmation, isConfirmation)
-        );
-
-        // Assert
-        comp.Markup.Should().NotBeNullOrEmpty();
+        componentType.GetProperty("OtherUserName").Should().NotBeNull();
+        componentType.GetProperty("IsConfirmation").Should().NotBeNull();
     }
-    
-    // Note: Testing Submit/Cancel usually requires wrapping in a MudDialogProvider or mocking the CascadingParameter.
-    // Since BUnit's generic support for MudDialog is limited without full setup, we check rendering primarily.
-    // However, we can inject a mock dialog instance if we assume internal verification.
-    // For now, these render tests cover the conditional logic.
+
+    [Fact]
+    public void RoommateRequestDialog_DefaultValues_AreCorrect()
+    {
+        // Create instance to check defaults
+        var dialog = new RoommateRequestDialog();
+        
+        // OtherUserName should be empty string by default (based on component code)
+        dialog.OtherUserName.Should().BeEmpty();
+        // IsConfirmation should default to false
+        dialog.IsConfirmation.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RoommateRequestDialog_ComponentType_IsCorrect()
+    {
+        // Verify the component inherits from ComponentBase
+        typeof(RoommateRequestDialog).Should().BeAssignableTo<ComponentBase>();
+    }
 }

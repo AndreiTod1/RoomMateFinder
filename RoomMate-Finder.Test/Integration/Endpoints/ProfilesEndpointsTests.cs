@@ -113,21 +113,76 @@ public class ProfilesEndpointsTests : IClassFixture<CustomWebApplicationFactory>
 
     #region CreateProfile Endpoint Tests
 
-    // CreateProfile endpoint uses [FromForm] multipart/form-data, not JSON
-    // These tests require MultipartFormDataContent - skipped for now
-    
-    [Fact(Skip = "CreateProfile endpoint requires multipart/form-data, not JSON")]
+    [Fact]
     public async Task CreateProfile_WithValidData_ReturnsOkWithToken()
     {
-        // Requires MultipartFormDataContent
-        await Task.CompletedTask;
+        // Arrange - use multipart/form-data
+        var uniqueEmail = $"newuser_{Guid.NewGuid()}@example.com";
+        
+        using var formData = new MultipartFormDataContent();
+        formData.Add(new StringContent(uniqueEmail), "Email");
+        formData.Add(new StringContent("Password123!"), "Password");
+        formData.Add(new StringContent("New Test User"), "FullName");
+        formData.Add(new StringContent("25"), "Age");
+        formData.Add(new StringContent("Male"), "Gender");
+        formData.Add(new StringContent("Test University"), "University");
+        formData.Add(new StringContent("Test Bio"), "Bio");
+        formData.Add(new StringContent("Night Owl"), "Lifestyle");
+        formData.Add(new StringContent("Testing, Coding"), "Interests");
+
+        // Act
+        var response = await _client.PostAsync("/profiles", formData);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("token");
     }
 
-    [Fact(Skip = "CreateProfile endpoint requires multipart/form-data, not JSON")]
+    [Fact]
     public async Task CreateProfile_WithDuplicateEmail_ReturnsBadRequest()
     {
-        // Requires MultipartFormDataContent
-        await Task.CompletedTask;
+        // Arrange - first create a user
+        var duplicateEmail = $"duplicate_{Guid.NewGuid()}@example.com";
+        
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        
+        var existingUser = new Profile
+        {
+            Id = Guid.NewGuid(),
+            Email = duplicateEmail,
+            PasswordHash = PasswordHasher.HashPassword("Password123!"),
+            FullName = "Existing User",
+            Age = 25,
+            Gender = "Male",
+            University = "Test University",
+            Bio = "Bio",
+            Lifestyle = "Night Owl",
+            Interests = "Testing",
+            Role = "User",
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Profiles.Add(existingUser);
+        await db.SaveChangesAsync();
+        
+        // Now try to create another user with same email
+        using var formData = new MultipartFormDataContent();
+        formData.Add(new StringContent(duplicateEmail), "Email");
+        formData.Add(new StringContent("Password123!"), "Password");
+        formData.Add(new StringContent("Another User"), "FullName");
+        formData.Add(new StringContent("30"), "Age");
+        formData.Add(new StringContent("Female"), "Gender");
+        formData.Add(new StringContent("Another University"), "University");
+        formData.Add(new StringContent("Another Bio"), "Bio");
+        formData.Add(new StringContent("Early Bird"), "Lifestyle");
+        formData.Add(new StringContent("Reading"), "Interests");
+
+        // Act
+        var response = await _client.PostAsync("/profiles", formData);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     #endregion

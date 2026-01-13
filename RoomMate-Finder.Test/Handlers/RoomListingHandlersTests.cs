@@ -258,6 +258,60 @@ public class SearchListingsHandlerTests
         result.Page.Should().Be(1);
         result.PageSize.Should().Be(5);
     }
+    [Fact]
+    public async Task Given_AmenitiesFilter_When_HandleIsCalled_Then_ReturnsFilteredResults()
+    {
+        // Arrange
+        using var context = DbContextHelper.CreateInMemoryDbContext();
+        var owner = CreateTestProfile(name: "Owner");
+        context.Profiles.Add(owner);
+
+        var l1 = CreateTestListing(owner, "Cluj", 200);
+        l1.Amenities = "WiFi, AC";
+        var l2 = CreateTestListing(owner, "Cluj", 300);
+        l2.Amenities = "Parking";
+        
+        context.RoomListings.AddRange(l1, l2);
+        await context.SaveChangesAsync();
+
+        var handler = new SearchListingsHandler(context);
+        var request = new SearchListingsRequest { Amenities = new List<string> { "AC" } };
+
+        // Act
+        var result = await handler.Handle(request, CancellationToken.None);
+
+        // Assert
+        result.Listings.Should().HaveCount(1);
+        result.Listings[0].Id.Should().Be(l1.Id);
+    }
+
+    [Fact]
+    public async Task Given_AdminView_When_HandleIsCalled_Then_ReturnsPendingListings()
+    {
+        // Arrange
+        using var context = DbContextHelper.CreateInMemoryDbContext();
+        var owner = CreateTestProfile(name: "Owner");
+        context.Profiles.Add(owner);
+
+        var l1 = CreateTestListing(owner, "Cluj", 200, isActive: true, status: ListingApprovalStatus.Pending);
+        var l2 = CreateTestListing(owner, "Cluj", 300, isActive: true, status: ListingApprovalStatus.Approved);
+        
+        context.RoomListings.AddRange(l1, l2);
+        await context.SaveChangesAsync();
+
+        var handler = new SearchListingsHandler(context);
+        var request = new SearchListingsRequest 
+        { 
+            ApprovalStatus = ListingApprovalStatus.Pending 
+        };
+
+        // Act
+        var result = await handler.Handle(request, CancellationToken.None);
+
+        // Assert
+        result.Listings.Should().HaveCount(1);
+        result.Listings[0].Id.Should().Be(l1.Id);
+    }
 }
 
 #endregion
