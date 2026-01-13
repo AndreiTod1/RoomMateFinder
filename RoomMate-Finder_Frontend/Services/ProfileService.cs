@@ -85,10 +85,6 @@ public class ProfileService : IProfileService
             var text = await resp.Content.ReadAsStringAsync();
             throw new InvalidOperationException(string.IsNullOrWhiteSpace(text) ? "Failed to get profile" : text);
         }
-        catch (UnauthorizedAccessException)
-        {
-            throw; // Re-throw authentication errors
-        }
         catch (System.Net.Http.HttpRequestException)
         {
             // network error  return null so UI can show loading/empty
@@ -118,10 +114,6 @@ public class ProfileService : IProfileService
 
             var text = await resp.Content.ReadAsStringAsync();
             throw new InvalidOperationException(string.IsNullOrWhiteSpace(text) ? "Failed to get current profile" : text);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            throw; // Re-throw authentication errors
         }
         catch (System.Net.Http.HttpRequestException)
         {

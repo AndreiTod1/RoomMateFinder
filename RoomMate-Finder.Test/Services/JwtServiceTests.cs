@@ -115,6 +115,81 @@ public class JwtServiceTests
         // Assert
         var handler = new JwtSecurityTokenHandler();
         var jwtToken = handler.ReadJwtToken(token);
+        
+        // Token should expire in about 7 days (with some tolerance)
+        jwtToken.ValidTo.Should().BeCloseTo(DateTime.UtcNow.AddDays(7), TimeSpan.FromMinutes(5));
+    }
+
+    [Fact]
+    public void Constructor_ShouldThrowArgumentException_WhenKeyIsEmpty()
+    {
+        // Act
+        Action act = () => new JwtService("", Issuer, Audience);
+
+        // Assert
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*JWT key is not set*");
+    }
+
+    [Fact]
+    public void Constructor_ShouldThrowArgumentException_WhenKeyIsWhitespace()
+    {
+        // Act
+        Action act = () => new JwtService("   ", Issuer, Audience);
+
+        // Assert
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*JWT key is not set*");
+    }
+
+    [Fact]
+    public void GenerateToken_ShouldGenerateDifferentTokensForDifferentUsers()
+    {
+        // Arrange
+        var service = new JwtService(ValidKey, Issuer, Audience);
+        var user1 = new Profile { Id = Guid.NewGuid(), Email = "user1@test.com", FullName = "User One", Role = "User" };
+        var user2 = new Profile { Id = Guid.NewGuid(), Email = "user2@test.com", FullName = "User Two", Role = "Admin" };
+
+        // Act
+        var token1 = service.GenerateToken(user1);
+        var token2 = service.GenerateToken(user2);
+
+        // Assert
+        token1.Should().NotBe(token2);
+    }
+
+    [Fact]
+    public void Constructor_ShouldAcceptKeyExactly16Bytes()
+    {
+        // Arrange - exactly 16 ASCII characters = 16 bytes
+        var exactKey = "1234567890123456";
+
+        // Act
+        Action act = () => new JwtService(exactKey, Issuer, Audience);
+
+        // Assert
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void GenerateToken_TokenShouldBeReadable()
+    {
+        // Arrange
+        var service = new JwtService(ValidKey, Issuer, Audience);
+        var user = new Profile
+        {
+            Id = Guid.NewGuid(),
+            Email = "test@example.com",
+            FullName = "Test User",
+            Role = "User"
+        };
+
+        // Act
+        var token = service.GenerateToken(user);
+
+        // Assert
+        var handler = new JwtSecurityTokenHandler();
+        var jwtToken = handler.ReadJwtToken(token);
 
         // Expiration should be roughly 7 days from now
         var expiration = jwtToken.ValidTo;

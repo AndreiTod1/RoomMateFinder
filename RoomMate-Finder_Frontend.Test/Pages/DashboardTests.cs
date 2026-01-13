@@ -24,6 +24,12 @@ public class DashboardTests : BunitContext
 
         // Assert
         cut.Markup.Should().Contain("Găsește-ți colegul");
-        cut.FindAll("a").Should().Contain(e => e.HasAttribute("href") && e.GetAttribute("href").Contains("register"));
+        var links = cut.FindAll("a");
+        var hasRegisterLink = links.Any(e => 
+        {
+            var href = e.GetAttribute("href");
+            return href != null && href.Contains("register");
+        });
+        hasRegisterLink.Should().BeTrue();
     }
 }

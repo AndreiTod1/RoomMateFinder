@@ -15,7 +15,7 @@ public class RegisterTests : BunitContext, IAsyncLifetime
     private readonly Mock<IAuthService> _mockAuthService;
     
     public Task InitializeAsync() => Task.CompletedTask;
-    public Task DisposeAsync()
+    public new Task DisposeAsync()
     {
         Dispose();
         return Task.CompletedTask;
