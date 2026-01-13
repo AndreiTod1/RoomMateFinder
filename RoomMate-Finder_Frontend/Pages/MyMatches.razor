@@ -148,7 +148,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        #pragma warning disable S1075
         _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "http://localhost:5111";
+        #pragma warning restore S1075
         try
         {
             var me = await ProfileService.GetCurrentAsync();
@@ -165,7 +167,7 @@
         return path.StartsWith("http") ? path : $"{_apiBaseUrl}{path}";
     }
     
-    private string GetInitials(string name)
+    private static string GetInitials(string name)
     {
         if (string.IsNullOrEmpty(name)) return "?";
         var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);

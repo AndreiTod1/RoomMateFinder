@@ -1,4 +1,4 @@
-﻿@page "/conversations"
+@page "/conversations"
 @page "/messages"
 @using Microsoft.AspNetCore.Authorization
 @using RoomMate_Finder_Frontend.Services
@@ -123,8 +123,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // S1075: Development fallback URL when ApiBaseUrl not configured
+        #pragma warning disable S1075 // Development fallback URL is intentional
         _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "http://localhost:5111";
+        #pragma warning restore S1075
         NotificationService.OnNotificationsChanged += HandleNotificationsChanged;
         await LoadConversations();
     }

@@ -238,7 +238,9 @@
     {
         if (string.IsNullOrEmpty(path)) return "";
         if (path.StartsWith("http")) return path;
+        #pragma warning disable S1075
         return $"{Http.BaseAddress?.ToString().TrimEnd('/') ?? "http://localhost:5111"}{path}";
+        #pragma warning restore S1075
     }
 
     private static string GetInitials(string? name)

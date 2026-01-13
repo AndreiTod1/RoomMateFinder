@@ -194,7 +194,7 @@
 @code {
     private List<ListingSummaryDto> _listings = new();
     private bool _isLoading = true;
-    private HashSet<Guid> _processingIds = new();
+    private readonly HashSet<Guid> _processingIds = new();
     private string _apiBaseUrl = "";
 
     // Reject dialog
@@ -202,11 +202,13 @@
     private ListingSummaryDto? _selectedListing;
     private string _rejectionReason = "";
     private bool _isRejecting = false;
-    private DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true };
+    private readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true };
 
     protected override async Task OnInitializedAsync()
     {
+        #pragma warning disable S1075
         _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "http://localhost:5111";
+        #pragma warning restore S1075
         await LoadListings();
     }
 

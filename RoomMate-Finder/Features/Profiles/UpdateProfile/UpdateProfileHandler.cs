@@ -21,13 +21,19 @@ public class UpdateProfileHandler : IRequestHandler<UpdateProfileWithFileCommand
         var request = command.Profile;
 
         var profile = await _dbContext.Profiles
-            .FirstOrDefaultAsync(p => p.Id == request.UserId, cancellationToken);
-            
-        if (profile == null)
-        {
-            throw new KeyNotFoundException("Profile not found");
-        }
+            .FirstOrDefaultAsync(p => p.Id == request.UserId, cancellationToken) 
+            ?? throw new KeyNotFoundException("Profile not found");
         
+        UpdateProfileFields(profile, request);
+        await UpdateProfilePictureAsync(profile, command, cancellationToken);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return CreateResponse(profile);
+    }
+
+    private static void UpdateProfileFields(Entities.Profile profile, UpdateProfileRequest request)
+    {
         if (request.FullName != null)
             profile.FullName = request.FullName;
             
@@ -48,51 +54,63 @@ public class UpdateProfileHandler : IRequestHandler<UpdateProfileWithFileCommand
             
         if (request.Interests != null)
             profile.Interests = request.Interests;
+    }
 
-        // Handle profile picture update from multipart/form-data
-        if (command.ProfilePicture is not null && command.ProfilePicture.Length > 0)
+    private async Task UpdateProfilePictureAsync(Entities.Profile profile, UpdateProfileWithFileCommand command, CancellationToken cancellationToken)
+    {
+        if (command.ProfilePicture is null || command.ProfilePicture.Length == 0)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(profile.ProfilePicturePath))
         {
-            if (!string.IsNullOrWhiteSpace(profile.ProfilePicturePath))
-            {
-                FileUploadHelper.DeleteProfilePicture(profile.ProfilePicturePath, _environment);
-            }
-
-            var extension = Path.GetExtension(command.ProfilePicture.FileName).ToLowerInvariant();
-            if (string.IsNullOrEmpty(extension))
-            {
-                extension = command.ProfilePicture.ContentType switch
-                {
-                    "image/png" => ".png",
-                    "image/jpeg" => ".jpg",
-                    "image/webp" => ".webp",
-                    _ => ".jpg"
-                };
-            }
-
-            var uploadsPath = Path.Combine(_environment.WebRootPath, "profile-pictures");
-            if (!Directory.Exists(uploadsPath))
-            {
-                Directory.CreateDirectory(uploadsPath);
-            }
-
-            var fileName = $"{profile.Id}{extension}";
-            var filePath = Path.Combine(uploadsPath, fileName);
-
-            if (File.Exists(filePath))
-            {
-                File.Delete(filePath);
-            }
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await command.ProfilePicture.CopyToAsync(stream, cancellationToken);
-            }
-
-            profile.ProfilePicturePath = $"/profile-pictures/{fileName}";
+            FileUploadHelper.DeleteProfilePicture(profile.ProfilePicturePath, _environment);
         }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        var extension = GetFileExtension(command.ProfilePicture);
+        var uploadsPath = EnsureUploadsDirectory();
+        var fileName = $"{profile.Id}{extension}";
+        var filePath = Path.Combine(uploadsPath, fileName);
 
+        if (File.Exists(filePath))
+        {
+            File.Delete(filePath);
+        }
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await command.ProfilePicture.CopyToAsync(stream, cancellationToken);
+        }
+
+        profile.ProfilePicturePath = $"/profile-pictures/{fileName}";
+    }
+
+    private static string GetFileExtension(IFormFile file)
+    {
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!string.IsNullOrEmpty(extension))
+            return extension;
+
+        return file.ContentType switch
+        {
+            "image/png" => ".png",
+            "image/jpeg" => ".jpg",
+            "image/webp" => ".webp",
+            _ => ".jpg"
+        };
+    }
+
+    private string EnsureUploadsDirectory()
+    {
+        var uploadsPath = Path.Combine(_environment.WebRootPath, "profile-pictures");
+        if (!Directory.Exists(uploadsPath))
+        {
+            Directory.CreateDirectory(uploadsPath);
+        }
+        return uploadsPath;
+    }
+
+    private static UpdateProfileResponse CreateResponse(Entities.Profile profile)
+    {
         return new UpdateProfileResponse(
             profile.Id,
             profile.Email,

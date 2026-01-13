@@ -155,7 +155,7 @@
     private List<ListingSummaryDto> _listings = new();
     private bool _isLoading = true;
     private int _currentPage = 1;
-    private int _pageSize = 15;
+    private readonly int _pageSize = 15;
     private int _totalCount;
     private int TotalPages => (int)Math.Ceiling((double)_totalCount / _pageSize);
     private string _apiBaseUrl = "";
@@ -165,7 +165,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        #pragma warning disable S1075
         _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "http://localhost:5111";
+        #pragma warning restore S1075
         await LoadListings();
     }
 

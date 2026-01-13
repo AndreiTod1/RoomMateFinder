@@ -1,4 +1,4 @@
-﻿@page "/register-with-picture"
+@page "/register-with-picture"
 @using RoomMate_Finder_Frontend.Services
 @inject AuthService AuthService
 @inject NavigationManager NavigationManager
@@ -81,7 +81,7 @@
 </div>
 
 @code {
-    private RegisterModel registerModel = new();
+    private readonly RegisterModel registerModel = new();
     private string profilePicturePreview = "";
     private string profilePictureBase64 = "";
     private string errorMessage = "";
@@ -110,7 +110,11 @@
                 // Convert to base64
                 var buffer = new byte[file.Size];
                 await using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
-                await stream.ReadAsync(buffer);
+                var bytesRead = await stream.ReadAsync(buffer);
+                if (bytesRead < buffer.Length)
+                {
+                    Array.Resize(ref buffer, bytesRead);
+                }
                 
                 profilePictureBase64 = $"data:{file.ContentType};base64,{Convert.ToBase64String(buffer)}";
                 profilePicturePreview = profilePictureBase64;
@@ -146,10 +150,12 @@
 
             // Call backend API
             using var http = new HttpClient();
+            #pragma warning disable S1075
             var response = await http.PostAsJsonAsync(
                 "http://localhost:5000/profiles", 
                 request
             );
+            #pragma warning restore S1075
 
             if (!response.IsSuccessStatusCode)
             {
@@ -167,7 +173,7 @@
         }
     }
 
-    private class RegisterModel
+    private sealed class RegisterModel
     {
         public string Email { get; set; } = "";
         public string Password { get; set; } = "";

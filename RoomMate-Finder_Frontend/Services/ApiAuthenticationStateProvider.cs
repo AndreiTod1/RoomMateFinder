@@ -67,6 +67,14 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
         var keyValuePairs = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonBytes);
         if (keyValuePairs == null) return claims;
 
+        ExtractClaimsFromJson(claims, keyValuePairs);
+        MapLegacyClaims(claims);
+
+        return claims;
+    }
+
+    private static void ExtractClaimsFromJson(List<Claim> claims, Dictionary<string, JsonElement> keyValuePairs)
+    {
         foreach (var kv in keyValuePairs)
         {
             if (kv.Value.ValueKind == JsonValueKind.Array)
@@ -81,28 +89,26 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
                 claims.Add(new Claim(kv.Key, kv.Value.ToString()));
             }
         }
+    }
 
-        if (!claims.Any(c => c.Type == ClaimTypes.Name) && claims.Any(c => c.Type == "name"))
+    private static void MapLegacyClaims(List<Claim> claims)
+    {
+        AddClaimIfNotPresent(claims, "name", ClaimTypes.Name);
+        AddClaimIfNotPresent(claims, "sub", ClaimTypes.NameIdentifier);
+        AddClaimIfNotPresent(claims, "role", ClaimTypes.Role);
+        AddClaimIfNotPresent(claims, "Role", ClaimTypes.Role);
+    }
+
+    private static void AddClaimIfNotPresent(List<Claim> claims, string sourceKey, string targetType)
+    {
+        if (!claims.Any(c => c.Type == targetType))
         {
-            claims.Add(new Claim(ClaimTypes.Name, claims.First(c => c.Type == "name").Value));
+            var source = claims.FirstOrDefault(c => c.Type == sourceKey);
+            if (source != null)
+            {
+                claims.Add(new Claim(targetType, source.Value));
+            }
         }
-
-        if (!claims.Any(c => c.Type == ClaimTypes.NameIdentifier) && claims.Any(c => c.Type == "sub"))
-        {
-            claims.Add(new Claim(ClaimTypes.NameIdentifier, claims.First(c => c.Type == "sub").Value));
-        }
-
-        if (!claims.Any(c => c.Type == ClaimTypes.Role) && claims.Any(c => c.Type == "role"))
-        {
-            claims.Add(new Claim(ClaimTypes.Role, claims.First(c => c.Type == "role").Value));
-        }
-
-        if (!claims.Any(c => c.Type == ClaimTypes.Role) && claims.Any(c => c.Type == "Role"))
-        {
-            claims.Add(new Claim(ClaimTypes.Role, claims.First(c => c.Type == "Role").Value));
-        }
-
-        return claims;
     }
 
     private static byte[] ParseBase64WithoutPadding(string base64)

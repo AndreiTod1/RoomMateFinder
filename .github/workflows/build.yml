@@ -1,59 +1,84 @@
-name: SonarQube
+name: SonarQube Analysis
+
 on:
   push:
     branches:
       - master
   pull_request:
     types: [opened, synchronize, reopened]
+
 jobs:
   build:
-    name: Build and analyze
+    name: Build, Test & Analyze
     runs-on: windows-latest
+
     steps:
+      # 1️⃣ Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2️⃣ Set up Java (required by SonarScanner)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: "zulu"
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Cache SonarQube Cloud packages
+
+      # 3️⃣ Cache SonarCloud packages
+      - name: Cache SonarCloud packages
         uses: actions/cache@v4
         with:
           path: ~\sonar\cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
-      - name: Cache SonarQube Cloud scanner
+
+      # 4️⃣ Cache SonarScanner tool
+      - name: Cache SonarScanner
         id: cache-sonar-scanner
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}\scanner
           key: ${{ runner.os }}-sonar-scanner
           restore-keys: ${{ runner.os }}-sonar-scanner
-      - name: Install SonarQube Cloud scanner
+
+      # 5️⃣ Install SonarScanner if not cached
+      - name: Install SonarScanner
         if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
         shell: powershell
         run: |
           New-Item -Path ${{ runner.temp }}\scanner -ItemType Directory
           dotnet tool update dotnet-sonarscanner --tool-path ${{ runner.temp }}\scanner
-      - name: Build and analyze
+
+      # 6️⃣ Build, Test & Sonar Analysis
+      - name: Build, Test & SonarCloud Analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: powershell
         run: |
-          # Start SonarScanner
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"Iuli4n0_RoomMate-Finder" /o:"iuli4n0" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml"
+          Write-Host "=== [1/4] Starting SonarScanner ==="
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin `
+            /k:"Iuli4n0_RoomMate-Finder" `
+            /o:"iuli4n0" `
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" `
+            /d:sonar.host.url="https://sonarcloud.io" `
+            /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml" `
+            /d:sonar.exclusions="**/Migrations/**/*,**/obj/**/*,**/bin/**/*" `
+            /d:sonar.coverage.exclusions="**/Migrations/**/*"
 
-          # Build the solution
+          Write-Host "=== [2/4] Building solution ==="
           dotnet build --no-incremental
 
-          # Run tests with coverage
-          dotnet test RoomMate-Finder.Test/RoomMate-Finder.Test.csproj --no-build --verbosity normal --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+          Write-Host "=== [3/4] Running tests with coverage ==="
+          dotnet test RoomMate-Finder.Test/RoomMate-Finder.Test.csproj `
+            --verbosity normal `
+            --collect:"XPlat Code Coverage" `
+            --results-directory:"./TestResults" `
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
 
-          # Debug: List coverage files found
-          Write-Host "Looking for coverage files..."
+          Write-Host "=== [Debug] Coverage files found ==="
           Get-ChildItem -Path . -Recurse -Filter "coverage.opencover.xml" | ForEach-Object { Write-Host $_.FullName }
 
-          # End SonarScanner
+          Write-Host "=== [4/4] Ending SonarScanner ==="
           ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"

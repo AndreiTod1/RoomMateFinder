@@ -294,6 +294,59 @@ public class GetReviewStatsHandlerTests
         result.TotalReviews.Should().Be(2);
         result.AverageRating.Should().Be(4.0); // (5 + 3) / 2 = 4
     }
+
+    [Fact]
+    public async Task Given_UserNotFound_When_HandleIsCalled_Then_ThrowsKeyNotFoundException()
+    {
+        // Arrange
+        using var context = DbContextHelper.CreateInMemoryDbContext();
+        var handler = new GetReviewStatsHandler(context);
+        var request = new GetReviewStatsRequest(Guid.NewGuid());
+
+        // Act
+        Func<Task> act = () => handler.Handle(request, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<KeyNotFoundException>();
+    }
+
+    [Fact]
+    public async Task Given_MultipleReviewsWithDifferentRatings_When_HandleIsCalled_Then_ReturnsCorrectDistribution()
+    {
+        // Arrange
+        using var context = DbContextHelper.CreateInMemoryDbContext();
+        var reviewed = CreateTestProfile(name: "Reviewed");
+        context.Profiles.Add(reviewed);
+        
+        // Add reviewers and reviews with different ratings
+        for (int i = 1; i <= 5; i++)
+        {
+            var reviewer = CreateTestProfile(name: $"Reviewer {i}");
+            context.Profiles.Add(reviewer);
+            context.Reviews.Add(new Review 
+            { 
+                Id = Guid.NewGuid(), 
+                ReviewerId = reviewer.Id, 
+                ReviewedUserId = reviewed.Id, 
+                Rating = i, 
+                Comment = $"Rating {i}", 
+                CreatedAt = DateTime.UtcNow 
+            });
+        }
+        await context.SaveChangesAsync();
+
+        var handler = new GetReviewStatsHandler(context);
+        var request = new GetReviewStatsRequest(reviewed.Id);
+
+        // Act
+        var result = await handler.Handle(request, CancellationToken.None);
+
+        // Assert
+        result.TotalReviews.Should().Be(5);
+        result.AverageRating.Should().Be(3.0); // (1+2+3+4+5) / 5 = 3
+        result.RatingDistribution.Should().ContainKey(1);
+        result.RatingDistribution.Should().ContainKey(5);
+    }
 }
 
 #endregion

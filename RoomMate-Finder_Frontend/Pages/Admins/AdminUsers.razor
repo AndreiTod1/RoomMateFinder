@@ -1,4 +1,4 @@
-﻿@page "/admin/users"
+@page "/admin/users"
 @using Microsoft.AspNetCore.Authorization
 @using RoomMate_Finder_Frontend.Services
 @attribute [Authorize(Roles = "Admin")]
@@ -90,7 +90,7 @@
     private string _searchString = "";
     private bool _isLoading = true;
     private int _currentPage = 1;
-    private int _pageSize = 15;
+    private readonly int _pageSize = 15;
     private int _totalUserCount;
     private int TotalPages => (int)Math.Ceiling((double)_totalUserCount / _pageSize);
 
@@ -137,7 +137,9 @@
     {
         if (string.IsNullOrEmpty(relativePath)) return string.Empty;
         if (relativePath.StartsWith("http")) return relativePath;
+        #pragma warning disable S1075
         var baseUrl = Http.BaseAddress?.ToString().TrimEnd('/') ?? "http://localhost:5111";
+        #pragma warning restore S1075
         return $"{baseUrl}{relativePath}";
     }
 

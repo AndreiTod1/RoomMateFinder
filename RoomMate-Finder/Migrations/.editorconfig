@@ -1,0 +1,4 @@
+# Suppress SonarCloud warnings for auto-generated Migration files
+[*.cs]
+dotnet_diagnostic.S1192.severity = none
+dotnet_diagnostic.S1186.severity = none

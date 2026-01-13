@@ -170,7 +170,7 @@
 
 @code {
     private MudForm? form;
-    private RegisterModel model = new();
+    private readonly RegisterModel model = new();
     private string? errorMessage;
     private string? successMessage;
     private bool _passwordShow = false;
@@ -216,80 +216,16 @@
 
         try
         {
-            if (form != null)
-            {
-                await form.Validate();
-                if (form.IsValid)
-                {
-                    using var content = new MultipartFormDataContent();
+            if (form == null) return;
+            
+            await form.Validate();
+            if (!form.IsValid) return;
 
-                    content.Add(new StringContent(model.Email), nameof(model.Email));
-                    content.Add(new StringContent(model.Password), nameof(model.Password));
-                    content.Add(new StringContent(model.FullName), nameof(model.FullName));
-                    content.Add(new StringContent(model.Bio ?? string.Empty), nameof(model.Bio));
-                    content.Add(new StringContent(model.Age.ToString()), nameof(model.Age));
-                    content.Add(new StringContent(model.Gender ?? string.Empty), nameof(model.Gender));
-                    content.Add(new StringContent(model.University ?? string.Empty), nameof(model.University));
-                    content.Add(new StringContent(model.Lifestyle ?? string.Empty), nameof(model.Lifestyle));
-                    content.Add(new StringContent(model.Interests ?? string.Empty), nameof(model.Interests));
+            using var content = BuildFormContent();
+            await AddProfilePictureToContent(content);
 
-                    // Get cropped image if user selected one
-                    if (_registerProfilePicture != null)
-                    {
-                        IBrowserFile fileToUpload = _registerProfilePicture;
-                        
-                        // Try to get cropped version
-                        if (_registerProfilePictureUpload != null)
-                        {
-                            try
-                            {
-                                var croppedBytes = await _registerProfilePictureUpload.GetCroppedImageAsync();
-                                if (croppedBytes != null && croppedBytes.Length > 0)
-                                {
-                                    fileToUpload = new CroppedBrowserFile(croppedBytes, "profile.jpg", "image/jpeg");
-                                }
-                            }
-                            catch (Exception cropEx)
-                            {
-                                Console.WriteLine($"Cropping failed, using original: {cropEx.Message}");
-                            }
-                        }
-                        
-                        var stream = fileToUpload.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
-                        var fileContent = new StreamContent(stream);
-                        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(fileToUpload.ContentType);
-                        content.Add(fileContent, "ProfilePicture", fileToUpload.Name);
-                    }
-
-                    var resp = await Http.PostAsync("/profiles", content);
-                    if (resp.IsSuccessStatusCode)
-                    {
-                        successMessage = "Înregistrare realizată cu succes! Te redirectionez către login...";
-                        await Task.Delay(2000);
-                        Navigation.NavigateTo("/login");
-                    }
-                    else
-                    {
-                        var text = await resp.Content.ReadAsStringAsync();
-                        try
-                        {
-                            var doc = System.Text.Json.JsonDocument.Parse(text);
-                            if (doc.RootElement.TryGetProperty("message", out var msg))
-                            {
-                                errorMessage = msg.GetString();
-                            }
-                            else
-                            {
-                                errorMessage = "Eroare la înregistrare. Te rog să încerci din nou.";
-                            }
-                        }
-                        catch
-                        {
-                            errorMessage = "Eroare la înregistrare. Te rog să încerci din nou.";
-                        }
-                    }
-                }
-            }
+            var resp = await Http.PostAsync("/profiles", content);
+            await HandleResponse(resp);
         }
         catch
         {
@@ -299,6 +235,87 @@
         {
             isLoading = false;
         }
+    }
+
+    private MultipartFormDataContent BuildFormContent()
+    {
+        var content = new MultipartFormDataContent();
+        content.Add(new StringContent(model.Email), nameof(model.Email));
+        content.Add(new StringContent(model.Password), nameof(model.Password));
+        content.Add(new StringContent(model.FullName), nameof(model.FullName));
+        content.Add(new StringContent(model.Bio ?? string.Empty), nameof(model.Bio));
+        content.Add(new StringContent(model.Age.ToString()), nameof(model.Age));
+        content.Add(new StringContent(model.Gender ?? string.Empty), nameof(model.Gender));
+        content.Add(new StringContent(model.University ?? string.Empty), nameof(model.University));
+        content.Add(new StringContent(model.Lifestyle ?? string.Empty), nameof(model.Lifestyle));
+        content.Add(new StringContent(model.Interests ?? string.Empty), nameof(model.Interests));
+        return content;
+    }
+
+    private async Task AddProfilePictureToContent(MultipartFormDataContent content)
+    {
+        if (_registerProfilePicture == null) return;
+
+        var fileToUpload = await GetFileToUpload();
+        var stream = fileToUpload.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+        var fileContent = new StreamContent(stream);
+        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(fileToUpload.ContentType);
+        content.Add(fileContent, "ProfilePicture", fileToUpload.Name);
+    }
+
+    private async Task<IBrowserFile> GetFileToUpload()
+    {
+        if (_registerProfilePicture == null) 
+            throw new InvalidOperationException("No profile picture selected");
+
+        if (_registerProfilePictureUpload == null) 
+            return _registerProfilePicture;
+
+        try
+        {
+            var croppedBytes = await _registerProfilePictureUpload.GetCroppedImageAsync();
+            if (croppedBytes != null && croppedBytes.Length > 0)
+            {
+                return new CroppedBrowserFile(croppedBytes, "profile.jpg", "image/jpeg");
+            }
+        }
+        catch (Exception cropEx)
+        {
+            Console.WriteLine($"Cropping failed, using original: {cropEx.Message}");
+        }
+        
+        return _registerProfilePicture;
+    }
+
+    private async Task HandleResponse(HttpResponseMessage resp)
+    {
+        if (resp.IsSuccessStatusCode)
+        {
+            successMessage = "Înregistrare realizată cu succes! Te redirectionez către login...";
+            await Task.Delay(2000);
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        errorMessage = await ExtractErrorMessage(resp);
+    }
+
+    private static async Task<string> ExtractErrorMessage(HttpResponseMessage resp)
+    {
+        var text = await resp.Content.ReadAsStringAsync();
+        try
+        {
+            var doc = System.Text.Json.JsonDocument.Parse(text);
+            if (doc.RootElement.TryGetProperty("message", out var msg))
+            {
+                return msg.GetString() ?? "Eroare la înregistrare. Te rog să încerci din nou.";
+            }
+        }
+        catch
+        {
+            // JSON parsing failed
+        }
+        return "Eroare la înregistrare. Te rog să încerci din nou.";
     }
 
     public class RegisterModel

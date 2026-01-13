@@ -48,8 +48,9 @@ public class ChatService : IChatService
 
     public ChatService(IConfiguration configuration)
     {
-        // S1075: Fallback URL is used only for local development when ApiBaseUrl is not configured
-        var baseUrl = configuration["ApiBaseUrl"] ?? "http://localhost:5111"; // Development fallback
+        #pragma warning disable S1075 // URIs should not be hardcoded - Development fallback is intentional
+        var baseUrl = configuration["ApiBaseUrl"] ?? "http://localhost:5111";
+        #pragma warning restore S1075
         _hubUrl = $"{baseUrl}/hubs/chat";
     }
 
