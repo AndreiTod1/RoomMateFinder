@@ -1,6 +1,6 @@
 @page "/register-with-picture"
 @using RoomMate_Finder_Frontend.Services
-@inject AuthService AuthService
+@inject IAuthService AuthService
 @inject NavigationManager NavigationManager
 @inject IConfiguration Configuration
 
@@ -150,17 +150,22 @@
             };
 
             // Call backend API
-            using var http = new HttpClient();
-            var apiBaseUrl = Configuration["ApiBaseUrl"] ?? string.Empty;
-            var response = await http.PostAsJsonAsync(
-                $"{apiBaseUrl}/profiles", 
-                request
+            var result = await AuthService.RegisterWithPictureAsync(
+                registerModel.Email,
+                registerModel.Password,
+                registerModel.FullName,
+                registerModel.Age,
+                registerModel.Gender,
+                registerModel.University,
+                registerModel.Bio,
+                registerModel.Lifestyle,
+                registerModel.Interests,
+                profilePictureBase64
             );
 
-            if (!response.IsSuccessStatusCode)
+            if (!result.Successful)
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                errorMessage = $"Registration failed: {errorContent}";
+                errorMessage = $"Registration failed: {string.Join(", ", result.Errors ?? new List<string>())}";
                 return;
             }
 

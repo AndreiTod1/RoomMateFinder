@@ -11,6 +11,9 @@ using System.ComponentModel.DataAnnotations;
 using System.Net;
 using System.Net.Http;
 using Xunit;
+using Xunit;
+using Bunit.TestDoubles;
+using Microsoft.AspNetCore.Components;
 
 namespace RoomMate_Finder_Frontend.Test.Pages;
 
@@ -473,6 +476,155 @@ public class RegisterTests : BunitContext, IAsyncLifetime
         
         // Should have: FullName, Email, Password, University, Bio, Interests
         cut.FindComponents<MudTextField<string>>().Count.Should().BeGreaterThanOrEqualTo(5);
+    }
+
+    #endregion
+    #region Functional Tests
+
+    [Fact]
+    public async Task Register_ValidSubmit_CallsApiAndNavigates()
+    {
+        // Arrange
+        RenderProviders();
+        var cut = Render<Register>();
+        var navMan = Services.GetRequiredService<NavigationManager>();
+
+        // Setup Mock Http
+        _mockHttpHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req => 
+                    req.Method == HttpMethod.Post && 
+                    req.RequestUri!.ToString().EndsWith("/profiles")),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Created))
+            .Verifiable();
+
+        // Fill Form
+        cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label == "Nume complet").Find("input").Change("John Doe");
+        cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label == "Email").Find("input").Change("john@test.com");
+        cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label == "Parola").Find("input").Change("password123");
+        
+        // Act
+        var btn = cut.FindAll("button").First(b => b.TextContent.Contains("Creează cont"));
+        btn.Click();
+
+        // Assert
+        _mockHttpHandler.Protected().Verify(
+            "SendAsync",
+            Times.Once(),
+            ItExpr.Is<HttpRequestMessage>(req => 
+                req.Method == HttpMethod.Post && 
+                req.RequestUri!.ToString().EndsWith("/profiles")),
+            ItExpr.IsAny<CancellationToken>()
+        );
+
+        // Allow navigation delay
+        await Task.Delay(2100); 
+        navMan.Uri.Should().EndWith("/login");
+    }
+
+    [Fact]
+    public async Task Register_ApiError_ShowsErrorMessage()
+    {
+        // Arrange
+        RenderProviders();
+        var cut = Render<Register>();
+
+        // Setup Mock Http to Fail
+        var errorJson = "{\"message\":\"Email already exists\"}";
+        _mockHttpHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                Content = new StringContent(errorJson)
+            });
+
+        // Fill Form
+        cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label == "Nume complet").Find("input").Change("John Doe");
+        cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label == "Email").Find("input").Change("john@test.com");
+        cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label == "Parola").Find("input").Change("password123");
+        
+        // Act
+        var btn = cut.FindAll("button").First(b => b.TextContent.Contains("Creează cont"));
+        btn.Click();
+
+        // Assert
+        cut.WaitForAssertion(() => 
+        {
+            cut.Markup.Should().Contain("Email already exists");
+            cut.FindComponents<MudAlert>().Should().Contain(a => a.Instance.Severity == Severity.Error);
+        });
+    }
+
+    [Fact]
+    public async Task Register_InvalidSubmit_DoesNotCallApi()
+    {
+        // Arrange
+        RenderProviders();
+        var cut = Render<Register>();
+
+        // Act - Click submit without filling required fields
+        var btn = cut.FindAll("button").First(b => b.TextContent.Contains("Creează cont"));
+        btn.Click();
+
+        // Assert
+        _mockHttpHandler.Protected().Verify(
+            "SendAsync",
+            Times.Never(),
+            ItExpr.IsAny<HttpRequestMessage>(),
+            ItExpr.IsAny<CancellationToken>()
+        );
+        
+        // Should show validation errors
+        cut.WaitForAssertion(() => 
+        {
+            cut.Markup.Should().Contain("Numele complet este obligatoriu");
+            cut.Markup.Should().Contain("Email-ul este obligatoriu");
+        });
+    }
+
+    [Fact]
+    public async Task Register_TogglePasswordVisibility_Works()
+    {
+        // Arrange
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        // Default is password type
+        var input = cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label == "Parola").Find("input");
+        input.GetAttribute("type").Should().Be("password");
+
+        // Act - Find adornment button (visibility toggle)
+        // Since it's an adornment on MudTextField, checking if we can trigger it via binding or event
+        // Simpler: Invoke the toggle method if accessible, or find the icon button
+        // The adornment click handler is OnAdornmentClick="TogglePasswordVisibility"
+        
+        // We can find the button by the icon
+        // Initial icon: VisibilityOff (since _passwordShow = false) ?? 
+        // Logic: _passwordShow ? Text : Password. Adornment: _passwordShow ? Off : On.
+        // Wait, code says: AdornmentIcon="@(_passwordShow ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+        // Default _passwordShow = false -> Visibility icon.
+        
+        // BUnit finding MudTextField and invoking OnAdornmentClick
+        var textField = cut.FindComponent<MudTextField<string>>(); // Password is likely the 3rd one, need to be specific
+        var passwordField = cut.FindComponents<MudTextField<string>>()
+            .FirstOrDefault(c => c.Instance.Label == "Parola");
+            
+        passwordField.Should().NotBeNull();
+        await cut.InvokeAsync(() => passwordField!.Instance.OnAdornmentClick.InvokeAsync(null));
+        
+        // Assert - type should change
+        passwordField!.Render(); // Re-render to update markup
+        input = cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label == "Parola").Find("input");
+        input.GetAttribute("type").Should().Be("text");
     }
 
     #endregion

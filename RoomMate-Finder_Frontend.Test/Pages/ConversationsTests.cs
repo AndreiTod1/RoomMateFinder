@@ -198,4 +198,178 @@ public class ConversationsTests : BunitContext, IAsyncLifetime
     {
         typeof(Conversations).GetInterfaces().Should().Contain(typeof(IDisposable));
     }
+
+    [Fact]
+    public void Conversations_ServiceError_ShowsErrorMessage()
+    {
+        // Arrange
+        _mockConversationService.Setup(x => x.GetConversationsAsync())
+            .ThrowsAsync(new Exception("Connection failed"));
+
+        RenderProviders();
+
+        // Act
+        var cut = Render<Conversations>();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("A apărut o eroare");
+        });
+    }
+
+    [Fact]
+    public void Conversations_WithProfilePicture_DisplaysAvatar()
+    {
+        // Arrange
+        var conversations = new List<ConversationDto>
+        {
+            new ConversationDto(
+                Id: Guid.NewGuid(),
+                OtherUserId: Guid.NewGuid(),
+                OtherUserName: "Test User",
+                OtherUserProfilePicture: "/images/profile.jpg",
+                OtherUserRole: "User",
+                CreatedAt: DateTime.UtcNow
+            )
+        };
+
+        _mockConversationService.Setup(x => x.GetConversationsAsync())
+            .ReturnsAsync(conversations);
+
+        RenderProviders();
+
+        // Act
+        var cut = Render<Conversations>();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("profile.jpg");
+        });
+    }
+
+    [Fact]
+    public void Conversations_WithAdminRole_DisplaysAdminChip()
+    {
+        // Arrange
+        var conversations = new List<ConversationDto>
+        {
+            new ConversationDto(Guid.NewGuid(), Guid.NewGuid(), "Admin User", null, "Admin", DateTime.UtcNow)
+        };
+
+        _mockConversationService.Setup(x => x.GetConversationsAsync())
+            .ReturnsAsync(conversations);
+
+        RenderProviders();
+
+        // Act
+        var cut = Render<Conversations>();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("Admin");
+        });
+    }
+
+    [Fact]
+    public void Conversations_UnreadMessage_ShowsNewBadge()
+    {
+        // Arrange
+        var conversationId = Guid.NewGuid();
+        var conversations = new List<ConversationDto>
+        {
+            new ConversationDto(conversationId, Guid.NewGuid(), "User With Unread", null, "User", DateTime.UtcNow)
+        };
+
+        _mockConversationService.Setup(x => x.GetConversationsAsync())
+            .ReturnsAsync(conversations);
+        _mockNotificationService.Setup(x => x.HasUnreadMessages(conversationId))
+            .Returns(true);
+
+        RenderProviders();
+
+        // Act
+        var cut = Render<Conversations>();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("NOU");
+        });
+    }
+
+    [Fact]
+    public void Conversations_RecentTime_ShowsMinutesAgo()
+    {
+        // Arrange
+        var conversations = new List<ConversationDto>
+        {
+            new ConversationDto(Guid.NewGuid(), Guid.NewGuid(), "Recent User", null, "User", DateTime.UtcNow.AddMinutes(-5))
+        };
+
+        _mockConversationService.Setup(x => x.GetConversationsAsync())
+            .ReturnsAsync(conversations);
+
+        RenderProviders();
+
+        // Act
+        var cut = Render<Conversations>();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("min");
+        });
+    }
+
+    [Fact]
+    public void Conversations_OldTime_ShowsHoursAgo()
+    {
+        // Arrange
+        var conversations = new List<ConversationDto>
+        {
+            new ConversationDto(Guid.NewGuid(), Guid.NewGuid(), "Old User", null, "User", DateTime.UtcNow.AddHours(-3))
+        };
+
+        _mockConversationService.Setup(x => x.GetConversationsAsync())
+            .ReturnsAsync(conversations);
+
+        RenderProviders();
+
+        // Act
+        var cut = Render<Conversations>();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("ore");
+        });
+    }
+
+    [Fact]
+    public void Conversations_ShowsConversationCount()
+    {
+        // Arrange
+        var conversations = new List<ConversationDto>
+        {
+            new ConversationDto(Guid.NewGuid(), Guid.NewGuid(), "User1", null, "User", DateTime.UtcNow),
+            new ConversationDto(Guid.NewGuid(), Guid.NewGuid(), "User2", null, "User", DateTime.UtcNow)
+        };
+
+        _mockConversationService.Setup(x => x.GetConversationsAsync())
+            .ReturnsAsync(conversations);
+
+        RenderProviders();
+
+        // Act
+        var cut = Render<Conversations>();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("2 conversații");
+        });
+    }
 }

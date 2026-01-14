@@ -308,7 +308,7 @@ public class ProfileTests : IAsyncLifetime
     }
 
     [Fact]
-    public void Profile_EditMode_HandlesFileUpload()
+    public async Task Profile_EditMode_HandlesFileUpload()
     {
         // Arrange
         var profileId = Guid.NewGuid();
@@ -336,7 +336,7 @@ public class ProfileTests : IAsyncLifetime
 
         // Save
         var saveBtn = profileComp.FindComponents<MudButton>().First(b => b.Markup.Contains("Salvează"));
-        saveBtn.Find("button").Click();
+        await profileComp.InvokeAsync(() => saveBtn.Find("button").Click());
         
         // Verify UpdateAsync calls with a file
         _mockProfileService.Verify(x => x.UpdateAsync(
