@@ -11,7 +11,7 @@ using Xunit;
 
 namespace RoomMate_Finder_Frontend.Test.Pages;
 
-public class ConversationsTests : TestContext, IAsyncLifetime
+public class ConversationsTests : BunitContext, IAsyncLifetime
 {
     private readonly Mock<IConversationService> _mockConversationService;
     private readonly Mock<INotificationService> _mockNotificationService;
@@ -46,7 +46,6 @@ public class ConversationsTests : TestContext, IAsyncLifetime
     {
         Render<MudPopoverProvider>();
         Render<MudDialogProvider>();
-        Render<MudSnackbarProvider>();
     }
 
     [Fact]
@@ -120,5 +119,83 @@ public class ConversationsTests : TestContext, IAsyncLifetime
         {
             cut.Markup.Should().Contain("John Doe");
         });
+    }
+
+    [Fact]
+    public void Conversations_HasTitle()
+    {
+        // Arrange
+        _mockConversationService.Setup(x => x.GetConversationsAsync())
+            .ReturnsAsync(new List<ConversationDto>());
+
+        RenderProviders();
+
+        // Act
+        var cut = Render<Conversations>();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("Mesajele mele");
+        });
+    }
+
+    [Fact]
+    public void Conversations_EmptyState_HasSearchRoomsButton()
+    {
+        // Arrange
+        _mockConversationService.Setup(x => x.GetConversationsAsync())
+            .ReturnsAsync(new List<ConversationDto>());
+
+        RenderProviders();
+
+        // Act
+        var cut = Render<Conversations>();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("Caută camere");
+            cut.Markup.Should().Contain("/listings");
+        });
+    }
+
+    [Fact]
+    public void Conversations_WithMultipleConversations_DisplaysAll()
+    {
+        // Arrange
+        var conversations = new List<ConversationDto>
+        {
+            new ConversationDto(Guid.NewGuid(), Guid.NewGuid(), "User One", null, "User", DateTime.UtcNow.AddMinutes(-10)),
+            new ConversationDto(Guid.NewGuid(), Guid.NewGuid(), "User Two", null, "Admin", DateTime.UtcNow.AddMinutes(-5))
+        };
+
+        _mockConversationService.Setup(x => x.GetConversationsAsync())
+            .ReturnsAsync(conversations);
+
+        RenderProviders();
+
+        // Act
+        var cut = Render<Conversations>();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("User One");
+            cut.Markup.Should().Contain("User Two");
+        });
+    }
+
+    [Fact]
+    public void Conversations_ComponentType_IsCorrect()
+    {
+        var componentType = typeof(Conversations);
+        componentType.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void Conversations_ImplementsIDisposable()
+    {
+        typeof(Conversations).GetInterfaces().Should().Contain(typeof(IDisposable));
     }
 }

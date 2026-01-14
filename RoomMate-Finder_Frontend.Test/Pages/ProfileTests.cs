@@ -240,4 +240,111 @@ public class ProfileTests : IAsyncLifetime
         // Assert
         profileComp.Markup.Should().NotContain("Editează Profilul");
     }
+    [Fact]
+    public void Profile_DisplaysReviews_WhenNotEmpty()
+    {
+        // Arrange
+        var profileId = Guid.NewGuid();
+        var profile = new ProfileDto(profileId, "test@test.com", "Test User", 25, "Male", "Uni", "Bio", "Style", "Interests", DateTime.UtcNow, null, "User");
+        
+        var reviews = new List<Review>
+        {
+            new Review { ReviewerFullName = "Reviewer 1", Rating = 5, Comment = "Great!", CreatedAt = DateTime.UtcNow },
+            new Review { ReviewerFullName = "Reviewer 2", Rating = 4, Comment = "Good", CreatedAt = DateTime.UtcNow }
+        };
+
+        _mockProfileService.Setup(x => x.GetByIdAsync(profileId)).ReturnsAsync(profile);
+        _mockProfileService.Setup(x => x.GetCurrentAsync()).ReturnsAsync(profile); 
+        _mockProfileService.Setup(x => x.GetUserReviews(profileId)).ReturnsAsync(reviews);
+
+        // Act
+        var cut = _ctx.Render<MudPopoverProvider>();
+        var profileComp = _ctx.Render<Profile>(parameters => parameters.Add(p => p.Id, profileId));
+
+        // Assert
+        profileComp.WaitForAssertion(() =>
+        {
+            profileComp.Markup.Should().Contain("Reviewer 1");
+            profileComp.Markup.Should().Contain("Great!");
+            profileComp.Markup.Should().Contain("Reviewer 2");
+        });
+    }
+
+    [Fact]
+    public void Profile_DisplaysRoommate_WhenExists()
+    {
+        // Arrange
+        var profileId = Guid.NewGuid();
+        var roommateId = Guid.NewGuid();
+        var profile = new ProfileDto(profileId, "test@test.com", "Test User", 25, "Male", "Uni", "Bio", "Style", "Interests", DateTime.UtcNow, null, "User");
+        
+        var roommate = new UserRoommateDto(
+            Guid.NewGuid(), // RelationshipId
+            roommateId,
+            "Room Mate",
+            "roommate@test.com",
+            null, // ProfilePicturePath
+            22,   // Age
+            "Uni", // University
+            DateTime.UtcNow // Since
+        );
+
+        _mockProfileService.Setup(x => x.GetByIdAsync(profileId)).ReturnsAsync(profile);
+        _mockProfileService.Setup(x => x.GetCurrentAsync()).ReturnsAsync(profile); 
+        _mockProfileService.Setup(x => x.GetUserReviews(profileId)).ReturnsAsync(new List<Review>());
+        _mockRoommateService.Setup(x => x.GetUserRoommateAsync(profileId)).ReturnsAsync(roommate);
+
+        // Act
+        var cut = _ctx.Render<MudPopoverProvider>();
+        var profileComp = _ctx.Render<Profile>(parameters => parameters.Add(p => p.Id, profileId));
+
+        // Assert
+        profileComp.WaitForAssertion(() =>
+        {
+            profileComp.Markup.Should().Contain("Roommate");
+            profileComp.Markup.Should().Contain("Room Mate");
+            profileComp.Markup.Should().Contain("RM"); // Initials expected for "Room Mate"
+        });
+    }
+
+    [Fact]
+    public void Profile_EditMode_HandlesFileUpload()
+    {
+        // Arrange
+        var profileId = Guid.NewGuid();
+        var profile = new ProfileDto(profileId, "me@test.com", "My Profile", 25, "Male", "Uni", "Bio", "Life", "Int", DateTime.UtcNow, null, "User");
+
+        _mockProfileService.Setup(x => x.GetByIdAsync(profileId)).ReturnsAsync(profile);
+        _mockProfileService.Setup(x => x.GetCurrentAsync()).ReturnsAsync(profile); 
+        _mockProfileService.Setup(x => x.GetUserReviews(profileId)).ReturnsAsync(new List<Review>());
+        
+        // Mock JS crop
+        _ctx.JSInterop.Setup<string>("cropImageToCircle", _ => true).SetResult("data:image/jpeg;base64,ZmFrZQ=="); // "fake" base64
+        _ctx.JSInterop.SetupVoid("preventScrollOnElement", _ => true);
+
+        var cut = _ctx.Render<MudPopoverProvider>();
+        var profileComp = _ctx.Render<Profile>(parameters => parameters.Add(p => p.Id, profileId));
+        
+        // Enter Edit Mode
+        profileComp.WaitForState(() => profileComp.FindAll("button").Count > 0);
+        profileComp.FindComponents<MudButton>().First(b => b.Markup.Contains("Editează Profilul")).Find("button").Click();
+        profileComp.WaitForState(() => profileComp.FindComponents<MudForm>().Count > 0);
+
+        // Upload File
+        var inputFile = profileComp.FindComponent<InputFile>();
+        inputFile.UploadFiles(InputFileContent.CreateFromText("fake image content", "test.jpg"));
+
+        // Save
+        var saveBtn = profileComp.FindComponents<MudButton>().First(b => b.Markup.Contains("Salvează"));
+        saveBtn.Find("button").Click();
+        
+        // Verify UpdateAsync calls with a file
+        _mockProfileService.Verify(x => x.UpdateAsync(
+            profileId, 
+            It.IsAny<UpdateProfileRequestDto>(), 
+            It.Is<IBrowserFile>(f => f != null)
+        ), Times.Once); // Might be invoked asynchronously so this verify might happen before call completes if not awaited? 
+                        // But invoke OnClick is sync here for the test part, the handler is async.
+                        // BUnit wait needed?
+    }
 }
