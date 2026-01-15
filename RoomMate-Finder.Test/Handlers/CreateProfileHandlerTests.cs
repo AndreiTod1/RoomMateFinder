@@ -157,5 +157,6 @@ public class CreateProfileHandlerTests : IDisposable
         {
             try { Directory.Delete(_tempPath, true); } catch { }
         }
+        GC.SuppressFinalize(this);
     }
 }

@@ -40,7 +40,7 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
         }
     }
 
-    public Task MarkUserAsAuthenticated(string token)
+    public virtual Task MarkUserAsAuthenticated(string token)
     {
         var claims = ParseClaimsFromJwt(token);
         var identity = new ClaimsIdentity(claims, "jwt");
@@ -49,14 +49,14 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
         return Task.CompletedTask;
     }
 
-    public Task MarkUserAsLoggedOut()
+    public virtual Task MarkUserAsLoggedOut()
     {
         var anonymous = new ClaimsPrincipal(new ClaimsIdentity());
         NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(anonymous)));
         return Task.CompletedTask;
     }
 
-    private static IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
+    private static List<Claim> ParseClaimsFromJwt(string jwt)
     {
         var claims = new List<Claim>();
         var parts = jwt.Split('.');
@@ -93,18 +93,18 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
 
     private static void MapLegacyClaims(List<Claim> claims)
     {
-        AddClaimIfNotPresent(claims, "name", ClaimTypes.Name);
-        AddClaimIfNotPresent(claims, "sub", ClaimTypes.NameIdentifier);
-        AddClaimIfNotPresent(claims, "role", ClaimTypes.Role);
-        AddClaimIfNotPresent(claims, "Role", ClaimTypes.Role);
+        MapClaims(claims, "name", ClaimTypes.Name);
+        MapClaims(claims, "sub", ClaimTypes.NameIdentifier);
+        MapClaims(claims, "role", ClaimTypes.Role);
+        MapClaims(claims, "Role", ClaimTypes.Role);
     }
 
-    private static void AddClaimIfNotPresent(List<Claim> claims, string sourceKey, string targetType)
+    private static void MapClaims(List<Claim> claims, string sourceKey, string targetType)
     {
-        if (!claims.Any(c => c.Type == targetType))
+        var sources = claims.Where(c => c.Type == sourceKey).ToList();
+        foreach (var source in sources)
         {
-            var source = claims.FirstOrDefault(c => c.Type == sourceKey);
-            if (source != null)
+            if (!claims.Any(c => c.Type == targetType && c.Value == source.Value))
             {
                 claims.Add(new Claim(targetType, source.Value));
             }

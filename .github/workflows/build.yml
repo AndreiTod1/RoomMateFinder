@@ -61,7 +61,7 @@ jobs:
           ${{ runner.temp }}\scanner\dotnet-sonarscanner begin `
             /k:"Iuli4n0_RoomMate-Finder" `
             /o:"iuli4n0" `
-            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" `
+            /d:sonar.token="$env:SONAR_TOKEN" `
             /d:sonar.host.url="https://sonarcloud.io" `
             /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml" `
             /d:sonar.exclusions="**/Migrations/**/*,**/obj/**/*,**/bin/**/*" `
@@ -81,4 +81,4 @@ jobs:
           Get-ChildItem -Path . -Recurse -Filter "coverage.opencover.xml" | ForEach-Object { Write-Host $_.FullName }
 
           Write-Host "=== [4/4] Ending SonarScanner ==="
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="$env:SONAR_TOKEN"

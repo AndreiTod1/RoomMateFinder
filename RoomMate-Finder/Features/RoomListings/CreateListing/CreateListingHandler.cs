@@ -78,7 +78,7 @@ public class CreateListingHandler : IRequestHandler<CreateListingWithImagesComma
         return imagePaths;
     }
 
-    private async Task<string> SaveSingleImageAsync(Guid listingId, IFormFile image, string uploadsFolder, int displayOrder, CancellationToken cancellationToken)
+    private static async Task<string> SaveSingleImageAsync(Guid listingId, IFormFile image, string uploadsFolder, int displayOrder, CancellationToken cancellationToken)
     {
         ValidateImageType(image);
         ValidateImageSize(image);

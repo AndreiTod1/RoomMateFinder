@@ -34,26 +34,13 @@ public class UpdateProfileHandler : IRequestHandler<UpdateProfileWithFileCommand
 
     private static void UpdateProfileFields(Entities.Profile profile, UpdateProfileRequest request)
     {
-        if (request.FullName != null)
-            profile.FullName = request.FullName;
-            
-        if (request.Age.HasValue)
-            profile.Age = request.Age.Value;
-            
-        if (request.Gender != null)
-            profile.Gender = request.Gender;
-            
-        if (request.University != null)
-            profile.University = request.University;
-            
-        if (request.Bio != null)
-            profile.Bio = request.Bio;
-            
-        if (request.Lifestyle != null)
-            profile.Lifestyle = request.Lifestyle;
-            
-        if (request.Interests != null)
-            profile.Interests = request.Interests;
+        profile.FullName = request.FullName ?? profile.FullName;
+        profile.Age = request.Age ?? profile.Age;
+        profile.Gender = request.Gender ?? profile.Gender;
+        profile.University = request.University ?? profile.University;
+        profile.Bio = request.Bio ?? profile.Bio;
+        profile.Lifestyle = request.Lifestyle ?? profile.Lifestyle;
+        profile.Interests = request.Interests ?? profile.Interests;
     }
 
     private async Task UpdateProfilePictureAsync(Entities.Profile profile, UpdateProfileWithFileCommand command, CancellationToken cancellationToken)

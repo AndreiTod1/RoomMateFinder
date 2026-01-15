@@ -8,7 +8,7 @@ using Xunit;
 
 namespace RoomMate_Finder.Test.Handlers;
 
-public class GetProfilesHandlerTests : IDisposable
+public class GetProfilesHandlerTests
 {
     [Fact]
     public async Task Given_EmptyDatabase_When_HandleIsCalled_Then_EmptyListIsReturned()
@@ -152,8 +152,4 @@ public class GetProfilesHandlerTests : IDisposable
         returnedProfile.Age.Should().Be(profile.Age);
     }
 
-    public void Dispose()
-    {
-        // Clean up resources if needed
-    }
 }

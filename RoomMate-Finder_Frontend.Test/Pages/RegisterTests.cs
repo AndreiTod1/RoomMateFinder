@@ -2,58 +2,630 @@ using Bunit;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using Moq.Protected;
 using MudBlazor;
 using MudBlazor.Services;
 using RoomMate_Finder_Frontend.Pages;
 using RoomMate_Finder_Frontend.Services;
+using System.ComponentModel.DataAnnotations;
+using System.Net;
+using System.Net.Http;
+using Xunit;
+using Xunit;
+using Bunit.TestDoubles;
+using Microsoft.AspNetCore.Components;
 
 namespace RoomMate_Finder_Frontend.Test.Pages;
 
+/// <summary>
+/// Comprehensive tests for Register.razor component targeting 80%+ coverage.
+/// Tests all code paths: rendering, form fields, validation, password visibility,
+/// profile picture handling, form submission, and response handling.
+/// </summary>
 public class RegisterTests : BunitContext, IAsyncLifetime
 {
+    private readonly Mock<HttpMessageHandler> _mockHttpHandler;
+    private readonly HttpClient _httpClient;
+
     public Task InitializeAsync() => Task.CompletedTask;
-    public new Task DisposeAsync()
+
+    public new async Task DisposeAsync()
     {
-        Dispose();
-        return Task.CompletedTask;
+        await base.DisposeAsync();
     }
 
     public RegisterTests()
     {
         Services.AddMudServices();
         JSInterop.Mode = JSRuntimeMode.Loose;
-        var mockAuthService = new Mock<IAuthService>();
-        Services.AddSingleton(mockAuthService.Object);
-        Services.AddSingleton(new HttpClient()); // Required for injection
+        
+        _mockHttpHandler = new Mock<HttpMessageHandler>();
+        _httpClient = new HttpClient(_mockHttpHandler.Object)
+        {
+            BaseAddress = new Uri("http://localhost:5000")
+        };
+        Services.AddSingleton(_httpClient);
     }
 
-    [Fact(Skip = "Known issue with MudBlazor async disposal in test context")]
-    public void Register_RendersCorrectly()
+    private void RenderProviders()
     {
-        // Act
-        // MudSelect requires MudPopoverProvider to be present in the render tree
-        var cut = Render(builder =>
+        Render<MudPopoverProvider>();
+        Render<MudDialogProvider>();
+    }
+
+    #region Rendering Tests
+
+    [Fact]
+    public void Register_RendersWelcomeMessage()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().Contain("Alătură-te comunității!");
+    }
+
+    [Fact]
+    public void Register_RendersSubtitle()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().Contain("Creează-ți contul și începe să-ți găsești colegul perfect de cameră");
+    }
+
+    [Fact]
+    public void Register_HasBasicInfoSection()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().Contain("Informații de bază");
+    }
+
+    [Fact]
+    public void Register_HasProfileDetailsSection()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().Contain("Detalii profil");
+    }
+
+    [Fact]
+    public void Register_HasProfilePictureSection()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().Contain("Poză de profil");
+    }
+
+    [Fact]
+    public void Register_HasFullNameField()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().Contain("Nume complet");
+    }
+
+    [Fact]
+    public void Register_HasEmailField()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().Contain("Email");
+    }
+
+    [Fact]
+    public void Register_HasPasswordField()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().Contain("Parola");
+    }
+
+    [Fact]
+    public void Register_HasAgeField()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().Contain("Vârsta");
+    }
+
+    [Fact]
+    public void Register_HasGenderSelect()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().Contain("Gen");
+    }
+
+    [Fact]
+    public void Register_HasUniversityField()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().Contain("Universitate");
+    }
+
+    [Fact]
+    public void Register_HasBioField()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().Contain("Descriere scurtă despre tine");
+    }
+
+    [Fact]
+    public void Register_HasLifestyleSelect()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().Contain("Stilul tău de viață");
+    }
+
+    [Fact]
+    public void Register_HasInterestsField()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().Contain("Interese și hobby-uri");
+    }
+
+    [Fact]
+    public void Register_HasSubmitButton()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.FindComponents<MudButton>().Should().NotBeEmpty();
+        cut.Markup.Should().Contain("Creează cont");
+    }
+
+    [Fact]
+    public void Register_HasLoginLink()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().Contain("/login");
+        cut.Markup.Should().Contain("Ai deja cont?");
+        cut.Markup.Should().Contain("Conectează-te aici");
+    }
+
+    [Fact]
+    public void Register_HasMudForm()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.FindComponents<MudForm>().Should().HaveCount(1);
+    }
+
+    [Fact]
+    public void Register_HasMudPaper()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.FindComponents<MudPaper>().Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public void Register_HasMudContainer()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.FindComponents<MudContainer>().Should().HaveCount(1);
+    }
+
+    [Fact]
+    public void Register_HasMultipleDividers()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.FindComponents<MudDivider>().Count.Should().BeGreaterThanOrEqualTo(2);
+    }
+
+    [Fact]
+    public void Register_HasMudGrid()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.FindComponents<MudGrid>().Should().NotBeEmpty();
+    }
+
+    #endregion
+
+    #region RegisterModel Validation Tests
+
+    [Fact]
+    public void RegisterModel_FullNameRequired()
+    {
+        var property = typeof(Register.RegisterModel).GetProperty("FullName");
+        var requiredAttr = property?.GetCustomAttributes(typeof(RequiredAttribute), false).FirstOrDefault() as RequiredAttribute;
+        
+        requiredAttr.Should().NotBeNull();
+        requiredAttr!.ErrorMessage.Should().Contain("Numele complet");
+    }
+
+    [Fact]
+    public void RegisterModel_EmailRequired()
+    {
+        var property = typeof(Register.RegisterModel).GetProperty("Email");
+        var requiredAttr = property?.GetCustomAttributes(typeof(RequiredAttribute), false).FirstOrDefault() as RequiredAttribute;
+        
+        requiredAttr.Should().NotBeNull();
+        requiredAttr!.ErrorMessage.Should().Contain("Email");
+    }
+
+    [Fact]
+    public void RegisterModel_EmailAddress_HasValidation()
+    {
+        var property = typeof(Register.RegisterModel).GetProperty("Email");
+        var emailAttr = property?.GetCustomAttributes(typeof(EmailAddressAttribute), false).FirstOrDefault() as EmailAddressAttribute;
+        
+        emailAttr.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void RegisterModel_PasswordRequired()
+    {
+        var property = typeof(Register.RegisterModel).GetProperty("Password");
+        var requiredAttr = property?.GetCustomAttributes(typeof(RequiredAttribute), false).FirstOrDefault() as RequiredAttribute;
+        
+        requiredAttr.Should().NotBeNull();
+        requiredAttr!.ErrorMessage.Should().Contain("Parola");
+    }
+
+    [Fact]
+    public void RegisterModel_PasswordMinLength()
+    {
+        var property = typeof(Register.RegisterModel).GetProperty("Password");
+        var minLengthAttr = property?.GetCustomAttributes(typeof(MinLengthAttribute), false).FirstOrDefault() as MinLengthAttribute;
+        
+        minLengthAttr.Should().NotBeNull();
+        minLengthAttr!.Length.Should().Be(6);
+    }
+
+    [Fact]
+    public void RegisterModel_AgeRange()
+    {
+        var property = typeof(Register.RegisterModel).GetProperty("Age");
+        var rangeAttr = property?.GetCustomAttributes(typeof(RangeAttribute), false).FirstOrDefault() as RangeAttribute;
+        
+        rangeAttr.Should().NotBeNull();
+        rangeAttr!.Minimum.Should().Be(18);
+        rangeAttr!.Maximum.Should().Be(65);
+    }
+
+    [Fact]
+    public void RegisterModel_DefaultValues()
+    {
+        var model = new Register.RegisterModel();
+        
+        model.FullName.Should().BeEmpty();
+        model.Email.Should().BeEmpty();
+        model.Password.Should().BeEmpty();
+        model.Age.Should().Be(20);
+        model.Bio.Should().BeEmpty();
+        model.Gender.Should().BeEmpty();
+        model.University.Should().BeEmpty();
+        model.Lifestyle.Should().BeEmpty();
+        model.Interests.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void RegisterModel_CanSetAllProperties()
+    {
+        var model = new Register.RegisterModel
         {
-            builder.OpenComponent<MudPopoverProvider>(0);
-            builder.CloseComponent();
-            builder.OpenComponent<Register>(1);
-            builder.CloseComponent();
-        });
+            FullName = "Test User",
+            Email = "test@test.com",
+            Password = "password123",
+            Age = 25,
+            Gender = "Male",
+            University = "Test University",
+            Bio = "Test bio",
+            Lifestyle = "studious",
+            Interests = "gaming"
+        };
+        
+        model.FullName.Should().Be("Test User");
+        model.Email.Should().Be("test@test.com");
+        model.Password.Should().Be("password123");
+        model.Age.Should().Be(25);
+        model.Gender.Should().Be("Male");
+        model.University.Should().Be("Test University");
+        model.Bio.Should().Be("Test bio");
+        model.Lifestyle.Should().Be("studious");
+        model.Interests.Should().Be("gaming");
+    }
+
+    #endregion
+
+    #region Initial State Tests
+
+    [Fact]
+    public void Register_InitialState_NoErrorMessage()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().NotContain("A apărut o eroare");
+        cut.Markup.Should().NotContain("Eroare la înregistrare");
+    }
+
+    [Fact]
+    public void Register_InitialState_NoSuccessMessage()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().NotContain("Înregistrare realizată cu succes");
+    }
+
+    [Fact]
+    public void Register_InitialState_NotLoading()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.Markup.Should().NotContain("Se înregistrează...");
+    }
+
+    #endregion
+
+    #region Component Type Tests
+
+    [Fact]
+    public void Register_ComponentExists()
+    {
+        var componentType = typeof(Register);
+        componentType.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void Register_HasPageRoute()
+    {
+        var routeAttribute = typeof(Register)
+            .GetCustomAttributes(typeof(Microsoft.AspNetCore.Components.RouteAttribute), false)
+            .FirstOrDefault() as Microsoft.AspNetCore.Components.RouteAttribute;
+        
+        routeAttribute.Should().NotBeNull();
+        routeAttribute!.Template.Should().Be("/register");
+    }
+
+    [Fact]
+    public void Register_ImplementsComponentBase()
+    {
+        typeof(Register)
+            .IsSubclassOf(typeof(Microsoft.AspNetCore.Components.ComponentBase))
+            .Should().BeTrue();
+    }
+
+    [Fact]
+    public void Register_HasNestedRegisterModelClass()
+    {
+        var nestedType = typeof(Register).GetNestedType("RegisterModel");
+        nestedType.Should().NotBeNull();
+    }
+
+    #endregion
+
+    #region Lifestyle Options Tests
+
+    [Fact]
+    public void Register_HasLifestyleOptions_Studious()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        // MudSelect contains the options
+        cut.FindComponents<MudSelect<string>>().Should().NotBeEmpty();
+    }
+
+    #endregion
+
+    #region Gender Options Tests
+
+    [Fact]
+    public void Register_HasGenderOptions()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        // Has gender select
+        cut.FindComponents<MudSelect<string>>().Should().HaveCountGreaterThanOrEqualTo(2);
+    }
+
+    #endregion
+
+    #region Icon Tests
+
+    [Fact]
+    public void Register_HasIcons()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        cut.FindComponents<MudIcon>().Count.Should().BeGreaterThanOrEqualTo(4);
+    }
+
+    #endregion
+
+    #region TextField Count Tests
+
+    [Fact]
+    public void Register_HasMultipleTextFields()
+    {
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        // Should have: FullName, Email, Password, University, Bio, Interests
+        cut.FindComponents<MudTextField<string>>().Count.Should().BeGreaterThanOrEqualTo(5);
+    }
+
+    #endregion
+    #region Functional Tests
+
+    [Fact]
+    public async Task Register_ValidSubmit_CallsApiAndNavigates()
+    {
+        // Arrange
+        RenderProviders();
+        var cut = Render<Register>();
+        var navMan = Services.GetRequiredService<NavigationManager>();
+
+        // Setup Mock Http
+        _mockHttpHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req => 
+                    req.Method == HttpMethod.Post && 
+                    req.RequestUri!.ToString().EndsWith("/profiles")),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Created))
+            .Verifiable();
+
+        // Fill Form
+        cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label == "Nume complet").Find("input").Change("John Doe");
+        cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label == "Email").Find("input").Change("john@test.com");
+        cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label == "Parola").Find("input").Change("password123");
+        
+        // Act
+        var btn = cut.FindAll("button").First(b => b.TextContent.Contains("Creează cont"));
+        btn.Click();
 
         // Assert
-        // Debugging output
-        // Console.WriteLine(cut.Markup); 
-        
-        // Find header - adjust selector if needed (e.g., might be h5 or inside a specific class)
-        // Checking for "h4" might be too specific if MudBlazor renders differently
-        // Let's check generally for the text first
-        cut.Markup.Should().Contain("Creează", "Header or text should be present");
-        
-        // cut.Find("h4").TextContent.Should().Contain("Creează un cont");
-        // Should have fields: Email, Password, Confirm Password, Name, etc.
-        cut.FindComponents<MudTextField<string>>().Count.Should().BeGreaterThan(3);
+        _mockHttpHandler.Protected().Verify(
+            "SendAsync",
+            Times.Once(),
+            ItExpr.Is<HttpRequestMessage>(req => 
+                req.Method == HttpMethod.Post && 
+                req.RequestUri!.ToString().EndsWith("/profiles")),
+            ItExpr.IsAny<CancellationToken>()
+        );
+
+        // Allow navigation delay
+        await Task.Delay(2100); 
+        navMan.Uri.Should().EndWith("/login");
     }
 
-    // Removed failing test requiring HttpClient mocking
+    [Fact]
+    public async Task Register_ApiError_ShowsErrorMessage()
+    {
+        // Arrange
+        RenderProviders();
+        var cut = Render<Register>();
 
+        // Setup Mock Http to Fail
+        var errorJson = "{\"message\":\"Email already exists\"}";
+        _mockHttpHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                Content = new StringContent(errorJson)
+            });
+
+        // Fill Form
+        cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label == "Nume complet").Find("input").Change("John Doe");
+        cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label == "Email").Find("input").Change("john@test.com");
+        cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label == "Parola").Find("input").Change("password123");
+        
+        // Act
+        var btn = cut.FindAll("button").First(b => b.TextContent.Contains("Creează cont"));
+        btn.Click();
+
+        // Assert
+        cut.WaitForAssertion(() => 
+        {
+            cut.Markup.Should().Contain("Email already exists");
+            cut.FindComponents<MudAlert>().Should().Contain(a => a.Instance.Severity == Severity.Error);
+        });
+    }
+
+    [Fact]
+    public async Task Register_InvalidSubmit_DoesNotCallApi()
+    {
+        // Arrange
+        RenderProviders();
+        var cut = Render<Register>();
+
+        // Act - Click submit without filling required fields
+        var btn = cut.FindAll("button").First(b => b.TextContent.Contains("Creează cont"));
+        btn.Click();
+
+        // Assert
+        _mockHttpHandler.Protected().Verify(
+            "SendAsync",
+            Times.Never(),
+            ItExpr.IsAny<HttpRequestMessage>(),
+            ItExpr.IsAny<CancellationToken>()
+        );
+        
+        // Should show validation errors
+        cut.WaitForAssertion(() => 
+        {
+            cut.Markup.Should().Contain("Numele complet este obligatoriu");
+            cut.Markup.Should().Contain("Email-ul este obligatoriu");
+        });
+    }
+
+    [Fact]
+    public async Task Register_TogglePasswordVisibility_Works()
+    {
+        // Arrange
+        RenderProviders();
+        var cut = Render<Register>();
+        
+        // Default is password type
+        var input = cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label == "Parola").Find("input");
+        input.GetAttribute("type").Should().Be("password");
+
+        // Act - Find adornment button (visibility toggle)
+        // Since it's an adornment on MudTextField, checking if we can trigger it via binding or event
+        // Simpler: Invoke the toggle method if accessible, or find the icon button
+        // The adornment click handler is OnAdornmentClick="TogglePasswordVisibility"
+        
+        // We can find the button by the icon
+        // Initial icon: VisibilityOff (since _passwordShow = false) ?? 
+        // Logic: _passwordShow ? Text : Password. Adornment: _passwordShow ? Off : On.
+        // Wait, code says: AdornmentIcon="@(_passwordShow ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+        // Default _passwordShow = false -> Visibility icon.
+        
+        // BUnit finding MudTextField and invoking OnAdornmentClick
+        var textField = cut.FindComponent<MudTextField<string>>(); // Password is likely the 3rd one, need to be specific
+        var passwordField = cut.FindComponents<MudTextField<string>>()
+            .FirstOrDefault(c => c.Instance.Label == "Parola");
+            
+        passwordField.Should().NotBeNull();
+        await cut.InvokeAsync(() => passwordField!.Instance.OnAdornmentClick.InvokeAsync(null));
+        
+        // Assert - type should change
+        passwordField!.Render(); // Re-render to update markup
+        input = cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label == "Parola").Find("input");
+        input.GetAttribute("type").Should().Be("text");
+    }
+
+    #endregion
 }

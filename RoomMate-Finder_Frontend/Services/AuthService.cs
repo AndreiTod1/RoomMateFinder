@@ -66,4 +66,32 @@ public class AuthService : IAuthService
             return null;
         }
     }
+
+    public async Task<RegisterResult> RegisterWithPictureAsync(string email, string password, string fullName, int age, string gender, 
+        string university, string bio, string lifestyle, string interests, string? profilePictureUrl)
+    {
+        var request = new
+        {
+            email,
+            password,
+            fullName,
+            age,
+            gender,
+            university,
+            bio,
+            lifestyle,
+            interests,
+            profilePictureUrl
+        };
+
+        var resp = await _http.PostAsJsonAsync("/profiles", request);
+
+        if (!resp.IsSuccessStatusCode)
+        {
+            var message = await resp.Content.ReadAsStringAsync();
+            return new RegisterResult { Successful = false, Errors = new[] { message } };
+        }
+        
+        return new RegisterResult { Successful = true };
+    }
 }

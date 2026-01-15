@@ -9,7 +9,7 @@ using Xunit;
 
 namespace RoomMate_Finder.Test.Handlers;
 
-public class GetConversationsHandlerTests : IDisposable
+public class GetConversationsHandlerTests
 {
     [Fact]
     public async Task Given_NoConversations_When_HandleIsCalled_Then_EmptyListIsReturned()
@@ -328,8 +328,4 @@ public class GetConversationsHandlerTests : IDisposable
         result.Conversations.Should().BeEmpty();
     }
 
-    public void Dispose()
-    {
-        // Clean up resources if needed
-    }
 }

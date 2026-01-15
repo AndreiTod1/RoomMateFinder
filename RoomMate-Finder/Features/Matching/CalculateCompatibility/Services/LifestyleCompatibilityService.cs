@@ -57,11 +57,11 @@ public class LifestyleCompatibilityService : ILifestyleCompatibilityService
 
     private bool IsCompatible(string life1, string life2)
     {
-        if (_compatiblePairs.ContainsKey(life1) && _compatiblePairs[life1].Contains(life2))
+        if (_compatiblePairs.TryGetValue(life1, out var compatibleList1) && compatibleList1.Contains(life2))
         {
             return true;
         }
-        if (_compatiblePairs.ContainsKey(life2) && _compatiblePairs[life2].Contains(life1))
+        if (_compatiblePairs.TryGetValue(life2, out var compatibleList2) && compatibleList2.Contains(life1))
         {
             return true;
         }

@@ -223,5 +223,6 @@ public class UpdateProfileHandlerTests : IDisposable
         {
             try { Directory.Delete(_tempPath, true); } catch { }
         }
+        GC.SuppressFinalize(this);
     }
 }

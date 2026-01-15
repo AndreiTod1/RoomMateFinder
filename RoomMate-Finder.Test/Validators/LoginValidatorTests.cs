@@ -6,7 +6,7 @@ using Xunit;
 
 namespace RoomMate_Finder.Test.Validators;
 
-public class LoginValidatorTests : IDisposable
+public class LoginValidatorTests
 {
     private LoginValidator _validator;
 
@@ -84,10 +84,5 @@ public class LoginValidatorTests : IDisposable
         // Assert
         result.IsValid.Should().BeTrue();
         result.Errors.Should().BeEmpty();
-    }
-
-    public void Dispose()
-    {
-        _validator = null!;
     }
 }

@@ -53,6 +53,7 @@ public class ProfilePictureTests : IDisposable
         {
             try { Directory.Delete(_tempPath, true); } catch { }
         }
+        GC.SuppressFinalize(this);
     }
 
     private static IFormFile CreateMockFormFile(string fileName, string contentType, byte[] content)
