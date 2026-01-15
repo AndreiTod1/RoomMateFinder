@@ -309,9 +309,10 @@ public class ListingServiceTests
         var service = new ListingService(httpClient);
 
         // Act
-        await service.DeleteAsync(Guid.NewGuid());
-        
-        // Assert - should not throw
+        var act = async () => await service.DeleteAsync(Guid.NewGuid());
+
+        // Assert
+        await act.Should().NotThrowAsync();
     }
 
     [Fact]

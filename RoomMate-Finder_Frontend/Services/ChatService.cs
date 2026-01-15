@@ -165,5 +165,6 @@ public class ChatService : IChatService
     public async ValueTask DisposeAsync()
     {
         await DisconnectAsync();
+        GC.SuppressFinalize(this);
     }
 }

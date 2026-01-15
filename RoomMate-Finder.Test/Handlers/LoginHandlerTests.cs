@@ -23,7 +23,7 @@ public class LoginHandlerTests
         return new JwtService(key, issuer, audience);
     }
 
-    private static IValidator<LoginRequest> CreateValidator()
+    private static LoginValidator CreateValidator()
     {
         return new LoginValidator();
     }

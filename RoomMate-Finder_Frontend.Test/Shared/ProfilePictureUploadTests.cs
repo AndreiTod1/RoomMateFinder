@@ -13,8 +13,10 @@ using Xunit;
 
 namespace RoomMate_Finder_Frontend.Test.Shared;
 
-public class ProfilePictureUploadTests : BunitContext
+public class ProfilePictureUploadTests : BunitContext, IAsyncLifetime
 {
+    public Task InitializeAsync() => Task.CompletedTask;
+    public new async Task DisposeAsync() => await base.DisposeAsync();
     public ProfilePictureUploadTests()
     {
         Services.AddMudServices();
@@ -63,7 +65,7 @@ public class ProfilePictureUploadTests : BunitContext
     }
 
     [Fact]
-    public async Task HandleFileSelected_InvokesCallback()
+    public void HandleFileSelected_InvokesCallback()
     {
         IBrowserFile? selectedFile = null;
         var cut = Render<ProfilePictureUpload>(parameters => parameters
@@ -151,5 +153,10 @@ public class ProfilePictureUploadTests : BunitContext
             .First(b => b.Markup.Contains("Resetează"));
             
         resetBtn.Find("button").Click();
+
+        // Assert
+        // Assert
+        cut.Instance.HasNewImage.Should().BeTrue();
+        cut.Markup.Should().Contain("Zoom: 1.0x");
     }
 }

@@ -57,7 +57,7 @@ public class MatchingServiceTests
                 "SendAsync",
                 ItExpr.Is<HttpRequestMessage>(req => 
                     req.Method == HttpMethod.Get && 
-                    req.RequestUri.ToString().Contains($"/matching/matches/{userId}")),
+                    req.RequestUri!.ToString().Contains($"/matching/matches/{userId}")),
                 ItExpr.IsAny<CancellationToken>()
             )
             .ReturnsAsync(new HttpResponseMessage
@@ -84,7 +84,7 @@ public class MatchingServiceTests
                 "SendAsync",
                 ItExpr.Is<HttpRequestMessage>(req => 
                     req.Method == HttpMethod.Get && 
-                    req.RequestUri.ToString().Contains($"/matching/matches/{userId}")),
+                    req.RequestUri!.ToString().Contains($"/matching/matches/{userId}")),
                 ItExpr.IsAny<CancellationToken>()
             )
             .ReturnsAsync(new HttpResponseMessage
@@ -117,7 +117,7 @@ public class MatchingServiceTests
                 "SendAsync",
                 ItExpr.Is<HttpRequestMessage>(req => 
                     req.Method == HttpMethod.Get && 
-                    req.RequestUri.ToString().Contains($"/matching/compatibility/{userId}/{otherUserId}")),
+                    req.RequestUri!.ToString().Contains($"/matching/compatibility/{userId}/{otherUserId}")),
                 ItExpr.IsAny<CancellationToken>()
             )
             .ReturnsAsync(new HttpResponseMessage
@@ -164,7 +164,7 @@ public class MatchingServiceTests
                 "SendAsync",
                 ItExpr.Is<HttpRequestMessage>(req => 
                     req.Method == HttpMethod.Get && 
-                    req.RequestUri.ToString().Contains($"/matching/my-matches/{userId}")),
+                    req.RequestUri!.ToString().Contains($"/matching/my-matches/{userId}")),
                 ItExpr.IsAny<CancellationToken>()
             )
             .ReturnsAsync(new HttpResponseMessage
@@ -195,7 +195,7 @@ public class MatchingServiceTests
                 "SendAsync",
                 ItExpr.Is<HttpRequestMessage>(req => 
                     req.Method == HttpMethod.Post && 
-                    req.RequestUri.ToString().Contains("/matching/like")),
+                    req.RequestUri!.ToString().Contains("/matching/like")),
                 ItExpr.IsAny<CancellationToken>()
             )
             .ReturnsAsync(new HttpResponseMessage
@@ -226,7 +226,7 @@ public class MatchingServiceTests
                 "SendAsync",
                 ItExpr.Is<HttpRequestMessage>(req => 
                     req.Method == HttpMethod.Post && 
-                    req.RequestUri.ToString().Contains("/matching/pass")),
+                    req.RequestUri!.ToString().Contains("/matching/pass")),
                 ItExpr.IsAny<CancellationToken>()
             )
             .ReturnsAsync(new HttpResponseMessage

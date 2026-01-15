@@ -502,7 +502,7 @@ public class AdminPendingListingsTests : BunitContext, IAsyncLifetime
         provider.WaitForAssertion(() => provider.Markup.Should().NotContain("Reject Listing"));
     }
 
-    [Fact(Skip = "MudTextField input element not found in test env - needs investigation")]
+    [Fact]
     public void RejectListing_DialogConfirm_CallsServiceAndRemovesListing()
     {
         // Arrange
@@ -524,7 +524,7 @@ public class AdminPendingListingsTests : BunitContext, IAsyncLifetime
         provider.WaitForAssertion(() => provider.Markup.Should().Contain("Reject Listing"));
 
         // Type reason
-        provider.FindComponent<MudTextField<string>>().Find("input").Change("Reason");
+        provider.FindComponent<MudTextField<string>>().Find("textarea").Change("Reason");
 
         // Act - Click Reject in dialog
         var confirmRejectBtn = provider.FindComponents<MudButton>()

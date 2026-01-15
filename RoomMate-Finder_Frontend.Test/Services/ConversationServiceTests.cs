@@ -311,8 +311,11 @@ public class ConversationServiceTests
 
         var service = new ConversationService(httpClient);
 
-        // Act & Assert - should not throw
-        await service.MarkMessagesAsReadAsync(Guid.NewGuid());
+        // Act
+        var act = async () => await service.MarkMessagesAsReadAsync(Guid.NewGuid());
+
+        // Assert
+        await act.Should().NotThrowAsync();
     }
 
     [Fact]
@@ -324,8 +327,11 @@ public class ConversationServiceTests
 
         var service = new ConversationService(httpClient);
 
-        // Act & Assert - should not throw
-        await service.MarkMessagesAsReadAsync(Guid.NewGuid());
+        // Act
+        var act = async () => await service.MarkMessagesAsReadAsync(Guid.NewGuid());
+
+        // Assert
+        await act.Should().NotThrowAsync();
     }
 
     #endregion

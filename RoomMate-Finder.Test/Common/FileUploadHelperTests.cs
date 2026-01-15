@@ -25,9 +25,11 @@ public class FileUploadHelperTests : IDisposable
     [InlineData(" ")]
     public void Given_EmptyUrl_When_DeleteProfilePictureIsCalled_Then_DoesNothing(string? url)
     {
-        // Act
-        // Should not throw
-        FileUploadHelper.DeleteProfilePicture(url!, _mockEnvironment.Object);
+        // Act - Should not throw
+        var act = () => FileUploadHelper.DeleteProfilePicture(url!, _mockEnvironment.Object);
+        
+        // Assert
+        act.Should().NotThrow();
     }
 
     [Fact]
@@ -52,9 +54,11 @@ public class FileUploadHelperTests : IDisposable
         // Arrange
         var fileUrl = "/nonexistent.jpg";
 
-        // Act
-        // Should not throw
-        FileUploadHelper.DeleteProfilePicture(fileUrl, _mockEnvironment.Object);
+        // Act - Should not throw
+        var act = () => FileUploadHelper.DeleteProfilePicture(fileUrl, _mockEnvironment.Object);
+        
+        // Assert
+        act.Should().NotThrow();
     }
     
     public void Dispose()

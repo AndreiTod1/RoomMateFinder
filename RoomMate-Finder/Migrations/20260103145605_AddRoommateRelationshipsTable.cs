@@ -8,54 +8,134 @@ namespace RoomMate_Finder.Migrations
     /// <inheritdoc />
     public partial class AddRoommateRelationshipsTable : Migration
     {
+        private static readonly string[] UserRelationshipColumns = { "User1Id", "User2Id" };
+        private static readonly string[] RequestColumns = { "RequesterId", "TargetUserId" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Check if table exists before creating
-            migrationBuilder.Sql(@"
-                DO $$
-                BEGIN
-                    IF NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'roommate_requests') THEN
-                        CREATE TABLE public.roommate_requests (
-                            ""Id"" uuid NOT NULL,
-                            ""RequesterId"" uuid NOT NULL,
-                            ""TargetUserId"" uuid NOT NULL,
-                            ""Status"" integer NOT NULL,
-                            ""Message"" text,
-                            ""CreatedAt"" timestamp with time zone NOT NULL,
-                            ""ProcessedAt"" timestamp with time zone,
-                            ""ProcessedByAdminId"" uuid,
-                            CONSTRAINT ""PK_roommate_requests"" PRIMARY KEY (""Id""),
-                            CONSTRAINT ""FK_roommate_requests_profiles_ProcessedByAdminId"" FOREIGN KEY (""ProcessedByAdminId"") REFERENCES public.profiles (""Id"") ON DELETE SET NULL,
-                            CONSTRAINT ""FK_roommate_requests_profiles_RequesterId"" FOREIGN KEY (""RequesterId"") REFERENCES public.profiles (""Id"") ON DELETE CASCADE,
-                            CONSTRAINT ""FK_roommate_requests_profiles_TargetUserId"" FOREIGN KEY (""TargetUserId"") REFERENCES public.profiles (""Id"") ON DELETE CASCADE
-                        );
-                    END IF;
-                END $$;
-            ");
+            migrationBuilder.CreateTable(
+                name: "roommate_requests",
+                schema: "public",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    RequesterId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TargetUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    Message = table.Column<string>(type: "text", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ProcessedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ProcessedByAdminId = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_roommate_requests", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_roommate_requests_profiles_ProcessedByAdminId",
+                        column: x => x.ProcessedByAdminId,
+                        principalSchema: "public",
+                        principalTable: "profiles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_roommate_requests_profiles_RequesterId",
+                        column: x => x.RequesterId,
+                        principalSchema: "public",
+                        principalTable: "profiles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_roommate_requests_profiles_TargetUserId",
+                        column: x => x.TargetUserId,
+                        principalSchema: "public",
+                        principalTable: "profiles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
 
-            // Check if table exists before creating
-            migrationBuilder.Sql(@"
-                DO $$
-                BEGIN
-                    IF NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'roommate_relationships') THEN
-                        CREATE TABLE public.roommate_relationships (
-                            ""Id"" uuid NOT NULL,
-                            ""User1Id"" uuid NOT NULL,
-                            ""User2Id"" uuid NOT NULL,
-                            ""ApprovedByAdminId"" uuid NOT NULL,
-                            ""OriginalRequestId"" uuid,
-                            ""CreatedAt"" timestamp with time zone NOT NULL,
-                            ""IsActive"" boolean NOT NULL,
-                            CONSTRAINT ""PK_roommate_relationships"" PRIMARY KEY (""Id""),
-                            CONSTRAINT ""FK_roommate_relationships_profiles_ApprovedByAdminId"" FOREIGN KEY (""ApprovedByAdminId"") REFERENCES public.profiles (""Id"") ON DELETE RESTRICT,
-                            CONSTRAINT ""FK_roommate_relationships_profiles_User1Id"" FOREIGN KEY (""User1Id"") REFERENCES public.profiles (""Id"") ON DELETE CASCADE,
-                            CONSTRAINT ""FK_roommate_relationships_profiles_User2Id"" FOREIGN KEY (""User2Id"") REFERENCES public.profiles (""Id"") ON DELETE CASCADE,
-                            CONSTRAINT ""FK_roommate_relationships_roommate_requests_OriginalRequestId"" FOREIGN KEY (""OriginalRequestId"") REFERENCES public.roommate_requests (""Id"") ON DELETE SET NULL
-                        );
-                    END IF;
-                END $$;
-            ");
+            migrationBuilder.CreateTable(
+                name: "roommate_relationships",
+                schema: "public",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    User1Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    User2Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ApprovedByAdminId = table.Column<Guid>(type: "uuid", nullable: false),
+                    OriginalRequestId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_roommate_relationships", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_roommate_relationships_profiles_ApprovedByAdminId",
+                        column: x => x.ApprovedByAdminId,
+                        principalSchema: "public",
+                        principalTable: "profiles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_roommate_relationships_profiles_User1Id",
+                        column: x => x.User1Id,
+                        principalSchema: "public",
+                        principalTable: "profiles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_roommate_relationships_profiles_User2Id",
+                        column: x => x.User2Id,
+                        principalSchema: "public",
+                        principalTable: "profiles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_roommate_relationships_roommate_requests_OriginalRequestId",
+                        column: x => x.OriginalRequestId,
+                        principalSchema: "public",
+                        principalTable: "roommate_requests",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_roommate_relationships_ApprovedByAdminId",
+                schema: "public",
+                table: "roommate_relationships",
+                column: "ApprovedByAdminId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_roommate_relationships_OriginalRequestId",
+                schema: "public",
+                table: "roommate_relationships",
+                column: "OriginalRequestId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_roommate_relationships_User1Id_User2Id",
+                schema: "public",
+                table: "roommate_relationships",
+                columns: UserRelationshipColumns,
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_roommate_relationships_User2Id",
+                schema: "public",
+                table: "roommate_relationships",
+                column: "User2Id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_roommate_requests_ProcessedByAdminId",
+                schema: "public",
+                table: "roommate_requests",
+                column: "ProcessedByAdminId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_roommate_requests_RequesterId_TargetUserId",
+                schema: "public",
+                table: "roommate_requests",
+                columns: RequestColumns );
 
             // Create indexes if they don't exist
             migrationBuilder.Sql(@"

@@ -11,13 +11,14 @@ COPY ["RoomMate-Finder/RoomMate-Finder.csproj", "RoomMate-Finder/"]
 RUN dotnet restore "RoomMate-Finder/RoomMate-Finder.csproj"
 COPY . .
 WORKDIR "/src/RoomMate-Finder"
-RUN dotnet build "./RoomMate-Finder.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "./RoomMate-Finder.csproj" -c "$BUILD_CONFIGURATION" -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./RoomMate-Finder.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./RoomMate-Finder.csproj" -c "$BUILD_CONFIGURATION" -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "RoomMate-Finder.dll"]
+

@@ -134,23 +134,8 @@
         {
             errorMessage = "";
 
-            // Create request with profile picture
-            var request = new
-            {
-                email = registerModel.Email,
-                password = registerModel.Password,
-                fullName = registerModel.FullName,
-                age = registerModel.Age,
-                gender = registerModel.Gender,
-                university = registerModel.University,
-                bio = registerModel.Bio,
-                lifestyle = registerModel.Lifestyle,
-                interests = registerModel.Interests,
-                profilePictureUrl = profilePictureBase64  // Include base64 image
-            };
-
             // Call backend API
-            var result = await AuthService.RegisterWithPictureAsync(
+            var request = new RegistrationRequest(
                 registerModel.Email,
                 registerModel.Password,
                 registerModel.FullName,
@@ -162,6 +147,7 @@
                 registerModel.Interests,
                 profilePictureBase64
             );
+            var result = await AuthService.RegisterWithPictureAsync(request);
 
             if (!result.Successful)
             {

@@ -67,24 +67,23 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<RegisterResult> RegisterWithPictureAsync(string email, string password, string fullName, int age, string gender, 
-        string university, string bio, string lifestyle, string interests, string? profilePictureUrl)
+    public async Task<RegisterResult> RegisterWithPictureAsync(RegistrationRequest request)
     {
-        var request = new
+        var body = new
         {
-            email,
-            password,
-            fullName,
-            age,
-            gender,
-            university,
-            bio,
-            lifestyle,
-            interests,
-            profilePictureUrl
+            email = request.Email,
+            password = request.Password,
+            fullName = request.FullName,
+            age = request.Age,
+            gender = request.Gender,
+            university = request.University,
+            bio = request.Bio,
+            lifestyle = request.Lifestyle,
+            interests = request.Interests,
+            profilePictureUrl = request.ProfilePictureUrl
         };
 
-        var resp = await _http.PostAsJsonAsync("/profiles", request);
+        var resp = await _http.PostAsJsonAsync("/profiles", body);
 
         if (!resp.IsSuccessStatusCode)
         {

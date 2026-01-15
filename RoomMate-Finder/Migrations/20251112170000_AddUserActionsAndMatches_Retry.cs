@@ -7,6 +7,9 @@ namespace RoomMate_Finder.Migrations
 {
     public partial class AddUserActionsAndMatches_Retry : Migration
     {
+        private static readonly string[] MatchColumns = { "User1Id", "User2Id" };
+        private static readonly string[] ActionColumns = { "UserId", "TargetUserId" };
+
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
@@ -73,7 +76,7 @@ namespace RoomMate_Finder.Migrations
                 name: "IX_matches_User1Id_User2Id",
                 schema: "public",
                 table: "matches",
-                columns: new[] { "User1Id", "User2Id" },
+                columns: MatchColumns,
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -92,7 +95,7 @@ namespace RoomMate_Finder.Migrations
                 name: "IX_user_actions_UserId_TargetUserId",
                 schema: "public",
                 table: "user_actions",
-                columns: new[] { "UserId", "TargetUserId" },
+                columns: ActionColumns,
                 unique: true);
         }
 

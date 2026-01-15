@@ -11,7 +11,7 @@ using Xunit;
 
 namespace RoomMate_Finder_Frontend.Test.Pages.Admins;
 
-public class AdminListingsTests : TestContext, IAsyncLifetime
+public class AdminListingsTests : BunitContext, IAsyncLifetime
 {
     private readonly Mock<IListingService> _mockListingService;
     private readonly Mock<IDialogService> _mockDialogService;
@@ -50,7 +50,7 @@ public class AdminListingsTests : TestContext, IAsyncLifetime
     }
 
     [Fact]
-    public async Task AdminListings_Loading_ShowsProgressIndicator()
+    public void AdminListings_Loading_ShowsProgressIndicator()
     {
         // Arrange
         var tcs = new TaskCompletionSource<ListingsResponse>();
@@ -169,7 +169,7 @@ public class AdminListingsTests : TestContext, IAsyncLifetime
     }
 
     [Fact]
-    public async Task AdminListings_DeleteListing_CallsServiceAndReloads()
+    public void AdminListings_DeleteListing_CallsServiceAndReloads()
     {
         // Arrange
         var listingId = Guid.NewGuid();
@@ -226,7 +226,7 @@ public class AdminListingsTests : TestContext, IAsyncLifetime
     }
 
     [Fact]
-    public async Task AdminListings_Pagination_ChangesPage()
+    public void AdminListings_Pagination_ChangesPage()
     {
         // Arrange
         var initialListings = new List<ListingSummaryDto>

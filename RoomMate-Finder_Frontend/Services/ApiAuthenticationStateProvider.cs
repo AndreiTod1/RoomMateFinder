@@ -102,13 +102,11 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
     private static void MapClaims(List<Claim> claims, string sourceKey, string targetType)
     {
         var sources = claims.Where(c => c.Type == sourceKey).ToList();
-        foreach (var source in sources)
-        {
-            if (!claims.Any(c => c.Type == targetType && c.Value == source.Value))
-            {
-                claims.Add(new Claim(targetType, source.Value));
-            }
-        }
+        var newClaims = sources
+            .Where(source => !claims.Any(c => c.Type == targetType && c.Value == source.Value))
+            .Select(source => new Claim(targetType, source.Value));
+            
+        claims.AddRange(newClaims);
     }
 
     private static byte[] ParseBase64WithoutPadding(string base64)

@@ -271,7 +271,7 @@ public class AdditionalCommonTests
     public void Given_JwtService_When_NullKey_Then_ThrowsArgumentException()
     {
         // Arrange & Act
-        Action act = () => new JwtService(null!, "issuer", "audience");
+        Action act = () => _ = new JwtService(null!, "issuer", "audience");
 
         // Assert
         act.Should().Throw<ArgumentException>();
@@ -281,7 +281,7 @@ public class AdditionalCommonTests
     public void Given_JwtService_When_EmptyKey_Then_ThrowsArgumentException()
     {
         // Arrange & Act
-        Action act = () => new JwtService("", "issuer", "audience");
+        Action act = () => _ = new JwtService("", "issuer", "audience");
 
         // Assert
         act.Should().Throw<ArgumentException>();
@@ -291,7 +291,7 @@ public class AdditionalCommonTests
     public void Given_JwtService_When_ShortKey_Then_ThrowsArgumentException()
     {
         // Arrange & Act (key too short - less than 16 bytes)
-        Action act = () => new JwtService("short", "issuer", "audience");
+        Action act = () => _ = new JwtService("short", "issuer", "audience");
 
         // Assert
         act.Should().Throw<ArgumentException>();

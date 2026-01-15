@@ -14,11 +14,14 @@ using Xunit;
 
 namespace RoomMate_Finder_Frontend.Test.Pages;
 
-public class RoomDetailsTests : BunitContext
+public class RoomDetailsTests : BunitContext, IAsyncLifetime
 {
     private readonly Mock<IListingService> _mockListingService;
     private readonly Mock<IConversationService> _mockConversationService;
     private readonly Mock<ISnackbar> _mockSnackbar;
+
+    public Task InitializeAsync() => Task.CompletedTask;
+    public new async Task DisposeAsync() => await base.DisposeAsync();
 
     public RoomDetailsTests()
     {
@@ -55,7 +58,7 @@ public class RoomDetailsTests : BunitContext
         }
     }
 
-    private ListingDto CreateTestListing(Guid id, Guid ownerId)
+    private static ListingDto CreateTestListing(Guid id, Guid ownerId)
     {
         return new ListingDto(
             id, ownerId, "Owner Name", "Test Room", "City", "Area", 500, DateTime.Now,
@@ -86,55 +89,63 @@ public class RoomDetailsTests : BunitContext
         _mockSnackbar.Verify(x => x.Add(It.Is<string>(s => s.Contains("Error loading")), Severity.Error, null, null), Times.Once);
     }
 
-    [Fact(Skip = "MudBlazor component requires complex JSInterop setup")]
+    [Fact]
     public void RoomDetails_Found_RendersDetails()
     {
-        var id = Guid.NewGuid();
-        var ownerId = Guid.NewGuid();
-        var listing = CreateTestListing(id, ownerId);
-        _mockListingService.Setup(x => x.GetByIdAsync(id)).ReturnsAsync(listing);
+        var listingId = Guid.NewGuid();
+        var listing = CreateTestListing(listingId, Guid.NewGuid());
+        
+        _mockListingService.Setup(x => x.GetByIdAsync(listingId))
+            .ReturnsAsync(listing);
 
-        var cut = Render<RoomDetails>(p => p.Add(x => x.Id, id));
+        var cut = Render<RoomDetails>(p => p.Add(x => x.Id, listingId));
+        
+        cut.WaitForState(() => cut.FindAll("h4").Any()); // Wait for load
 
         cut.Markup.Should().Contain("Test Room");
         cut.Markup.Should().Contain("500");
-        cut.Markup.Should().Contain("City");
-        cut.Markup.Should().Contain("Wifi");
-        cut.Markup.Should().Contain("AC");
+        cut.Markup.Should().Contain("Description");
+        cut.Markup.Should().Contain("Owner Name");
     }
-
-    [Fact(Skip = "MudBlazor component requires complex JSInterop setup")]
+    
+    [Fact]
     public void RoomDetails_BackNavigation_Works()
     {
-        var id = Guid.NewGuid();
-        var listing = CreateTestListing(id, Guid.NewGuid());
-        _mockListingService.Setup(x => x.GetByIdAsync(id)).ReturnsAsync(listing);
+        var listingId = Guid.NewGuid();
+        _mockListingService.Setup(x => x.GetByIdAsync(listingId))
+           .ReturnsAsync(CreateTestListing(listingId, Guid.NewGuid()));
+           
+        var cut = Render<RoomDetails>(p => p.Add(x => x.Id, listingId));
+        cut.WaitForState(() => cut.FindAll("h4").Any());
 
         var navMan = Services.GetRequiredService<NavigationManager>();
-        var cut = Render<RoomDetails>(p => p.Add(x => x.Id, id));
-
-        cut.WaitForAssertion(() => cut.FindComponents<MudButton>().Any(b => b.Instance.StartIcon == Icons.Material.Filled.ArrowBack).Should().BeTrue());
-        cut.FindComponents<MudButton>().First(b => b.Instance.StartIcon == Icons.Material.Filled.ArrowBack)
-           .Find("button").Click();
-
+        
+        // Find Back button
+        cut.Find("button").Click(); 
+        
         navMan.Uri.Should().EndWith("/listings");
     }
-
-    [Fact(Skip = "MudBlazor component requires complex JSInterop setup")]
+    
+    [Fact]
     public void RoomDetails_ContactOwner_NotLoggedIn_ShowsWarning()
     {
-        var id = Guid.NewGuid();
-        var listing = CreateTestListing(id, Guid.NewGuid());
-        _mockListingService.Setup(x => x.GetByIdAsync(id)).ReturnsAsync(listing);
+        var listingId = Guid.NewGuid();
+        _mockListingService.Setup(x => x.GetByIdAsync(listingId))
+            .ReturnsAsync(CreateTestListing(listingId, Guid.NewGuid()));
 
-        var cut = Render<RoomDetails>(p => p.Add(x => x.Id, id));
+        var cut = Render<RoomDetails>(p => p.Add(x => x.Id, listingId));
+        cut.WaitForState(() => cut.FindAll("h4").Any());
 
-        // Find contact button
-        cut.WaitForAssertion(() => cut.FindAll("button").Any(b => b.TextContent.Contains("Contact")).Should().BeTrue());
-        var contactBtn = cut.FindAll("button").First(b => b.TextContent.Contains("Contact"));
-        contactBtn.Click();
+        // Not logged in by default in FakeAuthStateProvider
 
-        // Should show warning that login is needed
-        _mockSnackbar.Verify(x => x.Add(It.IsAny<string>(), Severity.Warning, null, null), Times.AtLeastOnce);
+        // Click Contact Owner
+        var contactBtn = cut.FindComponents<MudButton>()
+            .First(b => b.Markup.Contains("Contact Owner"));
+        contactBtn.Find("button").Click();
+
+        _mockSnackbar.Verify(s => s.Add(It.Is<string>(m => m.Contains("Please log in")), Severity.Warning, null, null), Times.Once);
+        
+        var navMan = Services.GetRequiredService<NavigationManager>();
+        navMan.Uri.Should().EndWith("/login");
     }
 }

@@ -161,7 +161,7 @@ public class AdminRoommatesTests : BunitContext, IAsyncLifetime
 
     // Loading State Tests
     [Fact]
-    public async Task AdminRoommates_Loading_ShowsProgress()
+    public void AdminRoommates_Loading_ShowsProgress()
     {
         // Arrange
         var tcs = new TaskCompletionSource<List<PendingRoommateRequestDto>>();

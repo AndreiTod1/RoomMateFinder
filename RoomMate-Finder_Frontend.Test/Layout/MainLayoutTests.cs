@@ -22,7 +22,7 @@ namespace RoomMate_Finder_Frontend.Test.Layout;
 /// </summary>
 public class MainLayoutTests : IAsyncLifetime
 {
-    private readonly TestContext _ctx = new();
+    private readonly BunitContext _ctx = new();
     private readonly Mock<IChatService> _mockChatService;
     private readonly Mock<IAuthService> _mockAuthService;
     private readonly Mock<IConversationService> _mockConversationService;
@@ -290,11 +290,11 @@ public class MainLayoutTests : IAsyncLifetime
         SetupUnauth();
         var cut = _ctx.Render<CascadingAuthenticationState>(p => p.AddChildContent<MainLayout>());
         
-        // Call Dispose manually
-        cut.FindComponent<MainLayout>().Instance.Dispose();
-        
-        // Verification of unsubscription is hard with Moq events directly.
-        // But we ensure it doesn't throw.
+        // Act
+        var act = () => cut.FindComponent<MainLayout>().Instance.Dispose();
+
+        // Assert
+        act.Should().NotThrow();
     }
 
     #endregion

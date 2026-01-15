@@ -12,7 +12,7 @@ using Xunit;
 
 namespace RoomMate_Finder_Frontend.Test.Pages.Admins;
 
-public class AdminUsersTests : TestContext, IAsyncLifetime
+public class AdminUsersTests : BunitContext, IAsyncLifetime
 {
     private readonly Mock<IProfileService> _mockProfileService;
     private readonly Mock<IDialogService> _mockDialogService;
@@ -50,7 +50,7 @@ public class AdminUsersTests : TestContext, IAsyncLifetime
     }
 
     [Fact]
-    public async Task AdminUsers_Loading_ShowsProgressIndicator()
+    public void AdminUsers_Loading_ShowsProgressIndicator()
     {
         // Arrange
         var tcs = new TaskCompletionSource<PaginatedUsersResponse>();
@@ -126,7 +126,7 @@ public class AdminUsersTests : TestContext, IAsyncLifetime
     }
 
     [Fact]
-    public async Task AdminUsers_DeleteUser_CallsServiceAndReloads()
+    public void AdminUsers_DeleteUser_CallsServiceAndReloads()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -224,7 +224,7 @@ public class AdminUsersTests : TestContext, IAsyncLifetime
     }
 
     [Fact]
-    public async Task AdminUsers_Search_OnEnter_ReloadsUsers()
+    public void AdminUsers_Search_OnEnter_ReloadsUsers()
     {
         // Arrange
         _mockProfileService.Setup(x => x.GetAllUsersAsync(1, 15, It.IsAny<string>()))
@@ -243,7 +243,7 @@ public class AdminUsersTests : TestContext, IAsyncLifetime
     }
 
     [Fact]
-    public async Task AdminUsers_NavigateToProfile_Redirects()
+    public void AdminUsers_NavigateToProfile_Redirects()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -295,7 +295,7 @@ public class AdminUsersTests : TestContext, IAsyncLifetime
     }
 
     [Fact]
-    public async Task AdminUsers_ServiceError_ShowsSnackbar()
+    public void AdminUsers_ServiceError_ShowsSnackbar()
     {
         // Arrange
         _mockProfileService.Setup(x => x.GetAllUsersAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))

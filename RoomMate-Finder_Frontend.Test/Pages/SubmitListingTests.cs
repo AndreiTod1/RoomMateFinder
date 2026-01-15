@@ -130,7 +130,7 @@ public class SubmitListingTests : BunitContext, IAsyncLifetime
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "Description").Find("textarea").Change("Great room description.");
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "City").Find("input").Change("Bucharest");
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "Area / Neighborhood").Find("input").Change("Center");
-        cut.FindComponents<MudNumericField<decimal>>().First(c => c.Instance.Label.Contains("Price")).Find("input").Change("450");
+        cut.FindComponents<MudNumericField<decimal>>().First(c => c.Instance.Label!.Contains("Price")).Find("input").Change("450");
         
         // Mock File Upload
         var fileInput = cut.FindComponent<MudFileUpload<IReadOnlyList<IBrowserFile>>>();
@@ -179,7 +179,7 @@ public class SubmitListingTests : BunitContext, IAsyncLifetime
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "Description").Find("textarea").Change("Desc");
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "City").Find("input").Change("City");
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "Area / Neighborhood").Find("input").Change("Area");
-        cut.FindComponents<MudNumericField<decimal>>().First(c => c.Instance.Label.Contains("Price")).Find("input").Change("100");
+        cut.FindComponents<MudNumericField<decimal>>().First(c => c.Instance.Label!.Contains("Price")).Find("input").Change("100");
 
         var validationField = cut.Instance.GetType().GetField("_isValid", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         if (validationField != null) validationField.SetValue(cut.Instance, true);
@@ -255,7 +255,7 @@ public class SubmitListingTests : BunitContext, IAsyncLifetime
     }
 
     [Fact]
-    public async Task SubmitListing_RedirectsToLogin_WhenUserIdMissing()
+    public void SubmitListing_RedirectsToLogin_WhenUserIdMissing()
     {
         // Custom auth with no claims
         var identity = new ClaimsIdentity(new List<Claim>(), "TestAuth"); // Authenticated but no ID
@@ -357,8 +357,8 @@ public class SubmitListingTests : BunitContext, IAsyncLifetime
         var method = instance.GetType().GetMethod("RemoveImage", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         
         // Act - Remove invalid index
-        await cut.InvokeAsync(() => method.Invoke(instance, new object[] { 99 }));
-        await cut.InvokeAsync(() => method.Invoke(instance, new object[] { -1 }));
+        await cut.InvokeAsync(() => method!.Invoke(instance, new object[] { 99 }));
+        await cut.InvokeAsync(() => method!.Invoke(instance, new object[] { -1 }));
 
         // Assert - still has 1 image
         cut.Markup.Should().Contain("1 image(s) selected");
@@ -406,10 +406,10 @@ public class SubmitListingTests : BunitContext, IAsyncLifetime
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "Description").Find("textarea").Change("Desc");
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "City").Find("input").Change("City");
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "Area / Neighborhood").Find("input").Change("Area");
-        cut.FindComponents<MudNumericField<decimal>>().First(c => c.Instance.Label.Contains("Price")).Find("input").Change("100");
+        cut.FindComponents<MudNumericField<decimal>>().First(c => c.Instance.Label!.Contains("Price")).Find("input").Change("100");
         
         // Amenities with spacing and empty entries
-        cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label.Contains("Amenities")).Find("input").Change(" WiFi , , Balcony,  Parking ");
+        cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label!.Contains("Amenities")).Find("input").Change(" WiFi , , Balcony,  Parking ");
 
         var validationField = cut.Instance.GetType().GetField("_isValid", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         if (validationField != null) validationField.SetValue(cut.Instance, true);

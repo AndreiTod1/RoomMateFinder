@@ -17,7 +17,7 @@ namespace RoomMate_Finder_Frontend.Test.Layout;
 
 public class NavMenuTests : IAsyncLifetime
 {
-    private readonly TestContext _ctx = new();
+    private readonly BunitContext _ctx = new();
     private readonly Mock<IAuthService> _mockAuthService;
     private readonly Mock<IProfileService> _mockProfileService;
     private readonly Mock<INotificationService> _mockNotificationService;
@@ -207,7 +207,7 @@ public class NavMenuTests : IAsyncLifetime
             .AddCascadingValue(Task.FromResult(authState)));
         
         cut.Markup.Should().Contain("5"); 
-        cut.FindComponents<MudChip<string>>().Should().Contain(c => c.Markup.Contains("5"));
+        cut.FindComponents<MudChip<string>>().Should().Contain(c => c.Markup.Contains('5'));
     }
 
     [Fact]
@@ -253,7 +253,7 @@ public class NavMenuTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task NavMenu_GoToMyProfile_WhenServiceReturnsProfile_CallsService()
+    public void NavMenu_GoToMyProfile_WhenServiceReturnsProfile_CallsService()
     {
         // Arrange
         var authState = SetupAuth();
@@ -292,7 +292,7 @@ public class NavMenuTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task NavMenu_GoToMyProfile_WhenUnauthorized_ServiceThrows()
+    public void NavMenu_GoToMyProfile_WhenUnauthorized_ServiceThrows()
     {
         // Arrange
         var authState = SetupAuth();

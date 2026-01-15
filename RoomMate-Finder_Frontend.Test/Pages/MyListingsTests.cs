@@ -16,12 +16,15 @@ using Xunit;
 
 namespace RoomMate_Finder_Frontend.Test.Pages;
 
-public class MyListingsTests : BunitContext
+public class MyListingsTests : BunitContext, IAsyncLifetime
 {
     private readonly Mock<IListingService> _mockListingService;
     private readonly Mock<ISnackbar> _mockSnackbar;
     private readonly Mock<IDialogService> _mockDialogService;
     private readonly Mock<IConfiguration> _mockConfig;
+
+    public Task InitializeAsync() => Task.CompletedTask;
+    public new async Task DisposeAsync() => await base.DisposeAsync();
 
     public MyListingsTests()
     {
@@ -96,7 +99,7 @@ public class MyListingsTests : BunitContext
         cut.WaitForAssertion(() => cut.Markup.Should().Contain("No Listings Yet"));
     }
 
-    [Fact(Skip = "MudBlazor component requires complex JSInterop setup")]
+    [Fact]
     public void MyListings_WithListings_RendersCards()
     {
         var userId = Guid.NewGuid();
@@ -118,4 +121,3 @@ public class MyListingsTests : BunitContext
         cut.Markup.Should().Contain("400");
     }
 }
-

@@ -22,9 +22,9 @@ public static class DeleteListingEndpoint
 
                 if (!result.Success)
                 {
-                    if (result.Message.Contains("not found"))
+                    if (result.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
                         return Results.NotFound(new { message = result.Message });
-                    if (result.Message.Contains("authorized"))
+                    if (result.Message.Contains("authorized", StringComparison.OrdinalIgnoreCase))
                         return Results.Forbid();
                     
                     return Results.BadRequest(new { message = result.Message });

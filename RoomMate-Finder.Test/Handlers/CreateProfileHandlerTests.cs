@@ -36,7 +36,7 @@ public class CreateProfileHandlerTests : IDisposable
         return new JwtService(key, issuer, audience);
     }
 
-    private static IValidator<CreateProfileRequest> CreateValidator()
+    private static CreateProfileValidator CreateValidator()
     {
         return new CreateProfileValidator();
     }

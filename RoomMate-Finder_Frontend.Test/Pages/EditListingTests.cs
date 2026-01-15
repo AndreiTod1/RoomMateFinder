@@ -194,7 +194,7 @@ public class EditListingTests : BunitContext, IAsyncLifetime
         cut.WaitForAssertion(() => cut.Markup.Contains("Title"));
 
         // Enter Amenities
-        var amenitiesField = cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label.Contains("Amenities"));
+        var amenitiesField = cut.FindComponents<MudTextField<string>>().First(x => x.Instance.Label!.Contains("Amenities"));
         await cut.InvokeAsync(() => amenitiesField.Instance.ValueChanged.InvokeAsync("WiFi, AC,  Parking "));
 
         // Save

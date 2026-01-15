@@ -7,13 +7,13 @@ namespace RoomMate_Finder_Frontend.Test.Services;
 
 public class NotificationServiceTests
 {
-    private Mock<IJSRuntime> CreateMockJsRuntime(string? storedValue = null)
+    private static Mock<IJSRuntime> CreateMockJsRuntime(string? storedValue = null)
     {
         var mock = new Mock<IJSRuntime>();
         mock.Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
             .ReturnsAsync(storedValue);
         // InvokeVoidAsync is an extension method, so we mock InvokeAsync<object> with null return
-        mock.Setup(x => x.InvokeAsync<object>("localStorage.setItem", It.IsAny<object[]>()))
+        mock.Setup(x => x.InvokeAsync<object?>("localStorage.setItem", It.IsAny<object[]>()))
             .ReturnsAsync((object?)null);
         return mock;
     }
