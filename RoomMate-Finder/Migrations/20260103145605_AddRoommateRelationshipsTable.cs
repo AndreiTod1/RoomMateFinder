@@ -137,11 +137,16 @@ namespace RoomMate_Finder.Migrations
                 table: "roommate_requests",
                 columns: RequestColumns );
 
-            migrationBuilder.CreateIndex(
-                name: "IX_roommate_requests_TargetUserId",
-                schema: "public",
-                table: "roommate_requests",
-                column: "TargetUserId");
+            // Create indexes if they don't exist
+            migrationBuilder.Sql(@"
+                CREATE INDEX IF NOT EXISTS ""IX_roommate_relationships_ApprovedByAdminId"" ON public.roommate_relationships (""ApprovedByAdminId"");
+                CREATE INDEX IF NOT EXISTS ""IX_roommate_relationships_OriginalRequestId"" ON public.roommate_relationships (""OriginalRequestId"");
+                CREATE UNIQUE INDEX IF NOT EXISTS ""IX_roommate_relationships_User1Id_User2Id"" ON public.roommate_relationships (""User1Id"", ""User2Id"");
+                CREATE INDEX IF NOT EXISTS ""IX_roommate_relationships_User2Id"" ON public.roommate_relationships (""User2Id"");
+                CREATE INDEX IF NOT EXISTS ""IX_roommate_requests_ProcessedByAdminId"" ON public.roommate_requests (""ProcessedByAdminId"");
+                CREATE INDEX IF NOT EXISTS ""IX_roommate_requests_RequesterId_TargetUserId"" ON public.roommate_requests (""RequesterId"", ""TargetUserId"");
+                CREATE INDEX IF NOT EXISTS ""IX_roommate_requests_TargetUserId"" ON public.roommate_requests (""TargetUserId"");
+            ");
         }
 
         /// <inheritdoc />
