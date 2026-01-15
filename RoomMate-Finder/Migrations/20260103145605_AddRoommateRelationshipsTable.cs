@@ -20,10 +20,6 @@ namespace RoomMate_Finder.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-        
-        // ... I will use multiple chunks to be safe or just replace the whole UP method if simpler.
-        // Actually, replace_file_content is single block.
-        // I will use multi_replace again, CAREFULLY.
                     RequesterId = table.Column<Guid>(type: "uuid", nullable: false),
                     TargetUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
