@@ -20,10 +20,10 @@ public class GetAllUsersHandler : IRequestHandler<GetAllUsersRequest, GetAllUser
         // Apply search filter
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
-            var searchLower = request.Search.ToLower();
+            var searchPattern = $"%{request.Search}%";
             query = query.Where(p => 
-                p.FullName.ToLower().Contains(searchLower) || 
-                p.Email.ToLower().Contains(searchLower));
+                EF.Functions.Like(p.FullName, searchPattern) || 
+                EF.Functions.Like(p.Email, searchPattern));
         }
 
         // Get total count before pagination

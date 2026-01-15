@@ -39,14 +39,14 @@ public class SearchListingsHandler : IRequestHandler<SearchListingsRequest, Sear
 
         if (!string.IsNullOrWhiteSpace(request.City))
         {
-            var city = request.City.Trim().ToLower();
-            query = query.Where(l => l.City.ToLower() == city);
+            var city = request.City.Trim();
+            query = query.Where(l => EF.Functions.Like(l.City, city));
         }
 
         if (!string.IsNullOrWhiteSpace(request.Area))
         {
-            var area = request.Area.Trim().ToLower();
-            query = query.Where(l => l.Area.ToLower() == area);
+            var area = request.Area.Trim();
+            query = query.Where(l => EF.Functions.Like(l.Area, area));
         }
 
         if (request.MinPrice.HasValue)
@@ -69,12 +69,13 @@ public class SearchListingsHandler : IRequestHandler<SearchListingsRequest, Sear
         {
             var requested = request.Amenities
                 .Where(a => !string.IsNullOrWhiteSpace(a))
-                .Select(a => a.Trim().ToLower())
+                .Select(a => a.Trim())
                 .ToList();
 
             foreach (var amenity in requested)
             {
-                query = query.Where(l => l.Amenities.ToLower().Contains(amenity));
+                var pattern = $"%{amenity}%";
+                query = query.Where(l => EF.Functions.Like(l.Amenities, pattern));
             }
         }
 

@@ -1,17 +1,19 @@
 ﻿// Crop image with zoom and offset support
-window.cropImageToCircle = async (options) => {
-    const { imageDataUrl, cropX, cropY, cropRadius, scale, imageOffsetX, imageOffsetY, containerWidth, containerHeight } = options;
+globalThis.cropImageToCircle = async (options) => {
+    const { imageDataUrl, cropX, cropY, cropRadius, scale, imageOffsetX, imageOffsetY, containerWidth } = options;
+    const cropOptions = { cropX, cropY, cropRadius, scale, imageOffsetX, imageOffsetY, containerWidth };
+    
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = 'anonymous';
         
-        img.onload = () => processCropImage(img, cropX, cropY, cropRadius, scale, imageOffsetX, imageOffsetY, containerWidth, resolve, reject);
+        img.onload = () => processCropImage(img, cropOptions, resolve, reject);
         img.onerror = () => reject(new Error('Failed to load image'));
         img.src = imageDataUrl;
     });
 };
 
-function processCropImage(img, cropX, cropY, cropRadius, scale, imageOffsetX, imageOffsetY, containerWidth, resolve, reject) {
+function processCropImage(img, cropOptions, resolve, reject) {
     try {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
@@ -20,10 +22,10 @@ function processCropImage(img, cropX, cropY, cropRadius, scale, imageOffsetX, im
         canvas.width = outputSize;
         canvas.height = outputSize;
         
-        const cropParams = calculateCropParameters(img, cropX, cropY, cropRadius, scale, imageOffsetX, imageOffsetY, containerWidth);
+        const cropParams = calculateCropParameters(img, cropOptions);
         
         console.log('CROP DEBUG:', {
-            input: { cropX, cropY, cropRadius, scale, imageOffsetX, imageOffsetY, containerWidth },
+            input: cropOptions,
             natural: { naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight },
             display: { displayWidth: cropParams.displayWidth, displayHeight: cropParams.displayHeight },
             pixelRatio: cropParams.pixelRatio,
@@ -39,7 +41,8 @@ function processCropImage(img, cropX, cropY, cropRadius, scale, imageOffsetX, im
     }
 }
 
-function calculateCropParameters(img, cropX, cropY, cropRadius, scale, imageOffsetX, imageOffsetY, containerWidth) {
+function calculateCropParameters(img, cropOptions) {
+    const { cropX, cropY, cropRadius, scale, imageOffsetX, imageOffsetY, containerWidth } = cropOptions;
     const naturalWidth = img.naturalWidth;
     const naturalHeight = img.naturalHeight;
     
@@ -83,7 +86,7 @@ function convertCanvasToDataUrl(canvas, resolve, reject) {
 }
 
 // Simple center crop (kept for compatibility)
-window.cropImageFromCenter = async (imageDataUrl, outputSize) => {
+globalThis.cropImageFromCenter = async (imageDataUrl, outputSize) => {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = 'anonymous';
