@@ -72,7 +72,7 @@ public class ReviewServiceTests
                 "SendAsync",
                 ItExpr.Is<HttpRequestMessage>(req => 
                     req.Method == HttpMethod.Get && 
-                    req.RequestUri.ToString().Contains($"/matching/my-matches/{userId}")),
+                    req.RequestUri!.ToString().Contains($"/matching/my-matches/{userId}")),
                 ItExpr.IsAny<CancellationToken>()
             )
             .ReturnsAsync(new HttpResponseMessage
@@ -99,7 +99,7 @@ public class ReviewServiceTests
                 "SendAsync",
                 ItExpr.Is<HttpRequestMessage>(req => 
                     req.Method == HttpMethod.Get && 
-                    req.RequestUri.ToString().Contains($"/matching/my-matches/{userId}")),
+                    req.RequestUri!.ToString().Contains($"/matching/my-matches/{userId}")),
                 ItExpr.IsAny<CancellationToken>()
             )
             .ReturnsAsync(new HttpResponseMessage
@@ -128,7 +128,7 @@ public class ReviewServiceTests
                 "SendAsync",
                 ItExpr.Is<HttpRequestMessage>(req => 
                     req.Method == HttpMethod.Post && 
-                    req.RequestUri.ToString().Contains($"/profiles/{reviewedUserId}/reviews")),
+                    req.RequestUri!.ToString().Contains($"/profiles/{reviewedUserId}/reviews")),
                 ItExpr.IsAny<CancellationToken>()
             )
             .ReturnsAsync(new HttpResponseMessage

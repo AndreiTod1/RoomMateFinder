@@ -1,5 +1,6 @@
 ﻿// Crop image with zoom and offset support
-window.cropImageToCircle = async (imageDataUrl, cropX, cropY, cropRadius, scale, imageOffsetX, imageOffsetY, containerWidth, containerHeight) => {
+window.cropImageToCircle = async (options) => {
+    const { imageDataUrl, cropX, cropY, cropRadius, scale, imageOffsetX, imageOffsetY, containerWidth, containerHeight } = options;
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = 'anonymous';

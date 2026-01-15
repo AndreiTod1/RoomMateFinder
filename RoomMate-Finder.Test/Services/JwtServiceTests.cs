@@ -16,7 +16,7 @@ public class JwtServiceTests
     public void Constructor_ShouldThrowArgumentException_WhenKeyIsNull()
     {
         // Act
-        Action act = () => new JwtService(null!, Issuer, Audience);
+        Action act = () => _ = new JwtService(null!, Issuer, Audience);
 
         // Assert
         act.Should().Throw<ArgumentException>()
@@ -27,7 +27,7 @@ public class JwtServiceTests
     public void Constructor_ShouldThrowArgumentException_WhenKeyIsTooShort()
     {
         // Act
-        Action act = () => new JwtService("short", Issuer, Audience);
+        Action act = () => _ = new JwtService("short", Issuer, Audience);
 
         // Assert
         act.Should().Throw<ArgumentException>()
@@ -124,7 +124,7 @@ public class JwtServiceTests
     public void Constructor_ShouldThrowArgumentException_WhenKeyIsEmpty()
     {
         // Act
-        Action act = () => new JwtService("", Issuer, Audience);
+        Action act = () => _ = new JwtService("", Issuer, Audience);
 
         // Assert
         act.Should().Throw<ArgumentException>()
@@ -135,7 +135,7 @@ public class JwtServiceTests
     public void Constructor_ShouldThrowArgumentException_WhenKeyIsWhitespace()
     {
         // Act
-        Action act = () => new JwtService("   ", Issuer, Audience);
+        Action act = () => _ = new JwtService("   ", Issuer, Audience);
 
         // Assert
         act.Should().Throw<ArgumentException>()
@@ -165,7 +165,7 @@ public class JwtServiceTests
         var exactKey = "1234567890123456";
 
         // Act
-        Action act = () => new JwtService(exactKey, Issuer, Audience);
+        Action act = () => _ = new JwtService(exactKey, Issuer, Audience);
 
         // Assert
         act.Should().NotThrow();

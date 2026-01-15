@@ -7,6 +7,8 @@ namespace RoomMate_Finder.Migrations
     /// <inheritdoc />
     public partial class AddRoomListingsAndReviews : Migration
     {
+        private static readonly string[] ReviewColumns = { "ReviewerId", "ReviewedUserId" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -105,7 +107,7 @@ namespace RoomMate_Finder.Migrations
                 name: "IX_reviews_ReviewerId_ReviewedUserId",
                 schema: "public",
                 table: "reviews",
-                columns: new[] { "ReviewerId", "ReviewedUserId" },
+                columns: ReviewColumns,
                 unique: true);
         }
 

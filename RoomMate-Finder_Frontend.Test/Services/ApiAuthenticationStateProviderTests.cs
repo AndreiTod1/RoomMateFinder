@@ -37,7 +37,7 @@ public class ApiAuthenticationStateProviderTests
         var state = await _provider.GetAuthenticationStateAsync();
 
         // Assert
-        state.User.Identity.IsAuthenticated.Should().BeFalse();
+        state.User.Identity!.IsAuthenticated.Should().BeFalse();
         _httpClient.DefaultRequestHeaders.Authorization.Should().BeNull();
     }
 
@@ -55,7 +55,7 @@ public class ApiAuthenticationStateProviderTests
         var state = await _provider.GetAuthenticationStateAsync();
 
         // Assert
-        state.User.Identity.IsAuthenticated.Should().BeTrue();
+        state.User.Identity!.IsAuthenticated.Should().BeTrue();
         state.User.FindFirst(ClaimTypes.NameIdentifier)?.Value.Should().Be("123");
         state.User.FindFirst(ClaimTypes.Name)?.Value.Should().Be("Test User");
         state.User.FindFirst(ClaimTypes.Role)?.Value.Should().Be("User");
@@ -79,10 +79,12 @@ public class ApiAuthenticationStateProviderTests
         var state = await _provider.GetAuthenticationStateAsync();
 
         // Assert
-        state.User.Identity.IsAuthenticated.Should().BeTrue();
+        state.User.Identity!.IsAuthenticated.Should().BeTrue();
         var roles = state.User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
-        roles.Should().Contain(new[] { "Admin", "User" });
+        roles.Should().Contain(ExpectedRoles);
     }
+
+    private static readonly string[] ExpectedRoles = { "Admin", "User" };
 
     [Fact]
     public async Task MarkUserAsAuthenticated_NotifyStateChanged()
@@ -121,7 +123,7 @@ public class ApiAuthenticationStateProviderTests
         stateChanged.Should().BeTrue();
     }
 
-    private string CreateDummyJwt(object payload)
+    private static string CreateDummyJwt(object payload)
     {
         var header = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("{\"alg\":\"HS256\",\"typ\":\"JWT\"}"));
         var json = JsonSerializer.Serialize(payload);

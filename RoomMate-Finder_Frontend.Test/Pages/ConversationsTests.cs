@@ -49,7 +49,7 @@ public class ConversationsTests : BunitContext, IAsyncLifetime
     }
 
     [Fact]
-    public async Task Conversations_Loading_ShowsProgressIndicator()
+    public void Conversations_Loading_ShowsProgressIndicator()
     {
         // Arrange
         var tcs = new TaskCompletionSource<List<ConversationDto>>();

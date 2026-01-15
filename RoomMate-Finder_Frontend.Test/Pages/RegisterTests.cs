@@ -527,7 +527,7 @@ public class RegisterTests : BunitContext, IAsyncLifetime
     }
 
     [Fact]
-    public async Task Register_ApiError_ShowsErrorMessage()
+    public void Register_ApiError_ShowsErrorMessage()
     {
         // Arrange
         RenderProviders();
@@ -565,7 +565,7 @@ public class RegisterTests : BunitContext, IAsyncLifetime
     }
 
     [Fact]
-    public async Task Register_InvalidSubmit_DoesNotCallApi()
+    public void Register_InvalidSubmit_DoesNotCallApi()
     {
         // Arrange
         RenderProviders();

@@ -3,6 +3,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using MudBlazor;
 using MudBlazor.Services;
 using RoomMate_Finder_Frontend.Pages;
 using RoomMate_Finder_Frontend.Services;
@@ -17,6 +18,8 @@ namespace RoomMate_Finder_Frontend.Test.Pages;
 public class RegisterWithPictureTests : BunitContext, IAsyncLifetime
 {
     private readonly Mock<IAuthService> _mockAuthService;
+    private readonly Mock<ISnackbar> _mockSnackbar;
+    private static readonly string[] RegistrationErrors = { "Email taken" };
 
     public Task InitializeAsync() => Task.CompletedTask;
 
@@ -28,6 +31,7 @@ public class RegisterWithPictureTests : BunitContext, IAsyncLifetime
     public RegisterWithPictureTests()
     {
         _mockAuthService = new Mock<IAuthService>();
+        _mockSnackbar = new Mock<ISnackbar>();
 
         Services.AddMudServices();
         Services.AddSingleton(_mockAuthService.Object);
@@ -261,9 +265,7 @@ public class RegisterWithPictureTests : BunitContext, IAsyncLifetime
     public async Task RegisterWithPicture_ValidSubmit_CallsAuthService_AndNavigates()
     {
         // Arrange
-        _mockAuthService.Setup(x => x.RegisterWithPictureAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), 
-            It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), 
-            It.IsAny<string>(), It.IsAny<string>()))
+        _mockAuthService.Setup(x => x.RegisterWithPictureAsync(It.IsAny<RegistrationRequest>()))
             .ReturnsAsync(new RegisterResult { Successful = true });
 
         var nav = Services.GetRequiredService<NavigationManager>();
@@ -296,20 +298,17 @@ public class RegisterWithPictureTests : BunitContext, IAsyncLifetime
         cut.Find("form").Submit();
 
         // Assert
-        _mockAuthService.Verify(x => x.RegisterWithPictureAsync("test@example.com", "Password123!", "John Doe", 25, "Male", 
-            "My Uni", "Bio text", "Active", "Sports", It.IsAny<string>()), Times.Once);
+        _mockAuthService.Verify(x => x.RegisterWithPictureAsync(It.Is<RegistrationRequest>(r => r.Email == "test@example.com" && r.Password == "Password123!" && r.FullName == "John Doe")), Times.Once);
             
         nav.Uri.Should().EndWith("/login");
     }
 
     [Fact]
-    public async Task RegisterWithPicture_RegistrationError_ShowsAlert()
+    public void RegisterWithPicture_RegistrationError_ShowsAlert()
     {
          // Arrange
-        _mockAuthService.Setup(x => x.RegisterWithPictureAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), 
-            It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), 
-            It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(new RegisterResult { Successful = false, Errors = new [] { "Email taken" } });
+        _mockAuthService.Setup(x => x.RegisterWithPictureAsync(It.IsAny<RegistrationRequest>()))
+            .ReturnsAsync(new RegisterResult { Successful = false, Errors = RegistrationErrors });
 
         var cut = Render<RegisterWithPicture>();
 

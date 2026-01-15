@@ -10,7 +10,7 @@ namespace RoomMate_Finder_Frontend.Test.Shared;
 
 public class RoommateRequestDialogTests : IAsyncLifetime
 {
-    private readonly TestContext _ctx = new();
+    private readonly BunitContext _ctx = new();
     private IDialogService _dialogService = null!;
 
     public Task InitializeAsync() => Task.CompletedTask;
@@ -40,7 +40,7 @@ public class RoommateRequestDialogTests : IAsyncLifetime
     }
 
     [Fact]
-    public void RoommateRequestDialog_NonConfirmation_OpensAndShowsContent()
+    public async Task RoommateRequestDialog_NonConfirmation_OpensAndShowsContent()
     {
         // Arrange
         var cut = RenderHeader();
@@ -51,7 +51,7 @@ public class RoommateRequestDialogTests : IAsyncLifetime
         };
 
         // Act
-        _dialogService.Show<RoommateRequestDialog>("Request", parameters);
+        await _dialogService.ShowAsync<RoommateRequestDialog>("Request", parameters);
 
         // Assert
         cut.WaitForState(() => cut.FindComponents<RoommateRequestDialog>().Count > 0);
@@ -63,7 +63,7 @@ public class RoommateRequestDialogTests : IAsyncLifetime
     }
 
     [Fact]
-    public void RoommateRequestDialog_Confirmation_OpensAndShowsContent()
+    public async Task RoommateRequestDialog_Confirmation_OpensAndShowsContent()
     {
         // Arrange
         var cut = RenderHeader();
@@ -74,7 +74,7 @@ public class RoommateRequestDialogTests : IAsyncLifetime
         };
 
         // Act
-        _dialogService.Show<RoommateRequestDialog>("Confirmation", parameters);
+        await _dialogService.ShowAsync<RoommateRequestDialog>("Confirmation", parameters);
 
         // Assert
         cut.WaitForState(() => cut.FindComponents<RoommateRequestDialog>().Count > 0);
@@ -97,7 +97,7 @@ public class RoommateRequestDialogTests : IAsyncLifetime
         };
 
         // Act
-        var dlgRef = _dialogService.Show<RoommateRequestDialog>("Request", parameters);
+        var dlgRef = await _dialogService.ShowAsync<RoommateRequestDialog>("Request", parameters);
         cut.WaitForState(() => cut.FindComponents<RoommateRequestDialog>().Count > 0);
         var dialog = cut.FindComponent<RoommateRequestDialog>();
 
@@ -111,7 +111,7 @@ public class RoommateRequestDialogTests : IAsyncLifetime
         var result = await dlgRef.Result;
         
         // Assert
-        result.Canceled.Should().BeTrue();
+        result!.Canceled.Should().BeTrue();
         
         // Dialog should disappear
         cut.WaitForState(() => cut.FindComponents<RoommateRequestDialog>().Count == 0);
@@ -129,7 +129,7 @@ public class RoommateRequestDialogTests : IAsyncLifetime
         };
 
         // Act
-        var dlgRef = _dialogService.Show<RoommateRequestDialog>("Request", parameters);
+        var dlgRef = await _dialogService.ShowAsync<RoommateRequestDialog>("Request", parameters);
         cut.WaitForState(() => cut.FindComponents<RoommateRequestDialog>().Count > 0);
         var dialog = cut.FindComponent<RoommateRequestDialog>();
 
@@ -146,7 +146,7 @@ public class RoommateRequestDialogTests : IAsyncLifetime
         var result = await dlgRef.Result;
 
         // Assert
-        result.Canceled.Should().BeFalse();
+        result!.Canceled.Should().BeFalse();
         result.Data.Should().Be("Hello!");
         
         // Dialog should disappear
@@ -165,7 +165,7 @@ public class RoommateRequestDialogTests : IAsyncLifetime
         };
 
         // Act
-        var dlgRef = _dialogService.Show<RoommateRequestDialog>("Confirmation", parameters);
+        var dlgRef = await _dialogService.ShowAsync<RoommateRequestDialog>("Confirmation", parameters);
         cut.WaitForState(() => cut.FindComponents<RoommateRequestDialog>().Count > 0);
         var dialog = cut.FindComponent<RoommateRequestDialog>();
 
@@ -178,7 +178,7 @@ public class RoommateRequestDialogTests : IAsyncLifetime
         var result = await dlgRef.Result;
 
         // Assert
-        result.Canceled.Should().BeFalse();
+        result!.Canceled.Should().BeFalse();
         // Result data might be null or message depending on logic.
         // Component logic: MudDialog.Close(DialogResult.Ok(_message));
         // If _message is null (default), Data is null.

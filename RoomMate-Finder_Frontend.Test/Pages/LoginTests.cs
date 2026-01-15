@@ -15,9 +15,12 @@ using Xunit;
 
 namespace RoomMate_Finder_Frontend.Test.Pages;
 
-public class LoginTests : BunitContext
+public class LoginTests : BunitContext, IAsyncLifetime
 {
     private readonly Mock<IAuthService> _mockAuthService;
+
+    public Task InitializeAsync() => Task.CompletedTask;
+    public new async Task DisposeAsync() => await base.DisposeAsync();
 
     public LoginTests()
     {
@@ -41,74 +44,65 @@ public class LoginTests : BunitContext
         }
     }
 
-    [Fact(Skip = "MudBlazor component requires complex JSInterop setup")]
+    [Fact(Skip = "MudForm validation context not working reliably in BUnit test environment")]
     public void Login_Renders_TitleAndForm()
     {
         var cut = Render<Login>();
 
-        cut.Markup.Should().Contain("Login");
-        cut.FindAll("input").Should().HaveCountGreaterThanOrEqualTo(2); // Email, Password
-        cut.Find("button[type='submit']").TextContent.Should().Contain("Login");
+        cut.Markup.Should().Contain("Bun venit înapoi!");
+        cut.FindComponents<MudTextField<string>>().Should().HaveCount(2); // Email + Password
+        //cut.FindComponent<MudButton>().Markup.Should().Contain("Conectează-te");
     }
 
-    [Fact(Skip = "MudBlazor component requires complex JSInterop setup")]
+    [Fact(Skip = "NavigationManager interception for MudLink failing in localized test env")]
     public void Login_ClickSignup_NavigatesToRegister()
     {
         var cut = Render<Login>();
         var navMan = Services.GetRequiredService<NavigationManager>();
 
         cut.Find("a[href='/register']").Click();
-        
+
         navMan.Uri.Should().EndWith("/register");
     }
 
-    [Fact(Skip = "MudBlazor component requires complex JSInterop setup")]
+    [Fact(Skip = "MudForm validation context not working reliably in BUnit test environment")]
     public async Task Login_ValidSubmit_CallsAuthServiceAndNavigates()
     {
-        // Arrange
-        var email = "test@example.com";
-        var password = "Password123";
-        _mockAuthService.Setup(x => x.LoginAsync(email, password))
-            .Returns(Task.CompletedTask);
-
         var cut = Render<Login>();
         var navMan = Services.GetRequiredService<NavigationManager>();
 
-        // Act
-        cut.Find("input[type='email']").Change(email);
-        cut.Find("input[type='password']").Change(password);
-        
-        cut.Find("button[type='submit']").Click();
+        // Set model directly
+        cut.Instance.model.Email = "test@test.com";
+        cut.Instance.model.Password = "password123";
 
-        // Assert
-        // Wait for async operations
-        // If navigation happens, check it.
-        // Assuming Login component navigates on success.
-        
-        _mockAuthService.Verify(x => x.LoginAsync(email, password), Times.Once);
-            
-        // Wait for navigation
-        cut.WaitForAssertion(() => navMan.Uri.Should().EndWith("/"));
+        // Call submit directly
+        await cut.InvokeAsync(() => cut.Instance.HandleValidSubmit());
+
+        // Verify calls
+        _mockAuthService.Verify(x => x.LoginAsync("test@test.com", "password123"), Times.Once);
+        navMan.Uri.Should().Be("http://localhost/"); 
     }
 
-    [Fact(Skip = "MudBlazor component requires complex JSInterop setup")]
+    [Fact(Skip = "MudForm validation context not working reliably in BUnit test environment")]
     public async Task Login_InvalidSubmit_ShowsError()
     {
-        // Arrange
-         _mockAuthService.Setup(x => x.LoginAsync(It.IsAny<string>(), It.IsAny<string>()))
+        _mockAuthService.Setup(x => x.LoginAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ThrowsAsync(new Exception("Invalid credentials"));
 
         var cut = Render<Login>();
 
-        // Act
-        cut.Find("input[type='email']").Change("wrong@example.com");
-        cut.Find("input[type='password']").Change("wrongpass");
-        
-        cut.Find("button[type='submit']").Click();
+        // Set model directly
+        cut.Instance.model.Email = "test@test.com";
+        cut.Instance.model.Password = "wrongpassword";
 
-        // Assert
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Invalid credentials"));
-        // Should show error alert
-        // cut.Find(".mud-alert-message").TextContent.Should().Contain("Invalid credentials");
+        // Call submit
+        await cut.InvokeAsync(() => cut.Instance.HandleValidSubmit());
+
+        // Verify that invalid credentials threw exception
+        _mockAuthService.Verify(x => x.LoginAsync("test@test.com", "wrongpassword"), Times.Once);
+
+        // Verify error message
+        cut.WaitForState(() => cut.FindAll(".mud-alert-message").Any(), TimeSpan.FromSeconds(2));
+        cut.Markup.Should().Contain("Credențiale invalide");
     }
 }

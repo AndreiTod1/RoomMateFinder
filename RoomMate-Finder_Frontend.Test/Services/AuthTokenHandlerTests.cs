@@ -57,8 +57,7 @@ public class AuthTokenHandlerTests
     public async Task SendAsync_NoToken_DoesNotAddHeader()
     {
         // Arrange
-        _mockJs.Setup(j => j.InvokeAsync<string>("localStorage.getItem", It.IsAny<object[]>()))
-               .ReturnsAsync((string?)null);
+        _mockJs.Setup(j => j.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>())).ReturnsAsync((string?)null);
 
         var innerHandler = new TestInnerHandler();
         _handler.InnerHandler = innerHandler;

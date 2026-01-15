@@ -131,7 +131,7 @@ public class CreateListingTests : BunitContext, IAsyncLifetime
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "Description").Find("textarea").Change("Description Validation");
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "City").Find("input").Change("City Validation");
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "Area / Neighborhood").Find("input").Change("Area Validation");
-        cut.FindComponents<MudNumericField<decimal>>().First(c => c.Instance.Label.Contains("Price")).Find("input").Change("200");
+        cut.FindComponents<MudNumericField<decimal>>().First(c => c.Instance.Label!.Contains("Price")).Find("input").Change("200");
 
         // Act
         // Mock File Upload
@@ -181,7 +181,7 @@ public class CreateListingTests : BunitContext, IAsyncLifetime
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "Description").Find("textarea").Change("Desc");
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "City").Find("input").Change("City");
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "Area / Neighborhood").Find("input").Change("Area");
-        cut.FindComponents<MudNumericField<decimal>>().First(c => c.Instance.Label.Contains("Price")).Find("input").Change("100");
+        cut.FindComponents<MudNumericField<decimal>>().First(c => c.Instance.Label!.Contains("Price")).Find("input").Change("100");
 
         // Act
         // Force IsValid to true
@@ -306,7 +306,7 @@ public class CreateListingTests : BunitContext, IAsyncLifetime
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "Description").Find("textarea").Change("Desc");
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "City").Find("input").Change("City");
         cut.FindComponents<MudTextField<string>>().First(c => c.Instance.Label == "Area / Neighborhood").Find("input").Change("Area");
-        cut.FindComponents<MudNumericField<decimal>>().First(c => c.Instance.Label.Contains("Price")).Find("input").Change("100");
+        cut.FindComponents<MudNumericField<decimal>>().First(c => c.Instance.Label!.Contains("Price")).Find("input").Change("100");
 
         // Force valid
         var validationField = cut.Instance.GetType().GetField("_isValid", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -385,8 +385,8 @@ public class CreateListingTests : BunitContext, IAsyncLifetime
         var instance = cut.Instance;
         var method = instance.GetType().GetMethod("RemoveImage", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         
-        await cut.InvokeAsync(() => method.Invoke(instance, new object[] { 99 }));
-        await cut.InvokeAsync(() => method.Invoke(instance, new object[] { -1 }));
+        await cut.InvokeAsync(() => method!.Invoke(instance, new object[] { 99 }));
+        await cut.InvokeAsync(() => method!.Invoke(instance, new object[] { -1 }));
 
         cut.Markup.Should().Contain("1 image(s) selected");
     }

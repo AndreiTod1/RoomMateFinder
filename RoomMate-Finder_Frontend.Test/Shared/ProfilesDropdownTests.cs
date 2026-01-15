@@ -13,7 +13,7 @@ using Xunit;
 
 namespace RoomMate_Finder_Frontend.Test.Shared;
 
-public class ProfilesDropdownTests : TestContext
+public class ProfilesDropdownTests : BunitContext
 {
     private readonly Mock<IProfileService> _profileServiceMock;
     

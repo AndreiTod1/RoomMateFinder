@@ -36,10 +36,8 @@ public class AdditionalAuthServiceTests
         var service = new AuthService(httpClient, _jsMock.Object, _authProviderMock.Object);
 
         // Act
-        var result = await service.RegisterWithPictureAsync(
-            "test@test.com", "Password123!", "Test User", 25, "Male",
-            "MIT", "Developer", "Active", "Coding", "http://picture.url/pic.jpg"
-        );
+        var request = new RegistrationRequest("test@test.com", "Password123!", "Test User", 25, "Male", "MIT", "Developer", "Active", "Coding", "http://picture.url/pic.jpg");
+        var result = await service.RegisterWithPictureAsync(request);
 
         // Assert
         result.Should().NotBeNull();
@@ -57,10 +55,8 @@ public class AdditionalAuthServiceTests
         var service = new AuthService(httpClient, _jsMock.Object, _authProviderMock.Object);
 
         // Act
-        var result = await service.RegisterWithPictureAsync(
-            "existing@test.com", "Password123!", "Test User", 25, "Male",
-            "MIT", "Developer", "Active", "Coding", null
-        );
+        var request = new RegistrationRequest("existing@test.com", "Password123!", "Test User", 25, "Male", "MIT", "Developer", "Active", "Coding", null);
+        var result = await service.RegisterWithPictureAsync(request);
 
         // Assert
         result.Should().NotBeNull();
@@ -78,10 +74,8 @@ public class AdditionalAuthServiceTests
         var service = new AuthService(httpClient, _jsMock.Object, _authProviderMock.Object);
 
         // Act
-        var result = await service.RegisterWithPictureAsync(
-            "new@test.com", "Pass123!", "New User", 30, "Female",
-            "Harvard", "Student", "Quiet", "Reading", null
-        );
+        var request = new RegistrationRequest("new@test.com", "Pass123!", "New User", 30, "Female", "Harvard", "Student", "Quiet", "Reading", null);
+        var result = await service.RegisterWithPictureAsync(request);
 
         // Assert
         result.Successful.Should().BeTrue();
@@ -96,10 +90,8 @@ public class AdditionalAuthServiceTests
         var service = new AuthService(httpClient, _jsMock.Object, _authProviderMock.Object);
 
         // Act
-        var result = await service.RegisterWithPictureAsync(
-            "test@test.com", "Pass123!", "User", 25, "Male",
-            "Uni", "Bio", "Lifestyle", "Interests", null
-        );
+        var request = new RegistrationRequest("test@test.com", "Pass123!", "User", 25, "Male", "Uni", "Bio", "Lifestyle", "Interests", null);
+        var result = await service.RegisterWithPictureAsync(request);
 
         // Assert
         result.Successful.Should().BeFalse();
@@ -129,7 +121,7 @@ public class AdditionalAuthServiceTests
     public async Task Given_NoTokenInStorage_When_GetTokenAsyncIsCalled_Then_ReturnsNull()
     {
         // Arrange
-        _jsMock.Setup(x => x.InvokeAsync<string>("localStorage.getItem", It.IsAny<object[]>()))
+        _jsMock.Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
                .ReturnsAsync((string?)null);
 
         var service = new AuthService(null!, _jsMock.Object, null!);

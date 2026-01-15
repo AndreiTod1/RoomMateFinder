@@ -18,7 +18,7 @@ namespace RoomMate_Finder_Frontend.Test.Pages;
 
 public class ConversationDetailTests : IAsyncLifetime
 {
-    private readonly TestContext _ctx = new();
+    private readonly BunitContext _ctx = new();
     private readonly Mock<IConversationService> _mockConversationService;
     private readonly Mock<IChatService> _mockChatService;
     private readonly Mock<IAuthService> _mockAuthService;

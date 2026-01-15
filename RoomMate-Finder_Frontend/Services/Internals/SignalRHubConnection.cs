@@ -50,6 +50,7 @@ public class SignalRHubConnection : IHubConnection
 
     public ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         return _hubConnection.DisposeAsync();
     }
 }

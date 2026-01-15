@@ -359,9 +359,10 @@ public class ProfileServiceTests
         var service = new ProfileService(httpClient);
 
         // Act
-        await service.DeleteProfileAsync(Guid.NewGuid());
+        var act = async () => await service.DeleteProfileAsync(Guid.NewGuid());
 
-        // Assert - no exception thrown
+        // Assert
+        await act.Should().NotThrowAsync();
     }
 
     [Fact]
@@ -393,9 +394,10 @@ public class ProfileServiceTests
         var service = new ProfileService(httpClient);
 
         // Act
-        await service.UpdateRoleAsync(Guid.NewGuid(), "Admin");
+        var act = async () => await service.UpdateRoleAsync(Guid.NewGuid(), "Admin");
 
-        // Assert - no exception thrown
+        // Assert
+        await act.Should().NotThrowAsync();
     }
 
     [Fact]

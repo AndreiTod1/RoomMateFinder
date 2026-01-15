@@ -8,6 +8,9 @@ namespace RoomMate_Finder.Migrations
     /// <inheritdoc />
     public partial class AddRoommateRelationshipsTable : Migration
     {
+        private static readonly string[] UserRelationshipColumns = { "User1Id", "User2Id" };
+        private static readonly string[] RequestColumns = { "RequesterId", "TargetUserId" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -17,6 +20,10 @@ namespace RoomMate_Finder.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+        
+        // ... I will use multiple chunks to be safe or just replace the whole UP method if simpler.
+        // Actually, replace_file_content is single block.
+        // I will use multi_replace again, CAREFULLY.
                     RequesterId = table.Column<Guid>(type: "uuid", nullable: false),
                     TargetUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
@@ -113,7 +120,7 @@ namespace RoomMate_Finder.Migrations
                 name: "IX_roommate_relationships_User1Id_User2Id",
                 schema: "public",
                 table: "roommate_relationships",
-                columns: new[] { "User1Id", "User2Id" },
+                columns: UserRelationshipColumns,
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -132,7 +139,7 @@ namespace RoomMate_Finder.Migrations
                 name: "IX_roommate_requests_RequesterId_TargetUserId",
                 schema: "public",
                 table: "roommate_requests",
-                columns: new[] { "RequesterId", "TargetUserId" });
+                columns: RequestColumns );
 
             migrationBuilder.CreateIndex(
                 name: "IX_roommate_requests_TargetUserId",

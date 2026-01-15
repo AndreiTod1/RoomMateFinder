@@ -172,9 +172,20 @@
             const double circleCenterX = 140.0;
             const double circleCenterY = 140.0;
 
-            var croppedBase64 = await JS.InvokeAsync<string>("cropImageToCircle",
-                PreviewUrl, circleCenterX, circleCenterY, _circleRadius, _scale,
-                _imageOffsetX, _imageOffsetY, containerSize, containerSize);
+            var cropOptions = new
+            {
+                imageDataUrl = PreviewUrl,
+                cropX = circleCenterX,
+                cropY = circleCenterY,
+                cropRadius = _circleRadius,
+                scale = _scale,
+                imageOffsetX = _imageOffsetX,
+                imageOffsetY = _imageOffsetY,
+                containerWidth = containerSize,
+                containerHeight = containerSize
+            };
+
+            var croppedBase64 = await JS.InvokeAsync<string>("cropImageToCircle", cropOptions);
 
             if (!string.IsNullOrEmpty(croppedBase64))
             {

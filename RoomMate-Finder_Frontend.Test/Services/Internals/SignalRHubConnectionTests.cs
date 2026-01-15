@@ -8,7 +8,7 @@ namespace RoomMate_Finder_Frontend.Test.Services.Internals;
 
 public class SignalRHubConnectionTests
 {
-    private SignalRHubConnection CreateConnection()
+    private static SignalRHubConnection CreateConnection()
     {
         var hubConnection = new HubConnectionBuilder()
             .WithUrl("http://localhost/dummy")
@@ -224,7 +224,8 @@ public class SignalRHubConnectionTests
         var subscription = wrapper.On<string>("Event", _ => { });
 
         // Assert - Can dispose without error
-        subscription.Dispose();
+        var act = () => subscription.Dispose();
+        act.Should().NotThrow();
     }
 
     [Fact]
@@ -254,8 +255,11 @@ public class SignalRHubConnectionTests
         // Arrange
         var wrapper = CreateConnection();
 
-        // Act & Assert - Should not throw
-        await wrapper.DisposeAsync();
+        // Act
+        var act = async () => await wrapper.DisposeAsync();
+
+        // Assert
+        await act.Should().NotThrowAsync();
     }
 
     [Fact]
@@ -265,10 +269,10 @@ public class SignalRHubConnectionTests
         var wrapper = CreateConnection();
 
         // Act
-        await wrapper.DisposeAsync();
-        await wrapper.DisposeAsync();
+        var act = async () => { await wrapper.DisposeAsync(); await wrapper.DisposeAsync(); };
 
-        // Assert - No exception
+        // Assert
+        await act.Should().NotThrowAsync();
     }
 
     #endregion

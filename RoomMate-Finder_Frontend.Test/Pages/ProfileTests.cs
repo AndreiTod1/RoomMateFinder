@@ -16,7 +16,7 @@ namespace RoomMate_Finder_Frontend.Test.Pages;
 
 public class ProfileTests : IAsyncLifetime
 {
-    private readonly TestContext _ctx = new();
+    private readonly BunitContext _ctx = new();
     private readonly Mock<IProfileService> _mockProfileService;
     private readonly Mock<IRoommateService> _mockRoommateService;
     

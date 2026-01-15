@@ -248,7 +248,7 @@ public class CreateListingHandlerTests : IDisposable
         listing.ApprovedAt.Should().NotBeNull();
     }
 
-    private IFormFile CreateMockFile(string fileName, string contentType, long length)
+    private static IFormFile CreateMockFile(string fileName, string contentType, long length)
     {
         var fileMock = new Mock<IFormFile>();
         fileMock.Setup(f => f.FileName).Returns(fileName);
@@ -273,5 +273,6 @@ public class CreateListingHandlerTests : IDisposable
         {
             try { Directory.Delete(_tempPath, true); } catch { }
         }
+        GC.SuppressFinalize(this);
     }
 }

@@ -77,7 +77,8 @@
 
 @code {
     private MudForm? form;
-    private readonly LoginModel model = new();
+
+    public LoginModel model { get; set; } = new();
     private string? errorMessage;
     private bool _passwordShow = false;
     private bool isLoading = false;
@@ -87,7 +88,7 @@
         _passwordShow = !_passwordShow;
     }
 
-    private async Task HandleValidSubmit()
+    public async Task HandleValidSubmit()
     {
         errorMessage = null;
         isLoading = true;

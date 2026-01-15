@@ -56,7 +56,7 @@ public class ProfilePictureTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private static IFormFile CreateMockFormFile(string fileName, string contentType, byte[] content)
+    private static FormFile CreateMockFormFile(string fileName, string contentType, byte[] content)
     {
         var stream = new MemoryStream(content);
         return new FormFile(stream, 0, content.Length, "ProfilePicture", fileName)

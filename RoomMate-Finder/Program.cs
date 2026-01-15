@@ -316,4 +316,7 @@ static void ConfigureCompatibilityServices(IServiceCollection services)
 
 
 // Needed for WebApplicationFactory in integration tests
-public partial class Program { }
+public partial class Program 
+{
+    protected Program() { }
+}

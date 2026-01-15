@@ -46,7 +46,7 @@ public class CreateListingHandler : IRequestHandler<CreateListingWithImagesComma
         }
     }
 
-    private static void ValidateImageCount(IReadOnlyList<IFormFile>? images)
+    private static void ValidateImageCount(List<IFormFile>? images)
     {
         if (images != null && images.Count > MaxImageCount)
         {
@@ -54,7 +54,7 @@ public class CreateListingHandler : IRequestHandler<CreateListingWithImagesComma
         }
     }
 
-    private async Task<List<string>> SaveImagesAsync(Guid listingId, IReadOnlyList<IFormFile>? images, CancellationToken cancellationToken)
+    private async Task<List<string>> SaveImagesAsync(Guid listingId, List<IFormFile>? images, CancellationToken cancellationToken)
     {
         var imagePaths = new List<string>();
         

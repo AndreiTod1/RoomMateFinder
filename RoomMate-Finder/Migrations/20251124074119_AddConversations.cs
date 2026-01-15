@@ -8,6 +8,8 @@ namespace RoomMate_Finder.Migrations
     /// <inheritdoc />
     public partial class AddConversations : Migration
     {
+        private static readonly string[] ConversationColumns = { "User1Id", "User2Id" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -44,7 +46,7 @@ namespace RoomMate_Finder.Migrations
                 name: "IX_conversations_User1Id_User2Id",
                 schema: "public",
                 table: "conversations",
-                columns: new[] { "User1Id", "User2Id" },
+                columns: ConversationColumns,
                 unique: true);
 
             migrationBuilder.CreateIndex(
