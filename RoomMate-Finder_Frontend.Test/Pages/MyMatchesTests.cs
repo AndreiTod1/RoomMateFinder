@@ -213,4 +213,190 @@ public class MyMatchesTests : BunitContext, IAsyncLifetime
             cut.Markup.Should().Contain("Test error");
         });
     }
+
+    [Fact]
+    public async Task MyMatches_ClickMessage_StartsNewConversation()
+    {
+        // Arrange
+        var profile = new ProfileDto(_userId, "test@test.com", "Test User", 20, "M", "Uni", "Bio", "Style", "Interests", DateTime.UtcNow, null);
+        var matchUserId = Guid.NewGuid();
+        var matches = new List<UserMatchDto>
+        {
+            new UserMatchDto(Guid.NewGuid(), matchUserId, "match@test.com", "Match User", 22, "F", "Uni", "Bio", "Active", "Gaming", DateTime.UtcNow, true, null)
+        };
+        var newConversation = new ConversationDto(Guid.NewGuid(), matchUserId, "Match User", null, "User", DateTime.UtcNow);
+        
+        _mockProfileService.Setup(x => x.GetCurrentAsync()).ReturnsAsync(profile);
+        _mockMatchingService.Setup(x => x.GetMyMatchesAsync(_userId)).ReturnsAsync(matches);
+        _mockConversationService.Setup(x => x.GetConversationsAsync()).ReturnsAsync(new List<ConversationDto>());
+        _mockConversationService.Setup(x => x.StartConversationAsync(matchUserId)).ReturnsAsync(newConversation);
+        _mockSnackbar.Setup(x => x.Configuration).Returns(new SnackbarConfiguration());
+        
+        RenderProviders();
+        var cut = RenderComponent();
+
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Mesaj"));
+
+        // Act
+        var messageBtn = cut.FindComponents<MudButton>().First(b => b.Markup.Contains("Mesaj"));
+        await cut.InvokeAsync(() => messageBtn.Instance.OnClick.InvokeAsync(null));
+
+        // Assert
+        _mockConversationService.Verify(x => x.StartConversationAsync(matchUserId), Times.Once);
+    }
+
+    [Fact]
+    public async Task MyMatches_ClickMessage_NavigatesToExistingConversation()
+    {
+        // Arrange
+        var profile = new ProfileDto(_userId, "test@test.com", "Test User", 20, "M", "Uni", "Bio", "Style", "Interests", DateTime.UtcNow, null);
+        var matchUserId = Guid.NewGuid();
+        var existingConvId = Guid.NewGuid();
+        var matches = new List<UserMatchDto>
+        {
+            new UserMatchDto(Guid.NewGuid(), matchUserId, "match@test.com", "Match User", 22, "F", "Uni", "Bio", "Active", "Gaming", DateTime.UtcNow, true, null)
+        };
+        var existingConversation = new ConversationDto(existingConvId, matchUserId, "Match User", null, "User", DateTime.UtcNow);
+        
+        _mockProfileService.Setup(x => x.GetCurrentAsync()).ReturnsAsync(profile);
+        _mockMatchingService.Setup(x => x.GetMyMatchesAsync(_userId)).ReturnsAsync(matches);
+        _mockConversationService.Setup(x => x.GetConversationsAsync()).ReturnsAsync(new List<ConversationDto> { existingConversation });
+        
+        RenderProviders();
+        var navMan = Services.GetRequiredService<NavigationManager>();
+        var cut = RenderComponent();
+
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Mesaj"));
+
+        // Act
+        var messageBtn = cut.FindComponents<MudButton>().First(b => b.Markup.Contains("Mesaj"));
+        await cut.InvokeAsync(() => messageBtn.Instance.OnClick.InvokeAsync(null));
+
+        // Assert - should NOT start new conversation
+        _mockConversationService.Verify(x => x.StartConversationAsync(It.IsAny<Guid>()), Times.Never);
+        navMan.Uri.Should().Contain($"/conversations/{existingConvId}");
+    }
+
+    [Fact]
+    public void MyMatches_NullProfile_RedirectsToLogin()
+    {
+        // Arrange
+        _mockProfileService.Setup(x => x.GetCurrentAsync()).ReturnsAsync((ProfileDto?)null);
+        
+        RenderProviders();
+        var navMan = Services.GetRequiredService<NavigationManager>();
+        
+        // Act
+        var cut = RenderComponent();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            navMan.Uri.Should().EndWith("/login");
+        });
+    }
+
+    [Fact]
+    public void MyMatches_WithProfilePicture_DisplaysImage()
+    {
+        // Arrange
+        var profile = new ProfileDto(_userId, "test@test.com", "Test User", 20, "M", "Uni", "Bio", "Style", "Interests", DateTime.UtcNow, null);
+        var matches = new List<UserMatchDto>
+        {
+            new UserMatchDto(Guid.NewGuid(), Guid.NewGuid(), "match@test.com", "Match User", 22, "F", "Uni", "Bio", "Active", "Gaming", DateTime.UtcNow, true, "/uploads/profile.jpg")
+        };
+        
+        _mockProfileService.Setup(x => x.GetCurrentAsync()).ReturnsAsync(profile);
+        _mockMatchingService.Setup(x => x.GetMyMatchesAsync(_userId)).ReturnsAsync(matches);
+        
+        RenderProviders();
+
+        // Act
+        var cut = RenderComponent();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("img");
+            cut.Markup.Should().Contain("/uploads/profile.jpg");
+        });
+    }
+
+    [Fact]
+    public void MyMatches_WithoutProfilePicture_DisplaysInitials()
+    {
+        // Arrange
+        var profile = new ProfileDto(_userId, "test@test.com", "Test User", 20, "M", "Uni", "Bio", "Style", "Interests", DateTime.UtcNow, null);
+        var matches = new List<UserMatchDto>
+        {
+            new UserMatchDto(Guid.NewGuid(), Guid.NewGuid(), "match@test.com", "John Doe", 22, "F", "Uni", "Bio", "Active", "Gaming", DateTime.UtcNow, true, null)
+        };
+        
+        _mockProfileService.Setup(x => x.GetCurrentAsync()).ReturnsAsync(profile);
+        _mockMatchingService.Setup(x => x.GetMyMatchesAsync(_userId)).ReturnsAsync(matches);
+        
+        RenderProviders();
+
+        // Act
+        var cut = RenderComponent();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("JD"); // Initials for John Doe
+        });
+    }
+
+    [Fact]
+    public void MyMatches_WithMatchInterests_DisplaysChips()
+    {
+        // Arrange
+        var profile = new ProfileDto(_userId, "test@test.com", "Test User", 20, "M", "Uni", "Bio", "Style", "Interests", DateTime.UtcNow, null);
+        var matches = new List<UserMatchDto>
+        {
+            new UserMatchDto(Guid.NewGuid(), Guid.NewGuid(), "match@test.com", "Match User", 22, "F", "Uni", "Bio", "Active", "Gaming, Music, Sports", DateTime.UtcNow, true, null)
+        };
+        
+        _mockProfileService.Setup(x => x.GetCurrentAsync()).ReturnsAsync(profile);
+        _mockMatchingService.Setup(x => x.GetMyMatchesAsync(_userId)).ReturnsAsync(matches);
+        
+        RenderProviders();
+
+        // Act
+        var cut = RenderComponent();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("Gaming");
+            cut.Markup.Should().Contain("Music");
+            cut.Markup.Should().Contain("+1"); // 3 interests, show 2, +1 remaining
+        });
+    }
+
+    [Fact]
+    public void MyMatches_WithBio_DisplaysBio()
+    {
+        // Arrange
+        var profile = new ProfileDto(_userId, "test@test.com", "Test User", 20, "M", "Uni", "Bio", "Style", "Interests", DateTime.UtcNow, null);
+        var matches = new List<UserMatchDto>
+        {
+            new UserMatchDto(Guid.NewGuid(), Guid.NewGuid(), "match@test.com", "Match User", 22, "F", "Uni", "I love coding!", "Active", "Gaming", DateTime.UtcNow, true, null)
+        };
+        
+        _mockProfileService.Setup(x => x.GetCurrentAsync()).ReturnsAsync(profile);
+        _mockMatchingService.Setup(x => x.GetMyMatchesAsync(_userId)).ReturnsAsync(matches);
+        
+        RenderProviders();
+
+        // Act
+        var cut = RenderComponent();
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("I love coding!");
+        });
+    }
 }
+

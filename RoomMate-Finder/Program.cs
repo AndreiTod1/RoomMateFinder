@@ -256,15 +256,6 @@ static async Task InitializeDatabaseAsync(WebApplication app)
         // Use migrations instead of EnsureCreated
         await dbContext.Database.MigrateAsync();
         Console.WriteLine("✓ Database migrations applied successfully");
-
-        // Seed Data ONLY if --seed argument is present
-        var args = Environment.GetCommandLineArgs();
-        if (args.Contains("--seed"))
-        {
-            Console.WriteLine("🌱 Seeding database...");
-            await DataSeeder.SeedAsync(dbContext);
-            Console.WriteLine("✓ Database seeded successfully");
-        }
     }
     catch (Exception ex)
     {

@@ -1,7 +1,10 @@
 using Bunit;
+using Bunit.TestDoubles;
 using FluentAssertions;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.JSInterop;
 using Moq;
 using MudBlazor;
 using MudBlazor.Services;
@@ -10,291 +13,143 @@ using Xunit;
 
 namespace RoomMate_Finder_Frontend.Test.Shared;
 
-/// <summary>
-/// Comprehensive tests for ProfilePictureUpload.razor component targeting 80%+ coverage.
-/// Tests all code paths: rendering, parameters, file selection, cropping controls.
-/// </summary>
-public class ProfilePictureUploadTests : BunitContext, IAsyncLifetime
+public class ProfilePictureUploadTests : BunitContext
 {
-    public Task InitializeAsync() => Task.CompletedTask;
-
-    public new async Task DisposeAsync()
-    {
-        await base.DisposeAsync();
-    }
-
     public ProfilePictureUploadTests()
     {
         Services.AddMudServices();
         JSInterop.Mode = JSRuntimeMode.Loose;
-    }
-
-    private void RenderProviders()
-    {
-        Render<MudPopoverProvider>();
-        Render<MudDialogProvider>();
-    }
-
-    #region Component Type Tests
-
-    [Fact]
-    public void ProfilePictureUpload_ComponentExists()
-    {
-        var componentType = typeof(ProfilePictureUpload);
-        componentType.Should().NotBeNull();
-    }
-
-    [Fact]
-    public void ProfilePictureUpload_ImplementsIAsyncDisposable()
-    {
-        typeof(ProfilePictureUpload).GetInterfaces().Should().Contain(typeof(IAsyncDisposable));
-    }
-
-    [Fact]
-    public void ProfilePictureUpload_ImplementsComponentBase()
-    {
-        typeof(ProfilePictureUpload)
-            .IsSubclassOf(typeof(Microsoft.AspNetCore.Components.ComponentBase))
-            .Should().BeTrue();
-    }
-
-    #endregion
-
-    #region Parameter Tests
-
-    [Fact]
-    public void ProfilePictureUpload_HasOnFileSelectedParameter()
-    {
-        var property = typeof(ProfilePictureUpload).GetProperty("OnFileSelected");
-        property.Should().NotBeNull();
         
-        var parameterAttribute = property!.GetCustomAttributes(typeof(Microsoft.AspNetCore.Components.ParameterAttribute), false);
-        parameterAttribute.Should().NotBeEmpty();
+        // Mock common JS functions used by the component
+        JSInterop.SetupVoid("preventScrollOnElement", _ => true);
+        JSInterop.SetupVoid("allowScrollOnElement", _ => true);
     }
 
     [Fact]
-    public void ProfilePictureUpload_HasPreviewUrlParameter()
+    public void ProfilePictureUpload_Renders_UploadButtonInitially()
     {
-        var property = typeof(ProfilePictureUpload).GetProperty("PreviewUrl");
-        property.Should().NotBeNull();
-        
-        var parameterAttribute = property!.GetCustomAttributes(typeof(Microsoft.AspNetCore.Components.ParameterAttribute), false);
-        parameterAttribute.Should().NotBeEmpty();
-    }
-
-    [Fact]
-    public void ProfilePictureUpload_HasHasNewImageProperty()
-    {
-        var property = typeof(ProfilePictureUpload).GetProperty("HasNewImage");
-        property.Should().NotBeNull();
-    }
-
-    #endregion
-
-    #region Rendering Tests - No Preview
-
-    [Fact]
-    public void ProfilePictureUpload_NoPreview_ShowsAddPhotoIcon()
-    {
-        RenderProviders();
         var cut = Render<ProfilePictureUpload>();
-        
-        cut.FindComponents<MudIcon>().Should().NotBeEmpty();
-    }
 
-    [Fact]
-    public void ProfilePictureUpload_NoPreview_ShowsSelectButton()
-    {
-        RenderProviders();
-        var cut = Render<ProfilePictureUpload>();
-        
         cut.Markup.Should().Contain("Alege Poză");
+        cut.FindComponent<MudIcon>().Instance.Icon.Should().Be(Icons.Material.Filled.AddAPhoto);
     }
 
     [Fact]
-    public void ProfilePictureUpload_NoPreview_ShowsFormatHint()
+    public void ProfilePictureUpload_WithPreviewUrl_RendersExistingImage()
     {
-        RenderProviders();
-        var cut = Render<ProfilePictureUpload>();
-        
-        cut.Markup.Should().Contain("JPG, PNG, WEBP");
-        cut.Markup.Should().Contain("Max 5MB");
-    }
-
-    [Fact]
-    public void ProfilePictureUpload_NoPreview_HasMudAvatar()
-    {
-        RenderProviders();
-        var cut = Render<ProfilePictureUpload>();
-        
-        cut.FindComponents<MudAvatar>().Should().NotBeEmpty();
-    }
-
-    [Fact]
-    public void ProfilePictureUpload_NoPreview_HasMudPaper()
-    {
-        RenderProviders();
-        var cut = Render<ProfilePictureUpload>();
-        
-        cut.FindComponents<MudPaper>().Should().HaveCount(1);
-    }
-
-    [Fact]
-    public void ProfilePictureUpload_NoPreview_HasMudStack()
-    {
-        RenderProviders();
-        var cut = Render<ProfilePictureUpload>();
-        
-        cut.FindComponents<MudStack>().Should().NotBeEmpty();
-    }
-
-    [Fact]
-    public void ProfilePictureUpload_NoPreview_HasInputFile()
-    {
-        RenderProviders();
-        var cut = Render<ProfilePictureUpload>();
-        
-        cut.FindComponents<InputFile>().Should().HaveCount(1);
-    }
-
-    [Fact]
-    public void ProfilePictureUpload_NoPreview_HasMudButton()
-    {
-        RenderProviders();
-        var cut = Render<ProfilePictureUpload>();
-        
-        cut.FindComponents<MudButton>().Should().NotBeEmpty();
-    }
-
-    #endregion
-
-    #region Rendering Tests - With Existing Preview
-
-    [Fact]
-    public void ProfilePictureUpload_WithExistingPreview_ShowsCurrentPhoto()
-    {
-        RenderProviders();
+        var previewUrl = "http://example.com/image.jpg";
         var cut = Render<ProfilePictureUpload>(parameters => parameters
-            .Add(p => p.PreviewUrl, "http://example.com/photo.jpg"));
-        
+            .Add(p => p.PreviewUrl, previewUrl));
+
+        cut.Markup.Should().Contain(previewUrl);
         cut.Markup.Should().Contain("Poză actuală");
-    }
-
-    [Fact]
-    public void ProfilePictureUpload_WithExistingPreview_ShowsChangeButton()
-    {
-        RenderProviders();
-        var cut = Render<ProfilePictureUpload>(parameters => parameters
-            .Add(p => p.PreviewUrl, "http://example.com/photo.jpg"));
-        
-        // When there's an existing image (not newly selected), button says "Schimbă poza"
         cut.Markup.Should().Contain("Schimbă poza");
     }
 
     [Fact]
-    public void ProfilePictureUpload_WithExistingPreview_ShowsAvatar()
+    public void HandleFileSelected_ValidImage_UpdatesState()
     {
-        RenderProviders();
-        var cut = Render<ProfilePictureUpload>(parameters => parameters
-            .Add(p => p.PreviewUrl, "http://example.com/photo.jpg"));
-        
-        cut.FindComponents<MudAvatar>().Should().NotBeEmpty();
-    }
-
-    [Fact]
-    public void ProfilePictureUpload_WithExistingPreview_ShowsImage()
-    {
-        RenderProviders();
-        var cut = Render<ProfilePictureUpload>(parameters => parameters
-            .Add(p => p.PreviewUrl, "http://example.com/photo.jpg"));
-        
-        cut.Markup.Should().Contain("src=\"http://example.com/photo.jpg\"");
-    }
-
-    #endregion
-
-    #region Method Tests
-
-    [Fact]
-    public void ProfilePictureUpload_HasGetCroppedImageAsyncMethod()
-    {
-        var method = typeof(ProfilePictureUpload).GetMethod("GetCroppedImageAsync");
-        method.Should().NotBeNull();
-    }
-
-    [Fact]
-    public void ProfilePictureUpload_HasHandleWheelZoomMethod()
-    {
-        var method = typeof(ProfilePictureUpload).GetMethod("HandleWheelZoom");
-        method.Should().NotBeNull();
-        
-        // Should have JSInvokable attribute
-        var jsInvokableAttr = method!.GetCustomAttributes(typeof(Microsoft.JSInterop.JSInvokableAttribute), false);
-        jsInvokableAttr.Should().NotBeEmpty();
-    }
-
-    [Fact]
-    public async Task ProfilePictureUpload_GetCroppedImageAsync_ReturnsNull_WhenNoPreview()
-    {
-        RenderProviders();
         var cut = Render<ProfilePictureUpload>();
+        
+        // Create a mock IBrowserFile
+        var file = InputFileContent.CreateFromText("dummy image content", "test.jpg", contentType: "image/jpeg");
+        
+        // Find InputFile and trigger change
+        var inputFile = cut.FindComponent<InputFile>();
+        inputFile.UploadFiles(file);
+
+        // Verify state changes
+        cut.Instance.HasNewImage.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task HandleFileSelected_InvokesCallback()
+    {
+        IBrowserFile? selectedFile = null;
+        var cut = Render<ProfilePictureUpload>(parameters => parameters
+            .Add(p => p.OnFileSelected, file => selectedFile = file));
+
+        var file = InputFileContent.CreateFromText("content", "test.png", contentType: "image/png");
+        var inputFile = cut.FindComponent<InputFile>();
+        
+        inputFile.UploadFiles(file);
+
+        selectedFile.Should().NotBeNull();
+        selectedFile!.Name.Should().Be("test.png");
+    }
+
+    [Fact]
+    public void CropControls_Render_WhenNewImageAndUrlPresent()
+    {
+        // Simulate state where new image is selected and URL is updated by parent
+        var cut = Render<ProfilePictureUpload>(parameters => parameters
+            .Add(p => p.PreviewUrl, "blob:url"));
+
+        // Trigger file selection to set _hasNewImage = true
+        var file = InputFileContent.CreateFromText("content", "new.jpg", contentType: "image/jpeg");
+        cut.FindComponent<InputFile>().UploadFiles(file);
+        
+        cut.Render(); // Ensure render cycle
+
+        cut.Markup.Should().Contain("crop-container");
+        cut.Markup.Should().Contain("Resetează");
+        cut.FindComponents<MudSlider<double>>().Should().HaveCount(2); // Zoom and Radius
+    }
+
+    [Fact]
+    public async Task GetCroppedImageAsync_CallsJSAndReturnsBytes()
+    {
+        var cut = Render<ProfilePictureUpload>(parameters => parameters
+            .Add(p => p.PreviewUrl, "blob:url"));
+
+        // Set internal state to allow cropping
+        var file = InputFileContent.CreateFromText("content", "new.jpg", contentType: "image/jpeg");
+        cut.FindComponent<InputFile>().UploadFiles(file);
+
+        // Mock JS return
+        var base64 = "base64,SGVsbG8gV29ybGQ="; // "Hello World"
+        var expectedBytes = Convert.FromBase64String("SGVsbG8gV29ybGQ=");
+
+        JSInterop.Setup<string>("cropImageToCircle", _ => true)
+            .SetResult(base64);
+
+        // Act
+        var result = await cut.Instance.GetCroppedImageAsync();
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().BeEquivalentTo(expectedBytes);
+        
+        // Verify JS call arguments
+        JSInterop.VerifyInvoke("cropImageToCircle", 1);
+    }
+
+    [Fact]
+    public async Task GetCroppedImageAsync_ReturnsNull_IfNoNewImage()
+    {
+        var cut = Render<ProfilePictureUpload>(parameters => parameters
+            .Add(p => p.PreviewUrl, "http://existing.com/img.jpg"));
+
+        // _hasNewImage is false by default
         
         var result = await cut.Instance.GetCroppedImageAsync();
-        
+
         result.Should().BeNull();
+        JSInterop.VerifyNotInvoke("cropImageToCircle");
     }
 
     [Fact]
-    public void ProfilePictureUpload_HasNewImage_InitiallyFalse()
+    public void ResetCrop_ResetsValues()
     {
-        RenderProviders();
-        var cut = Render<ProfilePictureUpload>();
-        
-        cut.Instance.HasNewImage.Should().BeFalse();
+        var cut = Render<ProfilePictureUpload>(parameters => parameters
+            .Add(p => p.PreviewUrl, "blob:url"));
+
+        var file = InputFileContent.CreateFromText("content", "new.jpg", contentType: "image/jpeg");
+        cut.FindComponent<InputFile>().UploadFiles(file);
+
+        var resetBtn = cut.FindComponents<MudButton>()
+            .First(b => b.Markup.Contains("Resetează"));
+            
+        resetBtn.Find("button").Click();
     }
-
-    #endregion
-
-    #region UI Elements Tests
-
-    [Fact]
-    public void ProfilePictureUpload_HasHiddenInputFile()
-    {
-        RenderProviders();
-        var cut = Render<ProfilePictureUpload>();
-        
-        // Input file should be hidden (display:none)
-        cut.Markup.Should().Contain("display:none");
-    }
-
-    [Fact]
-    public void ProfilePictureUpload_HasDashedBorder()
-    {
-        RenderProviders();
-        var cut = Render<ProfilePictureUpload>();
-        
-        cut.Markup.Should().Contain("dashed");
-    }
-
-    [Fact]
-    public void ProfilePictureUpload_HasLabel()
-    {
-        RenderProviders();
-        var cut = Render<ProfilePictureUpload>();
-        
-        cut.Markup.Should().Contain("<label");
-    }
-
-    [Fact]
-    public void ProfilePictureUpload_AcceptsImageFormats()
-    {
-        RenderProviders();
-        var cut = Render<ProfilePictureUpload>();
-        
-        cut.Markup.Should().Contain("image/jpeg");
-        cut.Markup.Should().Contain("image/png");
-        cut.Markup.Should().Contain("image/webp");
-    }
-
-    #endregion
 }

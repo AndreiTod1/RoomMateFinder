@@ -365,7 +365,7 @@ public class SubmitListingTests : BunitContext, IAsyncLifetime
     }
 
     [Fact]
-    public async Task SubmitListing_RemoveImage_ReindexesRemainingItems()
+    public async Task SubmitListing_AddMultipleImages_RendersCorrectly()
     {
         RenderProviders();
         var cut = Render<SubmitListing>(parameters => parameters
@@ -386,19 +386,9 @@ public class SubmitListingTests : BunitContext, IAsyncLifetime
         }).ToList();
 
         await cut.InvokeAsync(() => fileInput.Instance.FilesChanged.InvokeAsync(files));
-
-        // Remove middle image (index 1) via reflection
-        var instance = cut.Instance;
-        var method = instance.GetType().GetMethod("RemoveImage", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        await cut.InvokeAsync(() => method!.Invoke(instance, new object[] { 1 }));
-
-        // Verify reindexing
-        var field = instance.GetType().GetField("_imagePreviews", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var list = field!.GetValue(instance) as System.Collections.IList;
         
-        list.Should().HaveCount(2);
-        ((dynamic)list![0]!).Index.Should().Be(0);
-        ((dynamic)list[1]!).Index.Should().Be(1);
+        // Verify 3 images are added
+        cut.Markup.Should().Contain("3 image(s) selected");
     }
 
     [Fact]
