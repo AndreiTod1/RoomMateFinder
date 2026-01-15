@@ -70,8 +70,8 @@ jobs:
           Write-Host "=== [2/4] Building solution ==="
           dotnet build --no-incremental
 
-          Write-Host "=== [3/4] Running tests with coverage ==="
-          dotnet test RoomMate-Finder.Test/RoomMate-Finder.Test.csproj `
+          Write-Host "=== [3/4] Running ALL tests (Backend + Frontend) with coverage ==="
+          dotnet test . `
             --verbosity normal `
             --collect:"XPlat Code Coverage" `
             --results-directory:"./TestResults" `
